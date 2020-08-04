@@ -51,7 +51,7 @@ function Invoke-SqlMigrationPlan {
         try {
             $Connection = $T | PSql\Connect-Sql
             $PlanPath `
-                | Join-Path -ChildPath "$($T.Server);$($T.Database)\$ScriptFile" -Resolve `
+                | Join-Path -ChildPath "$($T.ServerName);$($T.DatabaseName)\$ScriptFile" -Resolve `
                 | % { Get-Content -LiteralPath $_ -Raw -Encoding UTF8 } `
                 | PSql\Invoke-Sql -Connection $Connection
         }
