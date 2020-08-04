@@ -54,8 +54,9 @@ function Set-SqlMigrationPlan {
     Write-Verbose "Discovering migrations applied to database."
     $Connection = $null
     try {
-        $As = if ($Credential) { @{ Credential = $Credential } } else { @{} }
-        $Connection = PSql\Connect-Sql $Server $Database @As
+        $As               = if ($Credential) { @{ Credential = $Credential } } else { @{} }
+        $Context          = PSql.Core\New-SqlContext -ServerName $Server -DatabaseName $Database -Credential $As
+        $Connection       = PSql.Core\Connect-Sql -Context $Context
         $TargetMigrations = Get-SqlMigrationsApplied $Connection
     }
     finally {
@@ -64,7 +65,7 @@ function Set-SqlMigrationPlan {
 
     # Merge into a unified migrations table
     Write-Verbose "Merging migrations list."
-    $Migrations = Merge-SqlMigrations $SourceMigrations $TargetMigrations   
+    $Migrations = Merge-SqlMigrations $SourceMigrations $TargetMigrations
 
     # Add the _Begin and _End pseudo-migrations
     Find-SqlMigrations $SourceDirectory -Type Begin | % { $Migrations.Insert(0, $_.Name, $_) }
