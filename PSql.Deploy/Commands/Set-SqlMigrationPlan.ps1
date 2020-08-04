@@ -1,6 +1,6 @@
 <#
     Part of: PSqlDeploy - Simple PowerShell Cmdlets for SQL Server Database Deployment
-    Copyright (C) 2017 Jeffrey Sharp
+    Copyright (C) 2020 Jeffrey Sharp
     https://github.com/sharpjs/PSqlDeploy
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
