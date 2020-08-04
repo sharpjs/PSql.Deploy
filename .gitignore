@@ -8,7 +8,7 @@ bin/
 /dist/
 /coverage/
 /Stamp.props
-PSql.psd1
+PSql.Deploy.psd1
 
 # Temporary files
 *.log
