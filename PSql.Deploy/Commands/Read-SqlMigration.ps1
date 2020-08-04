@@ -78,7 +78,7 @@ function Read-SqlMigration {
 
     # Parse into chunks
     $Chunks = Get-Content -LiteralPath $Path -Raw -Encoding UTF8 `
-        | PSql\Expand-SqlCmdDirectives -Define @{ Path = Split-Path $Path } -Verbose  `
+        | PSql.Core\Expand-SqlCmdDirectives -Define @{ Path = Split-Path $Path } -Verbose  `
         | % { $ChunksRe.Matches($_) }
 
     foreach ($Chunk in $Chunks) {
