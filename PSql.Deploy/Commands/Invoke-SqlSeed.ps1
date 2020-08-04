@@ -51,7 +51,7 @@ function Invoke-SqlSeed {
     foreach ($T in $Target) {
         foreach ($S in $SeedMains) {
             Write-Host "--------------------------------------------------------------------------------"
-            Write-Host "Seed $($S.Directory.Name) for database '$($T.Database)' on server '$($T.Server)'."
+            Write-Host "Seed $($S.Directory.Name) for database '$($T.DatabaseName)' on server '$($T.ServerName)'."
             Write-Host "--------------------------------------------------------------------------------"
 
             # Prepare for Expand-SqlCmdDirectives (without modifying passed hashtable)
@@ -60,8 +60,8 @@ function Invoke-SqlSeed {
 
             # Prepare for Invoke-SqlModules
             $LegacyConnectionParameters = @{
-                Server   = $T.Server
-                Database = $T.Database
+                Server   = $T.ServerName
+                Database = $T.DatabaseName
             }
             if ($T.Credential -ne [PSCredential]::Empty) {
                 $LegacyConnectionParameters.Login    = $T.Credential.UserName

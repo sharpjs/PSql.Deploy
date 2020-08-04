@@ -44,7 +44,7 @@ function Invoke-SqlMigrationPlan {
 
     foreach ($T in $Target) {
         Write-Host "--------------------------------------------------------------------------------"
-        Write-Host "Migration phase $Phase for database '$($T.Database)' on server '$($T.Server)'."
+        Write-Host "Migration phase $Phase for database '$($T.DatabaseName)' on server '$($T.ServerName)'."
         Write-Host "--------------------------------------------------------------------------------"
 
         $Connection = $null

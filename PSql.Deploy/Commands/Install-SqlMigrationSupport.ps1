@@ -26,7 +26,7 @@ function Install-SqlMigrationSupport {
     )
 
     foreach ($T in $Target) {
-        Write-Host "Installing migration support in database '$($T.Database)' on server '$($T.Server)'."
+        Write-Host "Installing migration support in database '$($T.DatabaseName)' on server '$($T.ServerName)'."
 
         $Connection = $null
         try {

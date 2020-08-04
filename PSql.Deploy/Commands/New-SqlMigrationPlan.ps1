@@ -51,10 +51,10 @@ function New-SqlMigrationPlan {
 
     # Create subplan for each target database
     $Subplans = $(foreach ($T in $Target) {
-        Write-Host "Computing plan for database '$($T.Database)' on server '$($T.Server)'."
+        Write-Host "Computing plan for database '$($T.DatabaseName)' on server '$($T.ServerName)'."
 
         # Discover migrations applied to database
-        Write-Verbose "Discovering migrations applied to database '$($T.Database)' on server '$($T.Server)'."
+        Write-Verbose "Discovering migrations applied to database '$($T.DatabaseName)' on server '$($T.ServerName)'."
         $TargetMigrations = @(Get-SqlMigrationsApplied $T)
         Write-Verbose "Discovered $($TargetMigrations.Length) applied migration(s)."
 
@@ -70,7 +70,7 @@ function New-SqlMigrationPlan {
         Resolve-SqlMigrations $Migrations
 
         # Make the plan
-        $TargetPath = Join-Path $PlanPath "$($T.Server);$($T.Database)"
+        $TargetPath = Join-Path $PlanPath "$($T.ServerName);$($T.DatabaseName)"
         ConvertTo-SqlMigrationPlan $Migrations $TargetPath
     })
 
