@@ -53,7 +53,6 @@ function Invoke-SqlMigrationPlan {
             $PlanPath `
                 | Join-Path -ChildPath "$($T.Server);$($T.Database)\$ScriptFile" -Resolve `
                 | % { Get-Content -LiteralPath $_ -Raw -Encoding UTF8 } `
-                | PSql\Split-SqlBatches `
                 | PSql\Invoke-Sql -Connection $Connection
         }
         finally {
