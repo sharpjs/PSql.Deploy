@@ -28,4 +28,7 @@ $Try = @{ ErrorAction = "SilentlyContinue" }
 $DefaultPlanPath = "SqlMigrationPlan"
 
 # Load module code
-Join-Path $PSScriptRoot *.ps1 -Resolve | ForEach-Object { . $_ }
+$PSScriptRoot `
+    | Join-Path -ChildPath Commands `
+    | Join-Path -ChildPath *.ps1 -Resolve `
+    | ForEach-Object { . $_ }
