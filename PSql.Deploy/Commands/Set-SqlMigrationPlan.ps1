@@ -55,12 +55,12 @@ function Set-SqlMigrationPlan {
     $Connection = $null
     try {
         $As               = if ($Credential) { @{ Credential = $Credential } } else { @{} }
-        $Context          = PSql.Core\New-SqlContext -ServerName $Server -DatabaseName $Database -Credential $As
-        $Connection       = PSql.Core\Connect-Sql -Context $Context
+        $Context          = PSql\New-SqlContext -ServerName $Server -DatabaseName $Database -Credential $As
+        $Connection       = PSql\Connect-Sql -Context $Context
         $TargetMigrations = Get-SqlMigrationsApplied $Connection
     }
     finally {
-        Disconnect-Sql $Connection
+        PSql\Disconnect-Sql $Connection
     }
 
     # Merge into a unified migrations table
