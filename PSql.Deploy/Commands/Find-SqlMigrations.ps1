@@ -39,7 +39,7 @@ function Find-SqlMigrations {
           > Seeds\              Seeds for the the database.
           |
           > ...\                Other directories as desired.
-    
+
         Each subdirectory of $SourceDirectory\Migrations containing a _Main.sql or _Main.Up.sql file is presumed to be a migration.  The name of the subdirectory is the name of the migration.  The search is not recursive; only one level of subdirectories is examined.
 
         Migrations named _Begin or _End, if present, are special pseudo-migrations intended for setup and teardown scripts.  These scripts are run before and after any named (normal) migrations.
@@ -76,12 +76,15 @@ function Find-SqlMigrations {
 
     # Find migrations
     "_Main.sql", "_Main.Up.sql" `
-        | % { Join-Path $SourceDirectory Migrations\$Pattern\$_ } `
+        | Foreach-Object { $SourceDirectory | `
+            Join-Path -ChildPath Migrations | `
+            Join-Path -ChildPath $Pattern | `
+            Join-Path -ChildPath $_ } `
         | Get-Item -Exclude $Excludes -ErrorAction SilentlyContinue `
-        | group Directory `
-        | sort Name `
-        | % { $_ | % Group | sort Name | select -First 1 } `
-        | % {
+        | Group-Object Directory `
+        | Sort-Object Name `
+        | Foreach-Object { $_ | Foreach-Object Group | Sort-Object Name | Select-Object -First 1 } `
+        | Foreach-Object {
             $Migration          = New-SqlMigrationObject
             $Migration.Name     = $_.Directory.Name
             $Migration.Path     = $_.FullName
