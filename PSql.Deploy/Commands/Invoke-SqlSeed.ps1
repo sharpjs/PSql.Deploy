@@ -29,7 +29,7 @@ function Invoke-SqlSeed {
 
         # Target database specification(s).  Create using New-SqlContext.
         [Parameter(Mandatory, Position=1, ValueFromPipeline)]
-        [object[]] $Target,
+        [PSql.SqlContext[]] $Target,
 
         # Name(s) of the seed(s).
         [Parameter(Mandatory, Position=2)]

@@ -30,7 +30,7 @@ function Invoke-SqlMigrationPlan {
 
         # Target database specification(s).  Create using New-SqlContext.
         [Parameter(Mandatory, Position = 1, ValueFromPipeline)]
-        [PSCustomObject[]] $Target,
+        [PSql.SqlContext[]] $Target,
 
         # Path of directory containing the migration plan.  The default value is "SqlMigrationPlan".
         [string] $PlanPath = $DefaultPlanPath

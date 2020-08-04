@@ -29,7 +29,7 @@ function New-SqlMigrationPlan {
 
         # Target database specification(s).  Create using New-SqlContext.
         [Parameter(Mandatory, Position = 1)]
-        [object[]] $Target,
+        [PSql.SqlContext[]] $Target,
 
         # Path of directory in which to save the migration plan.  The default value is "SqlMigrationPlan".
         [string] $PlanPath = $DefaultPlanPath

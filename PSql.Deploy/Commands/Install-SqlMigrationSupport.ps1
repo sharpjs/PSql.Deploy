@@ -22,7 +22,7 @@ function Install-SqlMigrationSupport {
     param (
         # Target database specification(s).  Create using New-SqlContext.
         [Parameter(Mandatory, Position = 1)]
-        [object[]] $Target
+        [PSql.SqlContext[]] $Target
     )
 
     foreach ($T in $Target) {
