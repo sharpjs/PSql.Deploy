@@ -17,11 +17,12 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #>
 
+<# TODO: Implement PSql\Invoke-SqlModules
 function Invoke-SqlSeed {
     <#
     .SYNOPSIS
         Runs seed script(s) on the target database(s).
-    #>
+    #><#<==REMOVE THIS
     param (
         # Path of directory containing database source code.
         [Parameter(Mandatory, Position=0)]
@@ -95,3 +96,4 @@ function Invoke-SqlSeed {
         }
     }
 }
+#>

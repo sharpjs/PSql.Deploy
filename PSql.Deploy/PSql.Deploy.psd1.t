@@ -50,7 +50,7 @@
         "Install-SqlMigrationSupport"
         "Invoke-SqlMigrations"
         "Invoke-SqlMigrationPlan"
-        "Invoke-SqlSeed"
+        #"Invoke-SqlSeed" <== Uncomment after PSql\Invoke-SqlModules is implemented
         "New-SqlMigrationPlan"
         "Read-SqlMigration"
         "Set-SqlMigrationPlan"
