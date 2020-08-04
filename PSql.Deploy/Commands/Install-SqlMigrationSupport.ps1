@@ -34,7 +34,6 @@ function Install-SqlMigrationSupport {
 
             Join-Path $PSScriptRoot Install-SqlMigrationSupport.sql -Resolve `
                 | % { Get-Content -LiteralPath $_ -Raw -Encoding UTF8 } `
-                | PSql\Split-SqlBatches `
                 | PSql\Invoke-Sql -Connection $Connection
         }
         finally {
