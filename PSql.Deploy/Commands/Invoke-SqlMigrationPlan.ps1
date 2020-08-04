@@ -28,7 +28,7 @@ function Invoke-SqlMigrationPlan {
         [ValidateSet("Pre", "Core", "Post")]
         [string] $Phase,
 
-        # Target database specification(s).  Create using New-SqlMigrationTarget.
+        # Target database specification(s).  Create using New-SqlContext.
         [Parameter(Mandatory, Position = 1, ValueFromPipeline)]
         [PSCustomObject[]] $Target,
 

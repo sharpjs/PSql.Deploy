@@ -27,7 +27,7 @@ function New-SqlMigrationPlan {
         [Parameter(Mandatory, Position = 0)]
         [string] $SourcePath,
 
-        # Target database specification(s).  Create using New-SqlMigrationTarget.
+        # Target database specification(s).  Create using New-SqlContext.
         [Parameter(Mandatory, Position = 1)]
         [object[]] $Target,
 
@@ -60,7 +60,7 @@ function New-SqlMigrationPlan {
 
         # Merge into a unified migrations table
         Write-Verbose "Merging migrations list."
-        $Migrations = Merge-SqlMigrations $SourceMigrations $TargetMigrations   
+        $Migrations = Merge-SqlMigrations $SourceMigrations $TargetMigrations
 
         # Add the _Begin and _End pseudo-migrations
         Find-SqlMigrations $SourcePath -Type Begin | % { $Migrations.Insert(0, $_.Name, $_) }

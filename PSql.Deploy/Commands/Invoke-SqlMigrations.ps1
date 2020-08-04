@@ -28,7 +28,7 @@ function Invoke-SqlMigrations {
         [Parameter(Mandatory, Position = 0)]
         [string] $SourcePath,
 
-        # Target database specification(s).  Create using New-SqlMigrationTarget.
+        # Target database specification(s).  Create using New-SqlContext.
         [Parameter(Mandatory, Position = 1)]
         [object[]] $Target,
 

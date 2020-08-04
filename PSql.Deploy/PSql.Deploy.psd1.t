@@ -52,7 +52,6 @@
         "Invoke-SqlMigrationPlan"
         "Invoke-SqlSeed"
         "New-SqlMigrationPlan"
-        "New-SqlMigrationTarget"
         "Read-SqlMigration"
         "Set-SqlMigrationPlan"
     )
