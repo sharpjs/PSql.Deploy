@@ -1,6 +1,6 @@
 # PSql.Deploy
 
-Cmdlets for schema migration of SQL Server and Azure SQL databases.
+PowerShell database deployment commands for SQL Server and Azure SQL Database.
 
 ## Status
 

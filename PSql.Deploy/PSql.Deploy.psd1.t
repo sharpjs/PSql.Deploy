@@ -20,7 +20,7 @@
     ModuleVersion = '{VersionPrefix}'
 
     # General
-    Description = 'Schema migration cmdlets for SQL Server and Azure SQL databases.'
+    Description = 'Database deployment commands for SQL Server and Azure SQL Database.'
     Author      = 'Jeffrey Sharp'
     CompanyName = 'Subatomix Research Inc.'
     Copyright   = '{Copyright}'
