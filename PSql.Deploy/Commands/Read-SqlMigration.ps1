@@ -79,34 +79,41 @@ function Read-SqlMigration {
         default { $CoreSql }
     }
 
-    # Parse into chunks
-    $Chunks = Get-Content -LiteralPath $Path -Raw -Encoding UTF8 `
-        | PSql\Expand-SqlCmdDirectives -Define @{ Path = Split-Path $Path } -Verbose  `
-        | ForEach-Object { $ChunksRe.Matches($_) }
+    # Parse into batches
+    $Batches = Get-Content -LiteralPath $Path -Raw -Encoding UTF8 `
+        | PSql\Expand-SqlCmdDirectives -Define @{ Path = Split-Path $Path } 
 
-    foreach ($Chunk in $Chunks) {
-        $Text  = $Chunk.Groups['text' ].Value
-        $Magic = $Chunk.Groups['magic'].Value
+    foreach ($Batch in $Batches) {
+        # Re-add batch separator if current phase had a previous batch
+        if ($Current.Length -gt 0) {
+            [void] $Current.AppendLine("GO")
+        }
 
-        # Text chunk belongs to block in progress
-        [void] $Current.Append($Text)
+        # Parse batch into chunks
+        foreach ($Chunk in $ChunksRe.Matches($Batch)) {
+            $Text  = $Chunk.Groups['text' ].Value
+            $Magic = $Chunk.Groups['magic'].Value
 
-        # Detect EOF
-        if (-not $Magic) { break }
+            # Text chunk belongs to block in progress
+            [void] $Current.Append($Text)
 
-        # Split magic comment, if any
-        $Match = $CommandRe.Match($Chunk.Groups['cmd'].Value)
-        $Name  =   $Match.Groups['name'].Value
-        $Argz  = @($Match.Groups['args'].Captures | ForEach-Object Value)
+            # Detect EOF
+            if (-not $Magic) { break }
 
-        # Interpret magic comment, if any
-        switch ($Name) {
-            PRE      { $Current = $PreSql  }
-            CORE     { $Current = $CoreSql }
-            OFFLINE  { $Current = $CoreSql }
-            POST     { $Current = $PostSql }
-            REQUIRES { [void] $Depends.Add($Argz) }
-            default  { [void] $Current.Append($Magic) } # Not our magic
+            # Split magic comment, if any
+            $Match = $CommandRe.Match($Chunk.Groups['cmd'].Value)
+            $Name  =   $Match.Groups['name'].Value
+            $Argz  = @($Match.Groups['args'].Captures | ForEach-Object Value)
+
+            # Interpret magic comment, if any
+            switch ($Name) {
+                PRE      { $Current = $PreSql  }
+                CORE     { $Current = $CoreSql }
+                OFFLINE  { $Current = $CoreSql }
+                POST     { $Current = $PostSql }
+                REQUIRES { [void] $Depends.Add($Argz) }
+                default  { [void] $Current.Append($Magic) } # Not our magic
+            }
         }
     }
 
