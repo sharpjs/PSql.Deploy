@@ -37,8 +37,4 @@
     <None Update="Properties\**" CopyToOutputDirectory="Never" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Psd1Template Remove="PSql.Deploy.psd1.t" />
-  </ItemGroup>
-
 </Project>
