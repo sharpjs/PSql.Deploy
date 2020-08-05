@@ -82,7 +82,7 @@ function Read-SqlMigration {
     # Parse into chunks
     $Chunks = Get-Content -LiteralPath $Path -Raw -Encoding UTF8 `
         | PSql\Expand-SqlCmdDirectives -Define @{ Path = Split-Path $Path } -Verbose  `
-        | % { $ChunksRe.Matches($_) }
+        | ForEach-Object { $ChunksRe.Matches($_) }
 
     foreach ($Chunk in $Chunks) {
         $Text  = $Chunk.Groups['text' ].Value
@@ -97,7 +97,7 @@ function Read-SqlMigration {
         # Split magic comment, if any
         $Match = $CommandRe.Match($Chunk.Groups['cmd'].Value)
         $Name  =   $Match.Groups['name'].Value
-        $Args  = @($Match.Groups['args'].Captures | % Value)
+        $Argz  = @($Match.Groups['args'].Captures | ForEach-Object Value)
 
         # Interpret magic comment, if any
         switch ($Name) {
@@ -105,7 +105,7 @@ function Read-SqlMigration {
             CORE     { $Current = $CoreSql }
             OFFLINE  { $Current = $CoreSql }
             POST     { $Current = $PostSql }
-            REQUIRES { [void] $Depends.Add($Args) }
+            REQUIRES { [void] $Depends.Add($Argz) }
             default  { [void] $Current.Append($Magic) } # Not our magic
         }
     }
