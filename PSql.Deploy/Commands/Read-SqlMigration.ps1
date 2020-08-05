@@ -1,3 +1,6 @@
+using namespace System.Collections.Generic
+using namespace System.Text
+
 <#
     Part of: PSqlDeploy - Simple PowerShell Cmdlets for SQL Server Database Deployment
     https://github.com/sharpjs/PSqlDeploy
@@ -63,14 +66,14 @@ function Read-SqlMigration {
         [string] $Path
     )
 
+    $Comparer = [StringComparer]::OrdinalIgnoreCase
+    $Depends  = New-Object SortedSet[string] $Comparer
+    $PreSql   = New-Object StringBuilder 4096
+    $CoreSql  = New-Object StringBuilder 4096
+    $PostSql  = New-Object StringBuilder 4096
+
     # Convert to absolute path
     $Path = Convert-Path -LiteralPath $Path
-
-    $Comparer = [StringComparer]::OrdinalIgnoreCase
-    $Depends  = New-Object System.Collections.Generic.SortedSet[string] $Comparer
-    $PreSql   = New-Object System.Text.StringBuilder 4096
-    $CoreSql  = New-Object System.Text.StringBuilder 4096
-    $PostSql  = New-Object System.Text.StringBuilder 4096
 
     # Decide the initial phase
     $Current  = switch ($Path | Split-Path | Split-Path -Leaf) {
