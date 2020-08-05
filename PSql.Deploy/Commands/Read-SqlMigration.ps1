@@ -63,6 +63,9 @@ function Read-SqlMigration {
         [string] $Path
     )
 
+    # Convert to absolute path
+    $Path = Convert-Path -LiteralPath $Path
+
     $Comparer = [StringComparer]::OrdinalIgnoreCase
     $Depends  = New-Object System.Collections.Generic.SortedSet[string] $Comparer
     $PreSql   = New-Object System.Text.StringBuilder 4096
