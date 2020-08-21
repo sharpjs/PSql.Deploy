@@ -28,7 +28,13 @@
     # Requirements
     CompatiblePSEditions = 'Core'
     PowerShellVersion    = '7.0'
-    RequiredModules      = @( 'PSql' )
+    RequiredModules      = @(
+        ${
+            ModuleName    = 'PSql'
+            ModuleVersion = '2.0.0-pre01'
+            GUID          = '218cb4b2-911a-46b1-b47c-d3504acd4627'
+        }
+    )
     #RequiredAssemblies  = @(...)
 
     # Initialization
