@@ -26,9 +26,27 @@ function Get-SqlMigrationHash {
         [string] $Path
     )
 
+    # Generate file list
+    $Files = [ordered] @{}
+    # ... first, using explicit file list, if one is provided
+    # NOTE: This _Files.lst capability is a compatibility hack for an existing
+    #       user and will be removed as soon as they don't need it.
+    Join-Path $Path _Files.lst `
+        | Get-Item -ErrorAction SilentlyContinue `
+        | Get-Content -Encoding utf8 `
+        | ForEach-Object { Join-Path $Path $_ } `
+        | Get-Item `
+        | ForEach-Object { $Files[$_.FullName] = $_ }
+    # ... then, using sorted order
+    Get-ChildItem $Path *.sql -Recurse `
+        | Where-Object { -not $Files.Contains($_.FullName) } `
+        | Sort-Object FullName `
+        | ForEach-Object { $Files[$_.FullName] = $_ }
+
     # Compute a hash for each file
-    $Hashes = Get-ChildItem $Path *.sql `
-        | Get-FileHash -Algorithm SHA1 | % Hash `
+    $Hashes = $Files.Values `
+        | Get-FileHash -Algorithm SHA1 `
+        | ForEach-Object Hash `
         | Out-String
 
     # Prep a stream to read the hashes as binary
