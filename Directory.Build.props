@@ -32,7 +32,7 @@
     <Copyright>Copyright $([System.DateTime]::UtcNow.Year) Jeffrey Sharp, Subatomix Research Inc.</Copyright>
     <PackageLicenseExpression>ISC</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/sharpjs/PSql</PackageProjectUrl>
-    <PackageTags>PowerShell SQL Server Azure Invoke SqlCmd</PackageTags>
+    <PackageTags>PowerShell SQL Server Azure Invoke SqlCmd Deploy Migration</PackageTags>
     <PackageReleaseNotes>$(PackageProjectUrl)/blob/master/CHANGES.md</PackageReleaseNotes>
     <PackageIcon>icon.png</PackageIcon>
     <RepositoryType>git</RepositoryType>
