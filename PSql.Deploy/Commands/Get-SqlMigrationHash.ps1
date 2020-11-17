@@ -71,9 +71,10 @@ function ConvertFrom-Hex {
         [string] $Hex
     )
 
-    [byte[]] ( $Hex `
-        -replace '[^0-9a-fA-F]', '' `
-        -split '(?<=\G..)(?=..)' `
-        | % { [Convert]::ToByte($_, 16) }
+    [byte[]] (
+        # Workaround: https://github.com/PowerShell/PowerShell/issues/14112
+        # $Hex -replace '[^0-9a-fA-F]', '' -split '(?<=\G..)(?=..)' `
+        [regex]::Matches($Hashes, '[0-9a-fA-F]{2}') `
+        | % { [Convert]::ToByte($_.Value, 16) }
     )
 }
