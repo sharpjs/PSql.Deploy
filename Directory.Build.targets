@@ -42,7 +42,7 @@
 
   <!-- Versioning -->
   <ItemGroup>
-    <PackageReference Include="Subatomix.Build.Versioning.Semantic" Version="0.0.0-pre.7">
+    <PackageReference Include="Subatomix.Build.Versioning.Semantic" Version="1.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
@@ -50,7 +50,7 @@
 
   <!-- <inheritdoc/> support -->
   <ItemGroup>
-    <PackageReference Include="SauceControl.InheritDoc" Version="1.0.0">
+    <PackageReference Include="SauceControl.InheritDoc" Version="1.2.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>

@@ -24,11 +24,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Subatomix.Build.Packaging.PowerShellModule" Version="1.0.0-pre.3">
+    <PackageReference Include="Subatomix.Build.Packaging.PowerShellModule" Version="1.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>build</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="System.Management.Automation" Version="7.0.3">
+    <PackageReference Include="System.Management.Automation" Version="[7.0.0,8.0.0)">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
   </ItemGroup>
