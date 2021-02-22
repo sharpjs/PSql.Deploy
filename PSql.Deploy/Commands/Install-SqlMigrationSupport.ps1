@@ -30,8 +30,8 @@ function Install-SqlMigrationSupport {
             $Connection = $T | PSql\Connect-Sql
 
             Join-Path $PSScriptRoot Install-SqlMigrationSupport.sql -Resolve `
-                | % { Get-Content -LiteralPath $_ -Raw -Encoding UTF8 } `
-                | PSql\Invoke-Sql -Connection $Connection
+                | ForEach-Object { Get-Content -LiteralPath $_ -Raw -Encoding UTF8 } `
+                | PSql\Invoke-Sql -Connection $Connection -Timeout '00:01:00'
         }
         finally {
             Disconnect-Sql $Connection

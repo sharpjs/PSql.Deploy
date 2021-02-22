@@ -51,7 +51,7 @@ function Invoke-SqlMigrationPlan {
                 | Join-Path -ChildPath "$($T.ServerName);$($T.DatabaseName)" `
                 | Join-Path -ChildPath $ScriptFile `
                 | Foreach-Object { Get-Content -LiteralPath $_ -Raw -Encoding UTF8 } `
-                | PSql\Invoke-Sql -Connection $Connection
+                | PSql\Invoke-Sql -Connection $Connection -Timeout 0
         }
         finally {
             PSql\Disconnect-Sql $Connection
