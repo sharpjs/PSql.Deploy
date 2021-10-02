@@ -45,10 +45,11 @@ function Invoke-SqlMigrationPlan {
         Write-Host "--------------------------------------------------------------------------------"
 
         $Connection = $null
+        $DatabaseId = "$($T.ServerName);$($T.DatabaseName)" -replace '[\\/:*?"<>|]', '_'
         try {
             $Connection = $T | PSql\Connect-Sql
             Convert-Path -LiteralPath $PlanPath `
-                | Join-Path -ChildPath "$($T.ServerName);$($T.DatabaseName)" `
+                | Join-Path -ChildPath $DatabaseId `
                 | Join-Path -ChildPath $ScriptFile `
                 | Foreach-Object { Get-Content -LiteralPath $_ -Raw -Encoding UTF8 } `
                 | PSql\Invoke-Sql -Connection $Connection -Timeout 0

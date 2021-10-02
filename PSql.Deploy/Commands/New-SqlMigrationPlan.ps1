@@ -67,7 +67,8 @@ function New-SqlMigrationPlan {
         Resolve-SqlMigrations $Migrations
 
         # Make the plan
-        $TargetPath = Join-Path $PlanPath "$($T.ServerName);$($T.DatabaseName)"
+        $DatabaseId = "$($T.ServerName);$($T.DatabaseName)" -replace '[\\/:*?"<>|]', '_'
+        $TargetPath = Join-Path $PlanPath $DatabaseId
         ConvertTo-SqlMigrationPlan $Migrations $TargetPath
     })
 
