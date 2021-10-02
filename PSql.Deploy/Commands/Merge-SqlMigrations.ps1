@@ -62,7 +62,9 @@ function Merge-SqlMigrations {
                 # Use TargetMigration
                 $Migration = $TargetItems.Current | Copy-SqlMigrationObject
                 $HasTarget = $TargetItems.MoveNext()
-                Write-Host ("    (-t-{1}) {0}" -f $Migration.Name, $Migration.State)
+                if ($Migration.State -lt 3) {
+                    Write-Host ("    (-t-{1}) {0}" -f $Migration.Name, $Migration.State)
+                }
                 break
             }
             default {
