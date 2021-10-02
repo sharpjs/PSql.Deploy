@@ -24,15 +24,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Subatomix.Build.Packaging.PowerShellModule" Version="1.0.0">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>build</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="System.Management.Automation" Version="[7.0.0,8.0.0)">
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
+    <PackageReference Include="Subatomix.Build.Packaging.PowerShellModule"
+                      Version="1.1.0" PrivateAssets="all" />
+    <PackageReference Include="System.Management.Automation"
+                      Version="7.0.0" PrivateAssets="all" />
   </ItemGroup>
 
-  <Target Name="FixupPsd1" DependsOnTargets="GeneratePsd1" BeforeTargets="AssignTargetPaths" />
+  <ItemGroup>
+    <Content Include="$(PowerShellItemIncludes)"
+             Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder)" />
+  </ItemGroup>
 
 </Project>

@@ -22,7 +22,7 @@
     https://docs.microsoft.com/en-us/visualstudio/msbuild/customize-your-build
   -->
 
-  <ItemGroup Condition="$(IsPackable)">
+  <ItemGroup Condition="'$(IsPackable)' == 'true'">
     <None Include="..\icon.png" Link="Properties\icon.png"
           Pack="true" PackagePath="" CopyToOutputDirectory="Never" />
     <None Include="..\LICENSE.txt" Link="Properties\LICENSE.txt"
@@ -42,23 +42,17 @@
 
   <!-- Versioning -->
   <ItemGroup>
-    <PackageReference Include="Subatomix.Build.Versioning.Semantic" Version="1.0.0">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
+    <PackageReference Include="Subatomix.Build.Versioning.Semantic" Version="1.0.0" PrivateAssets="all" />
   </ItemGroup>
 
   <!-- <inheritdoc/> support -->
   <ItemGroup>
-    <PackageReference Include="SauceControl.InheritDoc" Version="1.2.0">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
+    <PackageReference Include="SauceControl.InheritDoc" Version="1.3.0" PrivateAssets="all" />
   </ItemGroup>
 
   <!-- SourceLink https://github.com/dotnet/sourcelink/blob/master/README.md -->
-  <ItemGroup Condition="$(IsPackable)">
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
+  <ItemGroup Condition="'$(IsPackable)' == 'true'">
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="all" />
   </ItemGroup>
 
 </Project>
