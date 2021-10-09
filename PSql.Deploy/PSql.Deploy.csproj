@@ -31,6 +31,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="DependencyQueue"               Version="1.0.0-pre.1" />
+    <PackageReference Include="Subatomix.PowerShell.TaskHost" Version="1.0.0-pre.1" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include="$(PowerShellItemIncludes)"
              Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder)" />
   </ItemGroup>
