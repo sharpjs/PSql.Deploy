@@ -91,7 +91,8 @@ namespace PSql.Deploy.Seeding
                     continue;
 
                 // Non-magic line comments also are inert
-                if (!match.Groups.TryGetValue("cmd", out var command))
+                var command = match.Groups["cmd"];
+                if (!command.Success)
                     continue;
 
                 // Recognized magic comment
