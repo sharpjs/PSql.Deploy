@@ -45,7 +45,7 @@ namespace PSql.Deploy.Seeding
 
             NewModule(
                 _builder = queue.CreateEntryBuilder(),
-                name: "main",
+                InitialModuleName,
                 out _batches
             );
         }
