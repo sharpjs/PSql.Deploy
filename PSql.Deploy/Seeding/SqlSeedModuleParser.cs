@@ -90,12 +90,8 @@ namespace PSql.Deploy.Seeding
                 if (match.Value[0] != '-')
                     continue;
 
-                // Non-magic line comments also are inert
-                var command = match.Groups["cmd"];
-                if (!command.Success)
-                    continue;
-
                 // Recognized magic comment
+                var command   = match.Groups["cmd"];
                 var arguments = match.Groups["arg"].Captures;
 
                 // Dispatch magic comment
@@ -176,8 +172,7 @@ namespace PSql.Deploy.Seeding
                 \[    ( [^\]] | \]\] )*                                 ( \]    | \z ) | # quoted identifier
                 /\*   ( .     | \n   )*?                                ( \*/   | \z ) | # block comment
                 ^--\# [ \t]*   (?<cmd>MODULE|PROVIDES|REQUIRES)                          # magic comment
-                    : [ \t]* ( (?<arg>([^ \t\r\n]|\r(?!\n))+) [ \t]* )* ( \r?\n | \z ) | # + arguments
-                --    .*?                                               ( \r?\n | \z )   # line comment
+                    : [ \t]* ( (?<arg>([^ \t\r\n]|\r(?!\n))+) [ \t]* )* ( \r?\n | \z )   # + arguments
             ",
             Options
         );
