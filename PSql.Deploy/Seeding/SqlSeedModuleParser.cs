@@ -120,6 +120,19 @@ namespace PSql.Deploy.Seeding
             }
         }
 
+        private void NewModule(CaptureCollection arguments)
+        {
+            if (arguments.Count != 1)
+                throw new Exception(); // TODO
+
+            NewModule(_builder, arguments[0].Value, out _batches);
+        }
+
+        private static void NewModule(Builder builder, string name, out List<string> batches)
+        {
+            builder.NewEntry(name, batches = new());
+        }
+
         private void EndModule()
         {
             _builder.Enqueue();
@@ -143,14 +156,6 @@ namespace PSql.Deploy.Seeding
             AddBatch(text.Slice(start, length: end - start));
         }
 
-        private void NewModule(CaptureCollection arguments)
-        {
-            if (arguments.Count != 1)
-                throw new Exception(); // TODO
-
-            NewModule(_builder, arguments[0].Value, out _batches);
-        }
-
         private void AddProvides(CaptureCollection arguments)
         {
             _builder.AddProvides(arguments.Select(a => a.Value));
@@ -159,11 +164,6 @@ namespace PSql.Deploy.Seeding
         private void AddRequires(CaptureCollection arguments)
         {
             _builder.AddRequires(arguments.Select(a => a.Value));
-        }
-
-        private static void NewModule(Builder builder, string name, out List<string> batches)
-        {
-            builder.NewEntry(name, batches = new());
         }
 
         private static readonly string SpaceCharacters = " \t";
