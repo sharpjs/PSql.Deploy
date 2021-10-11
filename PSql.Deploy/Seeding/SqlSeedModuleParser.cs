@@ -79,6 +79,7 @@ namespace PSql.Deploy.Seeding
                 if (!match.Success)
                 {
                     AddBatch(text, start);
+                    EndModule();
                     return;
                 }
 
@@ -102,6 +103,7 @@ namespace PSql.Deploy.Seeding
                     // MODULE
                     case 'M': case 'm':
                         AddBatch(text, start, match.Index);
+                        EndModule();
                         NewModule(arguments);
                         break;
 
@@ -116,6 +118,11 @@ namespace PSql.Deploy.Seeding
                         break;
                 }
             }
+        }
+
+        private void EndModule()
+        {
+            _builder.Enqueue();
         }
 
         private void AddBatch(ReadOnlySpan<char> text)
