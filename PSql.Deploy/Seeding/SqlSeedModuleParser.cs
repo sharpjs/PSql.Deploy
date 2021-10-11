@@ -125,7 +125,7 @@ namespace PSql.Deploy.Seeding
         private void NewModule(CaptureCollection arguments)
         {
             if (arguments.Count != 1)
-                throw new Exception(); // TODO
+                throw new FormatException("The MODULE magic comment expects exactly one argument.");
 
             NewModule(_builder, arguments[0].Value, out _batches);
         }
