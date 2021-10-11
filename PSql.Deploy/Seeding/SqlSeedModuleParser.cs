@@ -67,8 +67,8 @@ namespace PSql.Deploy.Seeding
             if (text.Length == 0)
                 return;
 
-            var index = 0;
             var start = 0;
+            var index = 0;
 
             for (;;)
             {
@@ -79,43 +79,54 @@ namespace PSql.Deploy.Seeding
                 if (!match.Success)
                 {
                     AddBatch(text, start);
-                    EndModule();
+                    EndModule(); // TODO: Actually only do this at end of ALL input across multiple Process calls
                     return;
                 }
 
                 // Compute where next iteration will start
                 index = match.Index + match.Length;
 
-                // All tokens except line comment are inert
+                // All tokens except magic comment are inert
                 if (match.Value[0] != '-')
                     continue;
 
-                // Recognized magic comment
-                var command   = match.Groups["cmd"];
-                var arguments = match.Groups["arg"].Captures;
-
-                // Dispatch magic comment
-                switch (command.Value[0])
-                {
-                    // MODULE
-                    case 'M': case 'm':
-                        AddBatch(text, start, match.Index);
-                        EndModule();
-                        NewModule(arguments);
-                        start = index;
-                        break;
-
-                    // PROVIDES
-                    case 'P': case 'p':
-                        AddProvides(arguments);
-                        break;
-
-                    // REQUIRES
-                    case 'R': case 'r':
-                        AddRequires(arguments);
-                        break;
-                }
+                // Recognized a magic comment
+                start = HandleMagicComment(text, start, index, match);
             }
+        }
+
+        private int HandleMagicComment(string text, int start, int index, Match match)
+        {
+            // Decode
+            var command   = match.Groups["cmd"];
+            var arguments = match.Groups["arg"].Captures;
+
+            // Dispatch
+            switch (command.Value[0])
+            {
+                // MODULE
+                case 'M':
+                case 'm':
+                    AddBatch(text, start, match.Index);
+                    EndModule();
+                    NewModule(arguments);
+                    start = index;
+                    break;
+
+                // PROVIDES
+                case 'P':
+                case 'p':
+                    AddProvides(arguments);
+                    break;
+
+                // REQUIRES
+                case 'R':
+                case 'r':
+                    AddRequires(arguments);
+                    break;
+            }
+
+            return start;
         }
 
         private void NewModule(CaptureCollection arguments)
