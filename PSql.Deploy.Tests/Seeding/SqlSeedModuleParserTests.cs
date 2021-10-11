@@ -41,6 +41,7 @@ namespace PSql.Deploy.Seeding
             var parser = new SqlSeedModuleParser(queue);
 
             parser.Process("a");
+            parser.Complete();
 
             Assert(queue, Module("(init)", "a"));
         }
@@ -65,6 +66,7 @@ namespace PSql.Deploy.Seeding
             );
 
             parser.Process(script);
+            parser.Complete();
 
             Assert(queue, Module("(init)", script));
         }
@@ -82,6 +84,7 @@ namespace PSql.Deploy.Seeding
                 "--# MODULE: b", eol,
                 "two",           eol
             ));
+            parser.Complete();
 
             Assert(
                 queue,
@@ -106,6 +109,7 @@ namespace PSql.Deploy.Seeding
                 "--# PROVIDES: x", eol,
                 "two",             eol
             ));
+            parser.Complete();
 
             Assert(
                 queue,

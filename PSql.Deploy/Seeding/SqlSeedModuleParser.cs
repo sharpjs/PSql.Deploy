@@ -27,6 +27,7 @@ namespace PSql.Deploy.Seeding
 
         // Batches in the current seed module (DependencyQueue entry)
         private List<string> _batches;
+        private bool         _hasEnded;
 
         /// <summary>
         ///   Initializes a new <see cref="SqlSeedModuleParser"/> that adds
@@ -66,6 +67,8 @@ namespace PSql.Deploy.Seeding
                 throw new ArgumentNullException(nameof(text));
             if (text.Length == 0)
                 return;
+            if (_hasEnded)
+                throw OnEnded();
 
             var start = 0;
             var index = 0;
@@ -79,7 +82,6 @@ namespace PSql.Deploy.Seeding
                 if (!match.Success)
                 {
                     AddBatch(text, start);
-                    EndModule(); // TODO: Actually only do this at end of ALL input across multiple Process calls
                     return;
                 }
 
@@ -93,6 +95,15 @@ namespace PSql.Deploy.Seeding
                 // Recognized a magic comment
                 start = HandleMagicComment(text, start, index, match);
             }
+        }
+
+        public void Complete()
+        {
+            if (_hasEnded)
+                throw OnEnded();
+
+            EndModule();
+            _hasEnded = true;
         }
 
         private int HandleMagicComment(string text, int start, int index, Match match)
@@ -173,6 +184,11 @@ namespace PSql.Deploy.Seeding
         private void AddRequires(CaptureCollection arguments)
         {
             _builder.AddRequires(arguments.Select(a => a.Value));
+        }
+
+        private static InvalidOperationException OnEnded()
+        {
+            return new("The " + nameof(SqlSeedModuleParser) + " is ended.");
         }
 
         private static readonly string SpaceCharacters = " \t";
