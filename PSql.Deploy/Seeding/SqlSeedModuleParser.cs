@@ -68,11 +68,11 @@ namespace PSql.Deploy.Seeding
                 return;
 
             var index = 0;
+            var start = 0;
 
             for (;;)
             {
                 // Find the next non-token block and the next token
-                var start = index;
                 var match = TokenRegex.Match(text, index);
 
                 // Detect end of input; handle final batch
@@ -106,6 +106,7 @@ namespace PSql.Deploy.Seeding
                         AddBatch(text, start, match.Index);
                         EndModule();
                         NewModule(arguments);
+                        start = index;
                         break;
 
                     // PROVIDES
