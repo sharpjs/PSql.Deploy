@@ -160,8 +160,6 @@ namespace PSql.Deploy.Seeding
 
         private void AddBatch(ReadOnlySpan<char> text)
         {
-            text = text.Trim(SpaceCharacters);
-
             if (text.Length != 0)
                 _batches.Add(new string(text));
         }
@@ -190,8 +188,6 @@ namespace PSql.Deploy.Seeding
         {
             return new("The " + nameof(SqlSeedModuleParser) + " is ended.");
         }
-
-        private static readonly string SpaceCharacters = " \t";
 
         private static readonly Regex TokenRegex = new Regex(
             @"
