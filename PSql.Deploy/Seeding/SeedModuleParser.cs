@@ -14,11 +14,11 @@ namespace PSql.Deploy.Seeding
     /// <summary>
     ///   Discovers seed modules and adds them to a dependency queue.
     /// </summary>
-    public class SqlSeedModuleParser
+    public class SeedModuleParser
     {
         /// <summary>
         ///   The name of the seed module that is the initial current module
-        ///   for newly-created <see cref="SqlSeedModuleParser"/> instances.
+        ///   for newly-created <see cref="SeedModuleParser"/> instances.
         /// </summary>
         public const string InitialModuleName = "(init)";
 
@@ -27,10 +27,10 @@ namespace PSql.Deploy.Seeding
 
         // Batches in the current seed module (DependencyQueue entry)
         private List<string> _batches;
-        private bool         _hasEnded;
+        private bool         _isCompleted;
 
         /// <summary>
-        ///   Initializes a new <see cref="SqlSeedModuleParser"/> that adds
+        ///   Initializes a new <see cref="SeedModuleParser"/> that adds
         ///   seed modules to the specified dependency queue.
         /// </summary>
         /// <param name="queue">
@@ -39,7 +39,7 @@ namespace PSql.Deploy.Seeding
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="queue"/> is <see langword="null"/>.
         /// </exception>
-        public SqlSeedModuleParser(Queue queue)
+        public SeedModuleParser(Queue queue)
         {
             if (queue is null)
                 throw new ArgumentNullException(nameof(queue));
@@ -67,8 +67,8 @@ namespace PSql.Deploy.Seeding
                 throw new ArgumentNullException(nameof(text));
             if (text.Length == 0)
                 return;
-            if (_hasEnded)
-                throw OnEnded();
+            if (_isCompleted)
+                throw OnCompleted();
 
             var start = 0;
             var index = 0;
@@ -99,11 +99,11 @@ namespace PSql.Deploy.Seeding
 
         public void Complete()
         {
-            if (_hasEnded)
-                throw OnEnded();
+            if (_isCompleted)
+                throw OnCompleted();
 
             EndModule();
-            _hasEnded = true;
+            _isCompleted = true;
         }
 
         private int HandleMagicComment(string text, int start, int index, Match match)
@@ -184,9 +184,9 @@ namespace PSql.Deploy.Seeding
             _builder.AddRequires(arguments.Select(a => a.Value));
         }
 
-        private static InvalidOperationException OnEnded()
+        private static InvalidOperationException OnCompleted()
         {
-            return new("The " + nameof(SqlSeedModuleParser) + " is ended.");
+            return new("The " + nameof(SeedModuleParser) + " has completed and is no longer usable.");
         }
 
         private static readonly Regex TokenRegex = new Regex(

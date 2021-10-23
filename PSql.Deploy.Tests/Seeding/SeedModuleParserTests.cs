@@ -9,16 +9,16 @@ namespace PSql.Deploy.Seeding
 {
     using static FluentActions;
 
-    using Module = DependencyQueueEntry<IEnumerable<string>>;
-    using Queue  = DependencyQueue<IEnumerable<string>>;
+    using Queue  = DependencyQueue      <IEnumerable<string>>;
+    using Module = DependencyQueueEntry <IEnumerable<string>>;
 
     [TestFixture]
     [TestFixtureSource(typeof(NewLineMode), nameof(NewLineMode.All))]
-    public class SqlSeedModuleParserTests
+    public class SeedModuleParserTests
     {
         private readonly string _newLine;
 
-        public SqlSeedModuleParserTests(NewLineMode mode)
+        public SeedModuleParserTests(NewLineMode mode)
         {
             _newLine = mode.NewLineString;
         }
@@ -26,7 +26,7 @@ namespace PSql.Deploy.Seeding
         [Test]
         public void Construct_NullQueue()
         {
-            Invoking(() => new SqlSeedModuleParser(null!))
+            Invoking(() => new SeedModuleParser(null!))
                 .Should().Throw<ArgumentNullException>()
                 .Where(e => e.ParamName == "queue");
         }
@@ -35,7 +35,7 @@ namespace PSql.Deploy.Seeding
         public void Complete_WithoutProcess()
         {
             var queue  = new Queue();
-            var parser = new SqlSeedModuleParser(queue);
+            var parser = new SeedModuleParser(queue);
 
             parser.Complete();
 
@@ -43,10 +43,10 @@ namespace PSql.Deploy.Seeding
         }
 
         [Test]
-        public void Complete_Ended()
+        public void Complete_Completed()
         {
-            var queue = new Queue();
-            var parser = new SqlSeedModuleParser(queue);
+            var queue  = new Queue();
+            var parser = new SeedModuleParser(queue);
 
             parser.Complete();
 
@@ -56,10 +56,10 @@ namespace PSql.Deploy.Seeding
         }
 
         [Test]
-        public void Process_Ended()
+        public void Process_Completed()
         {
-            var queue = new Queue();
-            var parser = new SqlSeedModuleParser(queue);
+            var queue  = new Queue();
+            var parser = new SeedModuleParser(queue);
 
             parser.Complete();
 
@@ -71,8 +71,8 @@ namespace PSql.Deploy.Seeding
         [Test]
         public void Process_NullText()
         {
-            var queue = new Queue();
-            var parser = new SqlSeedModuleParser(queue);
+            var queue  = new Queue();
+            var parser = new SeedModuleParser(queue);
 
             parser
                 .Invoking(p => p.Process(null!))
@@ -83,8 +83,8 @@ namespace PSql.Deploy.Seeding
         [Test]
         public void Process_EmptyText()
         {
-            var queue = new Queue();
-            var parser = new SqlSeedModuleParser(queue);
+            var queue  = new Queue();
+            var parser = new SeedModuleParser(queue);
 
             parser.Process("");
             parser.Process("");
@@ -97,7 +97,7 @@ namespace PSql.Deploy.Seeding
         public void Process_Init()
         {
             var queue  = new Queue();
-            var parser = new SqlSeedModuleParser(queue);
+            var parser = new SeedModuleParser(queue);
 
             parser.Process("a");
             parser.Process("b");
@@ -110,7 +110,7 @@ namespace PSql.Deploy.Seeding
         public void Process_String()
         {
             var queue  = new Queue();
-            var parser = new SqlSeedModuleParser(queue);
+            var parser = new SeedModuleParser(queue);
 
             var script = Lines(
                 "'A multi-line string with an escaped '' single quote.",
@@ -129,7 +129,7 @@ namespace PSql.Deploy.Seeding
         public void Process_QuotedIdentifier()
         {
             var queue  = new Queue();
-            var parser = new SqlSeedModuleParser(queue);
+            var parser = new SeedModuleParser(queue);
 
             var script = Lines(
                 "[A multi-line quoted identifier with an escaped ]] square bracket.",
@@ -148,7 +148,7 @@ namespace PSql.Deploy.Seeding
         public void Process_BlockComment()
         {
             var queue  = new Queue();
-            var parser = new SqlSeedModuleParser(queue);
+            var parser = new SeedModuleParser(queue);
 
             var script = Lines(
                 "/* A multi-line block comment.",
@@ -167,7 +167,7 @@ namespace PSql.Deploy.Seeding
         public void Process_LineComment()
         {
             var queue  = new Queue();
-            var parser = new SqlSeedModuleParser(queue);
+            var parser = new SeedModuleParser(queue);
 
             var script = " --# MODULE: Not a module! This is a deceptive line comment.";
 
@@ -181,7 +181,7 @@ namespace PSql.Deploy.Seeding
         public void Process_Module()
         {
             var queue  = new Queue();
-            var parser = new SqlSeedModuleParser(queue);
+            var parser = new SeedModuleParser(queue);
 
             parser.Process(Lines(
                 "--# MODULE: a",
@@ -207,7 +207,7 @@ namespace PSql.Deploy.Seeding
         public void Process_Module_NoName()
         {
             var queue  = new Queue();
-            var parser = new SqlSeedModuleParser(queue);
+            var parser = new SeedModuleParser(queue);
 
             parser
                 .Invoking(p => p.Process("--# MODULE:"))
@@ -218,7 +218,7 @@ namespace PSql.Deploy.Seeding
         public void Process_Module_MultipleNames()
         {
             var queue  = new Queue();
-            var parser = new SqlSeedModuleParser(queue);
+            var parser = new SeedModuleParser(queue);
 
             parser
                 .Invoking(p => p.Process("--# MODULE: a b"))
@@ -229,7 +229,7 @@ namespace PSql.Deploy.Seeding
         public void Process_ProvidesAndRequires()
         {
             var queue  = new Queue();
-            var parser = new SqlSeedModuleParser(queue);
+            var parser = new SeedModuleParser(queue);
 
             parser.Process(Lines(
                 "--# MODULE: a",
@@ -275,6 +275,8 @@ namespace PSql.Deploy.Seeding
 
         private static IEnumerable<Module> Enumerate(Queue queue)
         {
+            queue.Validate().Should().BeEmpty();
+
             for (;;)
             {
                 var module = queue.TryDequeue();
