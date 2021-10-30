@@ -14,7 +14,7 @@ namespace PSql.Deploy.Seeding
     /// <summary>
     ///   Discovers seed modules and adds them to a dependency queue.
     /// </summary>
-    public class SeedModuleParser
+    internal class SeedModuleParser
     {
         /// <summary>
         ///   The name of the seed module that is the initial current module
@@ -50,6 +50,11 @@ namespace PSql.Deploy.Seeding
                 out _batches
             );
         }
+
+        /// <summary>
+        ///   Gets whether the seed module parser is in the completed state.
+        /// </summary>
+        public bool IsCompleted => _isCompleted;
 
         /// <summary>
         ///   Discovers seed modules in the specified string and adds them to

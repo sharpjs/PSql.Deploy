@@ -14,83 +14,141 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #>
 
-<# TODO: Implement PSql\Invoke-SqlModules
+using namespace PSql.Deploy.Seeding
+
 function Invoke-SqlSeed {
     <#
     .SYNOPSIS
-        Runs seed script(s) on the target database(s).
-    #><#<==REMOVE THIS
+        Applies seeds to target databases.
+
+    .DESCRIPTION
+        This cmdlet expects a filesystem layout like the following:
+
+        Database\               The "source directory": a set of migrations and
+          |                       seeds for one database.  The name can vary.
+          |
+          > Migrations\         Migrations for the database.
+          |
+          > Seeds\              Seeds for the the database.
+          |   |
+          |   > Foo\            One seed.  The name can vary.
+          |       > _Main.sql   Top-level file for the seed.  It can include
+          |       |               other files with the :r directive.
+          |       | _Pre.ps1    PowerShell script that runs before _Main.sql.
+          |       | _Post.ps1   PowerShell script that runs after _Main.sql.
+          |       > FileA.sql   Example file included by _Main.sql.
+          |       > FileB.sql   Example file included by _Main.sql.
+          |
+          > ...\                Other directories as desired.
+
+        Each subdirectory of $SourceDirectory\Seeds containing a _Main.sql file is presumed to be a seed.  The name of the subdirectory is the name of the seed.  The search is not recursive; only one level of subdirectories is examined.
+    #>
+    [CmdletBinding()]
     param (
-        # Path of directory containing database source code.
+        # Names of the seeds to run.
         [Parameter(Mandatory, Position=0)]
-        [string] $SourcePath,
+        [string[]]
+        $Seed,
 
-        # Target database specification(s).  Create using New-SqlContext.
+        # Objects specifying how to connect to target databases.  Obtain via the New-SqlContext cmdlet.
         [Parameter(Mandatory, Position=1, ValueFromPipeline)]
-        [PSql.SqlContext[]] $Target,
+        [PSql.SqlContext[]]
+        $Target,
 
-        # Name(s) of the seed(s).
-        [Parameter(Mandatory, Position=2)]
-        [string[]] $Seed,
+        # Path to a directory containing database source code.  The default is the current directory.
+        [Parameter()]
+        [string]
+        $SourcePath = ".",
 
         # Name/value pairs to define as SqlCmd variables.
-        [Parameter(Position=3)]
-        [hashtable] $Define = @{}
+        [Parameter()]
+        [hashtable]
+        $Define = @{},
+
+        # Number of databases to seed simultaneously.
+        [Parameter()]
+        [ValidateRange(1, [int]::MaxValue)]
+        [int]
+        $DatabaseParallelism,
+
+        # Number of commands to perform simultaneously against a particular database.
+        [Parameter()]
+        [ValidateRange(1, [int]::MaxValue)]
+        [int]
+        $CommandParallelism
     )
 
-    $ErrorActionPreference = "Stop"
+    begin {
+        # The core script that each parallel worker runs
+        # NOTE: Use $Seed to access the seed context
+        $WorkerScript = {
+            $ErrorActionPreference = "Stop"
+            Set-StrictMode -Version 3.0
+            Import-Module PSql
 
-    # Resolve seeds
-    $SeedMains = @(
-        $Seed | % { Join-Path $SourcePath Seeds\$_\_Main.sql } | Get-Item
-    )
-
-    foreach ($T in $Target) {
-        foreach ($S in $SeedMains) {
-            Write-Host "--------------------------------------------------------------------------------"
-            Write-Host "Seed $($S.Directory.Name) for database '$($T.DatabaseName)' on server '$($T.ServerName)'."
-            Write-Host "--------------------------------------------------------------------------------"
-
-            # Prepare for Expand-SqlCmdDirectives (without modifying passed hashtable)
-            $MyDefine      = $Define.Clone()
-            $MyDefine.Path = $S.Directory.FullName
-
-            # Prepare for Invoke-SqlModules
-            $LegacyConnectionParameters = @{
-                Server   = $T.ServerName
-                Database = $T.DatabaseName
+            $Target = [PSql.SqlContext] $Seed.Data['Target']
+            $Connection = Connect-Sql -Context $Target
+            try {
+                Invoke-Sql -Connection $Connection "
+                    DECLARE @id uniqueidentifier = '$($Seed.RunId)';
+                    SET CONTEXT_INFO @id;
+                "
+                while ($Module = $Seed.GetNextModule()) {
+                    Invoke-Sql $Module.Batches -Connection $Connection
+                }
             }
-            if ($T.Credential -ne [PSCredential]::Empty) {
-                $LegacyConnectionParameters.Login    = $T.Credential.UserName
-                $LegacyConnectionParameters.Password = $T.Credential.GetNetworkCredential().Password
+            finally {
+                Disconnect-Sql $Connection
             }
+        }
 
-            # Prepare for _Pre.ps1 and _Post.ps1
-            $ScriptArgs = @{
-                Target = $T
-                Seed   = $S.Directory.Name
-                Define = $MyDefine
-            }
+        # Create factory to build each seed plan
+        $PlanFactory = [SeedPlanFactory]::new($WorkerScript, $Host)
+    }
 
-            # Execute _Pre.ps1
-            $Script = Join-Path $S.Directory.FullName _Pre.ps1
-            if (Test-Path $Script) {
-                Write-Host "Running _Pre.ps1"
-                & $Script @ScriptArgs
-            }
+    process {
+        # Get seed _Main.sql files
+        $Mains = $Seed | ForEach-Object { Join-Path $SourcePath Seeds $_ _Main.sql } | Get-Item
 
-            # Execute Seed SQL
-            Get-Content -LiteralPath $S.FullName -Raw -Encoding UTF8 `
-                | PSql\Expand-SqlCmdDirectives -Define $MyDefine `
-                | PSql\Invoke-SqlModules @LegacyConnectionParameters
+        # Assert _Main.sql files are readable
+        $Mains | Get-Content -Head 1 > $null
 
-            # Execute _Post.ps1
-            $Script = Join-Path $S.Directory.FullName _Post.ps1
-            if (Test-Path $Script) {
-                Write-Host "Running _Post.ps1"
-                & $Script @ScriptArgs
+        # Translate -DatabaseParallelism argument
+        $Limit = $DatabaseParallelism ? @{ ThrottleLimit = $DatabaseParallelism } : @{}
+
+        # Run seeds against each target in parallel
+        $Target | ForEach-Object @Limit -Parallel {
+            $ErrorActionPreference = "Stop"
+            Set-StrictMode -Version 3.0
+            Import-Module PSql, PSql.Deploy
+
+            # Run each seed in sequence
+            foreach ($Main in $using:Mains) {
+                $Plan = ($using:PlanFactory).Create()
+                try {
+                    # Flow objects to seed plan
+                    $Plan.AddContextData('Target', $_)
+                    $Plan.AddContextData('Name', $_.DatabaseName)
+
+                    # Populate the seed plan with modules
+                    $Main `
+                        | Get-Content -Raw `
+                        | Expand-SqlCmdDirectives -Define $using:Define `
+                        | ForEach-Object { $Plan.AddModules($_) }
+
+                    # Validate the seed plan
+                    if (($Errors = $Plan.Validate()).Count) {
+                        $Errors.GetEnumerator()
+                        throw "Invalid"
+                    }
+
+                    # Run the seed plan
+                    $Plan.Run($using:CommandParallelism)
+                }
+                finally {
+                    $Plan.Dispose()
+                }
             }
         }
     }
 }
-#>

@@ -24,5 +24,8 @@ $Try = @{ ErrorAction = "SilentlyContinue" }
 # Default path of directory in which to save migration plans
 $DefaultPlanPath = "SqlMigrationPlan"
 
+# Load .dll
+Join-Path $PSScriptRoot PSql.Deploy.dll | ForEach-Object { Add-Type -Path $_ }
+
 # Read all .ps1 files
 Join-Path $PSScriptRoot Commands *.ps1 -Resolve | ForEach-Object { . $_ }
