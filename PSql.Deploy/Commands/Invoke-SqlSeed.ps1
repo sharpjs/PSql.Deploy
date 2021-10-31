@@ -41,7 +41,7 @@ function Invoke-SqlSeed {
           |
           > ...\                Other directories as desired.
 
-        Each subdirectory of $SourceDirectory\Seeds containing a _Main.sql file is presumed to be a seed.  The name of the subdirectory is the name of the seed.  The search is not recursive; only one level of subdirectories is examined.
+        Each subdirectory of $SourcePath\Seeds containing a _Main.sql file is presumed to be a seed.  The name of the subdirectory is the name of the seed.  The search is not recursive; only one level of subdirectories is examined.
     #>
     [CmdletBinding()]
     param (
