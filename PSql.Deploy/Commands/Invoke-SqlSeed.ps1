@@ -134,6 +134,15 @@ function Invoke-SqlSeed {
                 $SeedName   = $SeedMain.Directory.Name
                 $SeedPath   = $SeedMain.Directory.FullName
                 $Define     = $DefineSource.Clone() # to prevent modifications from leaking
+                $ScriptArgs = @{ Target = $Target; SeedPath = $SeedPath; Define = $Define }
+                              # NOTE: in v1, Seed = $SeedName
+
+                # Execute pre-seed script
+                $ScriptPath = Join-Path $SeedPath _Pre.ps1
+                if (Test-Path $ScriptPath) {
+                    Write-Host "Running _Pre.ps1"
+                    & $ScriptPath @ScriptArgs
+                }
 
                 # Execute seed
                 $Plan = $PlanFactory.Create()
@@ -160,6 +169,13 @@ function Invoke-SqlSeed {
                 }
                 finally {
                     $Plan.Dispose()
+                }
+
+                # Execute post-seed script
+                $ScriptPath = Join-Path $SeedPath _Post.ps1
+                if (Test-Path $ScriptPath) {
+                    Write-Host "Running _Post.ps1"
+                    & $ScriptPath @ScriptArgs
                 }
             }
         }
