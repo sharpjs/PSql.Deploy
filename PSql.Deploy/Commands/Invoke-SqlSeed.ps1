@@ -116,6 +116,27 @@ function Invoke-SqlSeed {
         # Translate -DatabaseParallelism argument
         $Limit = $DatabaseParallelism ? @{ ThrottleLimit = $DatabaseParallelism } : @{}
 
+        # Show banner
+        $PreviousColor = $Host.UI.RawUI.ForegroundColor
+        try {
+            $Host.UI.RawUI.ForegroundColor = "Cyan"
+            Write-Host "--------------------------------------------------------------------------------"
+            Write-Host "Seed "              -NoNewline
+            Write-Host ($Seed -join " + ")  -NoNewline -ForegroundColor Yellow
+            Write-Host " for "              -NoNewline
+            Write-Host $Target.Length       -NoNewline -ForegroundColor Yellow
+            Write-Host " target" ($Target.Length -eq 1 ? "database" : "databases")
+            Write-Host "--------------------------------------------------------------------------------"
+        }
+        finally {
+             $Host.UI.RawUI.ForegroundColor = $PreviousColor
+        }
+
+        # List targets
+        $Target | Format-Table `
+            @{ Label = "Target Server";   Expression = { $_.GetEffectiveServerName()    } },
+            @{ Label = "Target Database"; Expression = { $_.DatabaseName ?? "(default)" } }
+
         # Run seeds against each target in parallel
         $Target | ForEach-Object @Limit -Parallel {
             $ErrorActionPreference = "Stop"
