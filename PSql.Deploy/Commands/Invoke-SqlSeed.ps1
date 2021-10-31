@@ -108,10 +108,10 @@ function Invoke-SqlSeed {
 
     process {
         # Get seed _Main.sql files
-        $Mains = $Seed | ForEach-Object { Join-Path $SourcePath Seeds $_ _Main.sql } | Get-Item
+        $SeedMains = $Seed | ForEach-Object { Join-Path $SourcePath Seeds $_ _Main.sql } | Get-Item
 
         # Assert _Main.sql files are readable
-        $Mains | Get-Content -Head 1 > $null
+        $SeedMains | Get-Content -Head 1 > $null
 
         # Translate -DatabaseParallelism argument
         $Limit = $DatabaseParallelism ? @{ ThrottleLimit = $DatabaseParallelism } : @{}
@@ -122,18 +122,31 @@ function Invoke-SqlSeed {
             Set-StrictMode -Version 3.0
             Import-Module PSql, PSql.Deploy
 
+            $Target       = $_
+            $DatabaseName = $_.DatabaseName ?? "(default)"
+            $SeedMains    = $using:SeedMains
+            $DefineSource = $using:Define
+            $Parallelism  = $using:CommandParallelism
+            $PlanFactory  = $using:PlanFactory
+
             # Run each seed in sequence
-            foreach ($Main in $using:Mains) {
-                $Plan = ($using:PlanFactory).Create()
+            foreach ($SeedMain in $SeedMains) {
+                $SeedName   = $SeedMain.Directory.Name
+                $SeedPath   = $SeedMain.Directory.FullName
+                $Define     = $DefineSource.Clone() # to prevent modifications from leaking
+
+                # Execute seed
+                $Plan = $PlanFactory.Create()
                 try {
                     # Flow objects to seed plan
+                    $Plan.AddContextData('Name',   "$SeedName->$DatabaseName")
+                    $Plan.AddContextData('Source', $SeedPath)
                     $Plan.AddContextData('Target', $_)
-                    $Plan.AddContextData('Name', $_.DatabaseName)
 
                     # Populate the seed plan with modules
-                    $Main `
+                    $SeedMain `
                         | Get-Content -Raw `
-                        | Expand-SqlCmdDirectives -Define $using:Define `
+                        | Expand-SqlCmdDirectives -Define $Define `
                         | ForEach-Object { $Plan.AddModules($_) }
 
                     # Validate the seed plan
@@ -143,7 +156,7 @@ function Invoke-SqlSeed {
                     }
 
                     # Run the seed plan
-                    $Plan.Run($using:CommandParallelism)
+                    $Plan.Run($Parallelism)
                 }
                 finally {
                     $Plan.Dispose()
