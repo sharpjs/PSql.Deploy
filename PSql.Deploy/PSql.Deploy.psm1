@@ -22,7 +22,7 @@ Set-StrictMode -Version 3.0
 $Try = @{ ErrorAction = "SilentlyContinue" }
 
 # Default path of directory in which to save migration plans
-$DefaultPlanPath = "SqlMigrationPlan"
+$DefaultPlanPath = ".migration-plan"
 
 # Load .dll
 Join-Path $PSScriptRoot PSql.Deploy.dll | ForEach-Object { Add-Type -Path $_ }
