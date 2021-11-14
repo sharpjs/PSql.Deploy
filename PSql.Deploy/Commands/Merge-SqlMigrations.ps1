@@ -34,10 +34,18 @@ function Merge-SqlMigrations {
         [object[]] $TargetMigrations
     )
 
-    $Comparer    = [StringComparer]::OrdinalIgnoreCase
+    # NOTE: Cannot sort a [PSCustomObject[]] in-place with [Array]::Sort due
+    # to odd PS behavior: PS appears to pass a copy of the array to the method,
+    # so any in-place modifications are lost.
+    $Comparer          = [StringComparer]::OrdinalIgnoreCase
+    $SourceMigrations_ = [System.Collections.Generic.List[object]]::new($SourceMigrations)
+    $TargetMigrations_ = [System.Collections.Generic.List[object]]::new($TargetMigrations)
+    $SourceMigrations_.Sort({ param($x, $y) $Comparer.Compare($x.Name, $y.Name) })
+    $TargetMigrations_.Sort({ param($x, $y) $Comparer.Compare($x.Name, $y.Name) })
+
     $Migrations  = [ordered] @{}
-    $SourceItems = $SourceMigrations.GetEnumerator()
-    $TargetItems = $TargetMigrations.GetEnumerator()
+    $SourceItems = $SourceMigrations_.GetEnumerator()
+    $TargetItems = $TargetMigrations_.GetEnumerator()
     $HasSource   = $SourceItems.MoveNext()
     $HasTarget   = $TargetItems.MoveNext()
 
