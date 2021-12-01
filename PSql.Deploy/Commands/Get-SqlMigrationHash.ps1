@@ -1,3 +1,6 @@
+using namespace System.Collections.Generic
+using namespace System.IO
+
 <#
     Copyright 2021 Jeffrey Sharp
 
@@ -38,9 +41,19 @@ function Get-SqlMigrationHash {
         | Get-Item `
         | ForEach-Object { $Files[$_.FullName] = $_ }
     # ... then, using sorted order
+    # NOTE: Using ordinal comparison because culture-aware comparison, even
+    # for the supposed 'invariant' culture, changed in the transition from
+    # .NET Framework to .NET Core.  This caused hash mismatches when PS 6+
+    # analyzed a migration chain performed in PS 5.x.
+    $FoundFiles = [List[FileInfo]]::new()
     Get-ChildItem $Path *.sql -Recurse `
         | Where-Object { -not $Files.Contains($_.FullName) } `
-        | Sort-Object FullName `
+        | ForEach-Object { $FoundFiles.Add($_) }
+    $FoundFiles.Sort({
+        param ( [System.IO.FileInfo] $x, [System.IO.FileInfo] $y )
+        [StringComparer]::Ordinal.Compare($x.FullName, $y.FullName)
+    })
+    $FoundFiles.GetEnumerator() `
         | ForEach-Object { $Files[$_.FullName] = $_ }
 
     # Compute a hash for each file
