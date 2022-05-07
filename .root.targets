@@ -1,8 +1,8 @@
-﻿<Project Sdk="Microsoft.Build.NoTargets/2.0.17">
+﻿<Project Sdk="Microsoft.Build.NoTargets/3.4.0">
   <!-- https://github.com/microsoft/MSBuildSdks/tree/master/src/NoTargets -->
 
   <!--
-    Copyright (C) 2020 Jeffrey Sharp
+    Copyright 2022 Jeffrey Sharp
 
     Permission to use, copy, modify, and distribute this software for any
     purpose with or without fee is hereby granted, provided that the above
@@ -22,11 +22,8 @@
     <EnableDefaultItems>false</EnableDefaultItems>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
-    <GenerateDependencyFile>false</GenerateDependencyFile>
-    <SkipCopyBuildProduct>true</SkipCopyBuildProduct>
     <IsPublishable>false</IsPublishable>
     <IsPackable>false</IsPackable>
-    <SetGitHubActionsVersion>true</SetGitHubActionsVersion>
   </PropertyGroup>
 
   <ItemGroup>

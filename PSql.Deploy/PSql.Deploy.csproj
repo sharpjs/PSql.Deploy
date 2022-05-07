@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    Copyright 2021 Jeffrey Sharp
+    Copyright 2022 Jeffrey Sharp
 
     Permission to use, copy, modify, and distribute this software for any
     purpose with or without fee is hereby granted, provided that the above
@@ -26,7 +26,7 @@
 
   <ItemGroup>
     <PackageReference Include="Subatomix.Build.Packaging.PowerShellModule"
-                      Version="1.1.0" PrivateAssets="all" />
+                      Version="1.1.1" PrivateAssets="all" />
     <PackageReference Include="System.Management.Automation"
                       Version="7.0.0" PrivateAssets="all" />
   </ItemGroup>
