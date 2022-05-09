@@ -1,5 +1,6 @@
 # _Pre
 
+[CmdletBinding()]
 param (
     # Target database specification.  Create using New-SqlContext.
     [Parameter(Mandatory)]
@@ -9,9 +10,11 @@ param (
     [Parameter(Mandatory)]
     [string] $SeedPath,
 
-    # Name/value pairs to define as SqlCmd variables.
+    # Name/value pairs to define as SQLCMD variables.
     [Parameter(Mandatory)]
     [hashtable] $Define
 )
 
-Write-Host "This is in _Pre.ps1"
+process {
+    Write-Host "This is in _Pre.ps1"
+}
