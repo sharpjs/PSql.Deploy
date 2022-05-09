@@ -38,4 +38,12 @@
     <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.2.3" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Using Include="FluentAssertions" />
+    <Using Include="FluentAssertions.FluentActions" Static="true" />
+    <Using Include="Moq" />
+    <Using Include="NUnit.Framework" />
+    <Using Include="Subatomix.Testing" />
+  </ItemGroup>
+
 </Project>
