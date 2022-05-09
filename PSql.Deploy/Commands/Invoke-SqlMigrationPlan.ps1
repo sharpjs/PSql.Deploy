@@ -29,7 +29,7 @@ function Invoke-SqlMigrationPlan {
         [Parameter(Mandatory, Position = 1, ValueFromPipeline)]
         [PSql.SqlContext[]] $Target,
 
-        # Path of directory containing the migration plan.  The default value is "SqlMigrationPlan".
+        # Path of directory containing the migration plan.  The default value is ".migration-plan".
         [string] $PlanPath = $DefaultPlanPath
     )
 

@@ -29,7 +29,7 @@ function Invoke-SqlMigrations {
         [Parameter(Mandatory, Position = 1)]
         [PSql.SqlContext[]] $Target,
 
-        # Path of directory in which to save the migration plan.  The default value is "SqlMigrationPlan".
+        # Path of directory in which to save the migration plan.  The default value is ".migration-plan".
         [string] $PlanPath = $DefaultPlanPath,
 
         # Do not prompt for confirmation if migration(s) require applications to be offline.
