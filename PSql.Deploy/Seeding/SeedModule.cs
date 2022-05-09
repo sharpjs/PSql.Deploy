@@ -21,7 +21,7 @@ namespace PSql.Deploy.Seeding;
 using QueueEntry = DependencyQueueEntry<IEnumerable<string>>;
 
 /// <summary>
-///    A named sequences of SQL batches to be executed during a seed run.
+///   A named sequence of SQL batches to be executed during a seed run.
 /// </summary>
 public class SeedModule
 {

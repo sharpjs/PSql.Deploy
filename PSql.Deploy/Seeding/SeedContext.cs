@@ -38,7 +38,7 @@ public class SeedContext
 
     /// <summary>
     ///   Gets the unique identifier of the seed run.
-    ///   The identifier is random GUID.
+    ///   The identifier is a random GUID.
     /// </summary>
     public Guid RunId
         => _context.RunId;
@@ -69,8 +69,8 @@ public class SeedContext
     ///   Gets the next module that the worker should execute.
     /// </summary>
     /// <returns>
-    ///    A module to execute, or null if no more modules remain to be
-    ///    executed.
+    ///   A module to execute, or null if no more modules remain to be
+    ///   executed.
     /// </returns>
     public SeedModule? GetNextModule()
     {

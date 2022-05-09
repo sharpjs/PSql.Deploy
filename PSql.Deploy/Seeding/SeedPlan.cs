@@ -38,8 +38,8 @@ public class SeedPlan : IDisposable
     }
 
     /// <summary>
-    ///   Discovers seed modules in the specified string and adds them to
-    ///   the seed plan.
+    ///   Discovers seed modules in the specified string and adds them to the
+    ///   seed plan.
     /// </summary>
     /// <param name="sql">
     ///   The string in which to discover seed modules.
@@ -56,8 +56,8 @@ public class SeedPlan : IDisposable
     }
 
     /// <summary>
-    ///   Sets the specified key/value pair in the <c>$Seed.Data</c>
-    ///   dictionary visible to the seed worker script.
+    ///   Sets the specified key/value pair in the <c>$Seed.Data</c> dictionary
+    ///   visible to the seed worker script.
     /// </summary>
     /// <param name="key"></param>
     /// <param name="value"></param>
@@ -76,8 +76,8 @@ public class SeedPlan : IDisposable
     ///   Checks whether the seed plan is valid.
     /// </summary>
     /// <returns>
-    ///   If the seed plan is valid, an empty list; otherwise, a list of
-    ///   errors that prevent the seed plan from being valid.
+    ///   If the seed plan is valid, an empty list; otherwise, a list of errors
+    ///   that prevent the seed plan from being valid.
     /// </returns>
     public IReadOnlyList<DependencyQueueError> Validate()
     {

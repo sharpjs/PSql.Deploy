@@ -30,8 +30,8 @@ using Builder = DependencyQueueEntryBuilder <IEnumerable<string>>;
 internal class SeedModuleParser
 {
     /// <summary>
-    ///   The name of the seed module that is the initial current module
-    ///   for newly-created <see cref="SeedModuleParser"/> instances.
+    ///   The name of the seed module that is the initial current module for
+    ///   newly-created <see cref="SeedModuleParser"/> instances.
     /// </summary>
     public const string InitialModuleName = "(init)";
 
@@ -43,8 +43,8 @@ internal class SeedModuleParser
     private bool         _isCompleted;
 
     /// <summary>
-    ///   Initializes a new <see cref="SeedModuleParser"/> that adds
-    ///   seed modules to the specified dependency queue.
+    ///   Initializes a new <see cref="SeedModuleParser"/> that adds seed
+    ///   modules to the specified dependency queue.
     /// </summary>
     /// <param name="queue">
     ///   The dependency queue to which to add discovered seed modules.
@@ -70,8 +70,8 @@ internal class SeedModuleParser
     public bool IsCompleted => _isCompleted;
 
     /// <summary>
-    ///   Discovers seed modules in the specified string and adds them to
-    ///   the dependency queue.
+    ///   Discovers seed modules in the specified string and adds them to the
+    ///   dependency queue.
     /// </summary>
     /// <param name="text">
     ///   The text in which to discover seed modules.
