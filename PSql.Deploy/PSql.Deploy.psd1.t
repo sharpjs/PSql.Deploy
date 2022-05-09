@@ -20,7 +20,7 @@
     ModuleVersion = '{VersionPrefix}'
 
     # General
-    Description = 'Database deployment commands for SQL Server and Azure SQL Database.'
+    Description = 'A simple, yet versatile database migration and seeding system for SQL Server and Azure SQL Database.'
     Author      = 'Jeffrey Sharp'
     CompanyName = 'Subatomix Research Inc.'
     Copyright   = '{Copyright}'
