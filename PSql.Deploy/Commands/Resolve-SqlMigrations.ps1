@@ -115,8 +115,9 @@ function Resolve-SqlMigrations {
 
         if ($HasWarnings) {
             $PSCmdlet.ThrowTerminatingError((New-Error `
-                "Migration(s) failed validation.  Address warnings and try again." `
-                -Id PSqlDeploy.InvalidMigrations
+                ( [System.Data.DataException] `
+                    "Migration(s) failed validation.  Address warnings and try again." ) `
+                -Id PSql.Deploy.InvalidMigrations
             ))
         }
     }
