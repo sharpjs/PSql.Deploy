@@ -1,3 +1,5 @@
+using namespace System.Management.Automation
+
 <#
     Copyright 2022 Jeffrey Sharp
 
@@ -24,51 +26,64 @@ function New-Error {
         https://stackoverflow.com/a/39949027/142138
     #>
     [CmdletBinding()]
+    [OutputType([System.Management.Automation.ErrorRecord])]
     param(
-        # An error message or exception.
-        [Parameter(Mandatory, Position=0)]
-        [object] $Error,
+        # Exception or error message.
+        #
+        # This parameter populates the ErrorRecord properties:
+        # - Exception
+        # - CategoryInfo.Reason (exception type name without namespace)
+        [Parameter(Mandatory, Position = 0)]
+        [Alias("Error")]
+        [Exception] $Exception,
 
-        # A developer-defined identifier for the error.
+        # Developer-defined identifier for the error.
+        #
+        # This parameter populates the ErrorRecord property:
+        # - FullyQualifiedErrorId
         [Parameter()]
         [string] $Id,
 
-        # The category to which the error belongs.
+        # Category that best describes the error.
+        #
+        # This parameter populates the ErrorRecord property:
+        # - CategoryInfo.Category
         [Parameter()]
         [System.Management.Automation.ErrorCategory] $Category = 'NotSpecified',
 
-        # The object being processed when the error occurred.
+        # Object being processed when the error occurred.
+        #
+        # This parameter populates the ErrorRecord properties:
+        # - TargetObject
+        # - CategoryInfo.TargetName (the result of .ToString() on the target)
+        # - CategoryInfo.TargetType (target type name without namespace)
         [Parameter()]
         [object] $TargetObject,
 
-        # The name of the object being processed when the error occurred.
+        # Textual description activity in progress when the error occurred.
+        #
+        # This parameter populates the ErrorRecord property:
+        # - CategoryInfo.Activity
         [Parameter()]
-        [string] $TargetName,
-
-        # The type of the object being processed when the error occurred.
-        [Parameter()]
-        [string] $TargetType,
-
-        # The name of the activity that caused the error
-        [Parameter()]
-        [string] $Activity,
-
-        # The reason why the error occurred.
-        [Parameter()]
-        [string] $Reason
+        [string] $Activity
     )
 
     process {
-        # Output will look like this:
-        # {Error}
+        # In PS 5.1 and earlier, output looked like:
+        #
+        # {Exception.Message}
         #     + CategoryInfo          : {Category}: ({TargetName}:{TargetType}) [{Activity}], {Reason}
         #     + FullyQualifiedErrorId : {Id}
+        #
+        # In PS 7.0 and later, it can look like any of these:
+        #
+        # {Activity}: {Exception.Message}
+        # {Category}: {Exception.Message}
+        # {Reason}: {Exception.Message}
+        # {Exception.GetType().Name}: {Exception.Message}
 
-        $Record = New-Object System.Management.Automation.ErrorRecord $Error, $Id, $Category, $TargetObject
-        $Record.CategoryInfo.TargetName = $TargetName
-        $Record.CategoryInfo.TargetType = $TargetType
-        $Record.CategoryInfo.Activity   = $Activity
-        $Record.CategoryInfo.Reason     = $Reason
+        $Record = [ErrorRecord]::new($Exception, $Id, $Category, $TargetObject)
+        $Record.CategoryInfo.Activity = $Activity
         $Record
     }
 }

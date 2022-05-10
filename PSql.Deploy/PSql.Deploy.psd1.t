@@ -59,6 +59,7 @@
         'Invoke-SqlMigrations'
         'Invoke-SqlMigrationPlan'
         'Invoke-SqlSeed'
+        'New-Error'
         'New-SqlMigrationPlan'
         'Read-SqlMigration'
         'Set-SqlMigrationPlan'
