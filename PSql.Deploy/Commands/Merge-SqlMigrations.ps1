@@ -82,12 +82,14 @@ function Merge-SqlMigrations {
                 $Migration.HasChanged = $TargetItems.Current.Hash -and $TargetItems.Current.Hash -ne $Migration.Hash
                 $HasSource            = $SourceItems.MoveNext()
                 $HasTarget            = $TargetItems.MoveNext()
-                Write-Host (
-                    "    (st{2}{1}) {0}" -f
-                    $Migration.Name,
-                    $Migration.State,
-                    $(if ($Migration.HasChanged) {'!'} else {'='})
-                )
+                if ($Migration.State -lt 3 -or $Migration.HasChanged) {
+                    Write-Host (
+                        "    (st{2}{1}) {0}" -f
+                        $Migration.Name,
+                        $Migration.State,
+                        ($Migration.HasChanged ? '!' : '=')
+                    )
+                }
                 break
             }
         }
