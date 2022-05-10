@@ -1,5 +1,5 @@
 /*
-    Copyright 2021 Jeffrey Sharp
+    Copyright 2022 Jeffrey Sharp
 
     Permission to use, copy, modify, and distribute this software for any
     purpose with or without fee is hereby granted, provided that the above
@@ -72,18 +72,4 @@ BEGIN
         CONSTRAINT Migration_CK_PostRunDate
             CHECK (PostRunDate IS NULL OR PostRunDate >= CoreRunDate),
     );
-END;
-
--- Retire old migration registry, if it exists.
-IF OBJECT_ID('_deploy.AppliedMigrations', 'U') IS NOT NULL
-BEGIN
-    INSERT _deploy.Migration
-        (Name, Hash, PreRunDate, CoreRunDate, PostRunDate)
-    SELECT
-        Name, Hash='', DateApplied, DateApplied, DateApplied
-    FROM
-        _deploy.AppliedMigrations
-    ;
-
-    DROP TABLE _deploy.AppliedMigrations;
 END;
