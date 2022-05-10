@@ -292,7 +292,7 @@ GO
 GO
 
 -- -----------------------------------------------------------------------------
-PRINT '+ updt _deploy.Migration ($Name $($Phase.Name) done)';
+PRINT '+ data _deploy.Migration ($Name $($Phase.Name) done)';
 GO
 
 MERGE _deploy.Migration dst
