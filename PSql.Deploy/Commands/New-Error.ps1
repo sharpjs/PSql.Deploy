@@ -1,5 +1,5 @@
 <#
-    Copyright 2021 Jeffrey Sharp
+    Copyright 2022 Jeffrey Sharp
 
     Permission to use, copy, modify, and distribute this software for any
     purpose with or without fee is hereby granted, provided that the above
@@ -58,15 +58,17 @@ function New-Error {
         [string] $Reason
     )
 
-    # Output will look like this:
-    # {Error}
-    #     + CategoryInfo          : {Category}: ({TargetName}:{TargetType}) [{Activity}], {Reason}
-    #     + FullyQualifiedErrorId : {Id}
+    process {
+        # Output will look like this:
+        # {Error}
+        #     + CategoryInfo          : {Category}: ({TargetName}:{TargetType}) [{Activity}], {Reason}
+        #     + FullyQualifiedErrorId : {Id}
 
-    $Record = New-Object System.Management.Automation.ErrorRecord $Error, $Id, $Category, $TargetObject
-    $Record.CategoryInfo.TargetName = $TargetName
-    $Record.CategoryInfo.TargetType = $TargetType
-    $Record.CategoryInfo.Activity   = $Activity
-    $Record.CategoryInfo.Reason     = $Reason
-    $Record
+        $Record = New-Object System.Management.Automation.ErrorRecord $Error, $Id, $Category, $TargetObject
+        $Record.CategoryInfo.TargetName = $TargetName
+        $Record.CategoryInfo.TargetType = $TargetType
+        $Record.CategoryInfo.Activity   = $Activity
+        $Record.CategoryInfo.Reason     = $Reason
+        $Record
+    }
 }

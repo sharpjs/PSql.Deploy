@@ -1,5 +1,5 @@
 <#
-    Copyright 2021 Jeffrey Sharp
+    Copyright 2022 Jeffrey Sharp
 
     Permission to use, copy, modify, and distribute this software for any
     purpose with or without fee is hereby granted, provided that the above
@@ -36,33 +36,35 @@ function Invoke-SqlMigrations {
         [switch] $Force
     )
 
-    $ErrorActionPreference = "Stop"
-    $OldConfirmPreference  = $ConfirmPreference
-    $ConfirmPreference     = "High"
+    process {
+        $ErrorActionPreference = "Stop"
+        $OldConfirmPreference  = $ConfirmPreference
+        $ConfirmPreference     = "High"
 
-    Install-SqlMigrationSupport $Target
+        Install-SqlMigrationSupport $Target
 
-    $Plan = New-SqlMigrationPlan $SourcePath $Target -PlanPath $PlanPath
+        $Plan = New-SqlMigrationPlan $SourcePath $Target -PlanPath $PlanPath
 
-    $ConfirmPreference = $OldConfirmPreference
+        $ConfirmPreference = $OldConfirmPreference
 
-    if ($Plan.RequiresOffline -and -not $Force -and -not $PSCmdlet.ShouldProcess(
-        "",
-        "Have you ensured that the above conditions are met?",
-        "***** WARNING *****`n" +
-        "The migration(s) to be applied contain breaking changes that require applications to be offline.  " +
-        "Continue ONLY when:`n" +
-        "  * downtime is expected; and,`n" +
-        "  * applications using the target database(s) have been taken offline.`n`n"
-    )) { return }
+        if ($Plan.RequiresOffline -and -not $Force -and -not $PSCmdlet.ShouldProcess(
+            "",
+            "Have you ensured that the above conditions are met?",
+            "***** WARNING *****`n" +
+            "The migration(s) to be applied contain breaking changes that require applications to be offline.  " +
+            "Continue ONLY when:`n" +
+            "  * downtime is expected; and,`n" +
+            "  * applications using the target database(s) have been taken offline.`n`n"
+        )) { return }
 
-    $ConfirmPreference = "High"
+        $ConfirmPreference = "High"
 
-    Invoke-SqlMigrationPlan Pre $Target -PlanPath $PlanPath
+        Invoke-SqlMigrationPlan Pre $Target -PlanPath $PlanPath
 
-    if ($Plan.RequiresOffline) {
-        Invoke-SqlMigrationPlan Core $Target -PlanPath $PlanPath
+        if ($Plan.RequiresOffline) {
+            Invoke-SqlMigrationPlan Core $Target -PlanPath $PlanPath
+        }
+
+        Invoke-SqlMigrationPlan Post $Target -PlanPath $PlanPath
     }
-
-    Invoke-SqlMigrationPlan Post $Target -PlanPath $PlanPath
 }

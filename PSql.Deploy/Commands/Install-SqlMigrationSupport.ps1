@@ -1,5 +1,5 @@
 <#
-    Copyright 2021 Jeffrey Sharp
+    Copyright 2022 Jeffrey Sharp
 
     Permission to use, copy, modify, and distribute this software for any
     purpose with or without fee is hereby granted, provided that the above
@@ -22,19 +22,21 @@ function Install-SqlMigrationSupport {
         [PSql.SqlContext[]] $Target
     )
 
-    foreach ($T in $Target) {
-        Write-Host "Installing migration support in database '$($T.DatabaseName)' on server '$($T.ServerName)'."
+    process {
+        foreach ($T in $Target) {
+            Write-Host "Installing migration support in database '$($T.DatabaseName)' on server '$($T.ServerName)'."
 
-        $Connection = $null
-        try {
-            $Connection = $T | PSql\Connect-Sql
+            $Connection = $null
+            try {
+                $Connection = $T | PSql\Connect-Sql
 
-            Join-Path $PSScriptRoot Install-SqlMigrationSupport.sql -Resolve `
-                | ForEach-Object { Get-Content -LiteralPath $_ -Raw -Encoding UTF8 } `
-                | PSql\Invoke-Sql -Connection $Connection -Timeout '00:01:00'
-        }
-        finally {
-            Disconnect-Sql $Connection
+                Join-Path $PSScriptRoot Install-SqlMigrationSupport.sql -Resolve `
+                    | ForEach-Object { Get-Content -LiteralPath $_ -Raw -Encoding UTF8 } `
+                    | PSql\Invoke-Sql -Connection $Connection -Timeout '00:01:00'
+            }
+            finally {
+                Disconnect-Sql $Connection
+            }
         }
     }
 }

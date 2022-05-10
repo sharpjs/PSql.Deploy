@@ -1,5 +1,5 @@
 <#
-    Copyright 2021 Jeffrey Sharp
+    Copyright 2022 Jeffrey Sharp
 
     Permission to use, copy, modify, and distribute this software for any
     purpose with or without fee is hereby granted, provided that the above
@@ -19,6 +19,7 @@ function New-SqlMigrationPlan {
     .SYNOPSIS
         Computes a plan to apply migrations to target databases.
     #>
+    [CmdletBinding()]
     param (
         # Path of directory containing database source code.
         [Parameter(Mandatory, Position = 0)]
@@ -32,48 +33,50 @@ function New-SqlMigrationPlan {
         [string] $PlanPath = $DefaultPlanPath
     )
 
-    # Discover migrations in source directory
-    Write-Verbose "Discovering migrations in source directory."
-    $SourceMigrations = @(Find-SqlMigrations $SourcePath)
-    if ($SourceMigrations.Length -gt 0) {
-        Write-Verbose "Discovered $($SourceMigrations.Length) source migration(s)."
-    } else {
-        throw "No migrations found in source directory: $SourcePath"
-    }
+    process {
+        # Discover migrations in source directory
+        Write-Verbose "Discovering migrations in source directory."
+        $SourceMigrations = @(Find-SqlMigrations $SourcePath)
+        if ($SourceMigrations.Length -gt 0) {
+            Write-Verbose "Discovered $($SourceMigrations.Length) source migration(s)."
+        } else {
+            throw "No migrations found in source directory: $SourcePath"
+        }
 
-    # Initialize plan directory
-    Write-Verbose "Initializing plan directory."
-    $PlanPath = New-Item $PlanPath -Type Directory -Force | % FullName
-    $PlanPath | Join-Path -ChildPath * | Remove-Item -Recurse
+        # Initialize plan directory
+        Write-Verbose "Initializing plan directory."
+        $PlanPath = New-Item $PlanPath -Type Directory -Force | % FullName
+        $PlanPath | Join-Path -ChildPath * | Remove-Item -Recurse
 
-    # Create subplan for each target database
-    $Subplans = $(foreach ($T in $Target) {
-        Write-Host "Computing plan for database '$($T.DatabaseName)' on server '$($T.ServerName)'."
+        # Create subplan for each target database
+        $Subplans = $(foreach ($T in $Target) {
+            Write-Host "Computing plan for database '$($T.DatabaseName)' on server '$($T.ServerName)'."
 
-        # Discover migrations applied to database
-        Write-Verbose "Discovering migrations applied to database '$($T.DatabaseName)' on server '$($T.ServerName)'."
-        $TargetMigrations = @(Get-SqlMigrationsApplied $T)
-        Write-Verbose "Discovered $($TargetMigrations.Length) applied migration(s)."
+            # Discover migrations applied to database
+            Write-Verbose "Discovering migrations applied to database '$($T.DatabaseName)' on server '$($T.ServerName)'."
+            $TargetMigrations = @(Get-SqlMigrationsApplied $T)
+            Write-Verbose "Discovered $($TargetMigrations.Length) applied migration(s)."
 
-        # Merge into a unified migrations table
-        Write-Verbose "Merging migrations list."
-        $Migrations = Merge-SqlMigrations $SourceMigrations $TargetMigrations
+            # Merge into a unified migrations table
+            Write-Verbose "Merging migrations list."
+            $Migrations = Merge-SqlMigrations $SourceMigrations $TargetMigrations
 
-        # Add the _Begin and _End pseudo-migrations
-        Find-SqlMigrations $SourcePath -Type Begin | % { $Migrations.Insert(0, $_.Name, $_) }
-        Find-SqlMigrations $SourcePath -Type End   | % { $Migrations.Add(      $_.Name, $_) }
+            # Add the _Begin and _End pseudo-migrations
+            Find-SqlMigrations $SourcePath -Type Begin | % { $Migrations.Insert(0, $_.Name, $_) }
+            Find-SqlMigrations $SourcePath -Type End   | % { $Migrations.Add(      $_.Name, $_) }
 
-        # Validate migrations and read SQL as needed
-        Resolve-SqlMigrations $Migrations
+            # Validate migrations and read SQL as needed
+            Resolve-SqlMigrations $Migrations
 
-        # Make the plan
-        $DatabaseId = "$($T.ServerName);$($T.DatabaseName)" -replace '[\\/:*?"<>|]', '_'
-        $TargetPath = Join-Path $PlanPath $DatabaseId
-        ConvertTo-SqlMigrationPlan $Migrations $TargetPath
-    })
+            # Make the plan
+            $DatabaseId = "$($T.ServerName);$($T.DatabaseName)" -replace '[\\/:*?"<>|]', '_'
+            $TargetPath = Join-Path $PlanPath $DatabaseId
+            ConvertTo-SqlMigrationPlan $Migrations $TargetPath
+        })
 
-    [PSCustomObject] @{
-        Path            = $PlanPath
-        RequiresOffline = !!($Subplans | ? RequiresOffline)
+        [PSCustomObject] @{
+            Path            = $PlanPath
+            RequiresOffline = !!($Subplans | ? RequiresOffline)
+        }
     }
 }

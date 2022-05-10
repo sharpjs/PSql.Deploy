@@ -1,5 +1,5 @@
 <#
-    Copyright 2021 Jeffrey Sharp
+    Copyright 2022 Jeffrey Sharp
 
     Permission to use, copy, modify, and distribute this software for any
     purpose with or without fee is hereby granted, provided that the above
@@ -21,17 +21,19 @@ function New-SqlMigrationObject {
     #>
     param ()
 
-    [PSCustomObject] @{
-        _Type      = "SqlMigration"
-        Name       = [string]   $null  # Name of the migration
-        Path       = [string]   $null  # Full path of the migration's main SQL file
-        Hash       = [string]   $null  # Hash computed from the migration's SQL files
-        State      = [int]      0      # Deployment state: 0 => not deployed, 1-3 => phases pre/core/post deployed
-        Depends    = [string[]] $null  # Names of migrations that must be done before this one
-        PreSql     = [string]   $null  # SQL script for Pre phase
-        CoreSql    = [string]   $null  # SQL script for Core phase
-        PostSql    = [string]   $null  # SQL script for Post phase
-        IsPseudo   = [bool]     $false # If this is a _Begin or _End pseudo-migration
-        HasChanged = [bool]     $false # If this migration has changed since it was applied
+    process {
+        [PSCustomObject] @{
+            _Type      = "SqlMigration"
+            Name       = [string]   $null  # Name of the migration
+            Path       = [string]   $null  # Full path of the migration's main SQL file
+            Hash       = [string]   $null  # Hash computed from the migration's SQL files
+            State      = [int]      0      # Deployment state: 0 => not deployed, 1-3 => phases pre/core/post deployed
+            Depends    = [string[]] $null  # Names of migrations that must be done before this one
+            PreSql     = [string]   $null  # SQL script for Pre phase
+            CoreSql    = [string]   $null  # SQL script for Core phase
+            PostSql    = [string]   $null  # SQL script for Post phase
+            IsPseudo   = [bool]     $false # If this is a _Begin or _End pseudo-migration
+            HasChanged = [bool]     $false # If this migration has changed since it was applied
+        }
     }
 }

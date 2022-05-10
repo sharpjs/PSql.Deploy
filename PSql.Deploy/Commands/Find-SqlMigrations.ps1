@@ -1,5 +1,5 @@
 <#
-    Copyright 2021 Jeffrey Sharp
+    Copyright 2022 Jeffrey Sharp
 
     Permission to use, copy, modify, and distribute this software for any
     purpose with or without fee is hereby granted, provided that the above
@@ -43,6 +43,7 @@ function Find-SqlMigrations {
 
         For each migration discovered, this cmdlet outputs a descriptor object with Name, Path, and IsPseudo properties set.
     #>
+    [CmdletBinding()]
     param (
         # Path to directory containing database source code.  The default is the current directory.
         [Parameter(ValueFromPipeline)]
@@ -53,40 +54,42 @@ function Find-SqlMigrations {
         [string] $Type = "Named"
     )
 
-    # Verify the source directory exists.
-    # If not, the thrown exception will mention the caller's specified path.
-    $SourceDirectory = Convert-Path $SourceDirectory
+    process {
+        # Verify the source directory exists.
+        # If not, the thrown exception will mention the caller's specified path.
+        $SourceDirectory = Convert-Path $SourceDirectory
 
-    # Choose which migrations to discover
-    $Pattern = $(switch ($Type) {
-        Named { "*"      }
-        Begin { "_Begin" }
-        End   { "_End"   }
-    })
+        # Choose which migrations to discover
+        $Pattern = $(switch ($Type) {
+            Named { "*"      }
+            Begin { "_Begin" }
+            End   { "_End"   }
+        })
 
-    # Choose which migrations to exclude
-    $Excludes = $(switch ($Type) {
-        Named { "_Begin", "_End" }
-        Begin { @()              }
-        End   { @()              }
-    })
+        # Choose which migrations to exclude
+        $Excludes = $(switch ($Type) {
+            Named { "_Begin", "_End" }
+            Begin { @()              }
+            End   { @()              }
+        })
 
-    # Find migrations
-    "_Main.sql", "_Main.Up.sql" `
-        | Foreach-Object { $SourceDirectory | `
-            Join-Path -ChildPath Migrations | `
-            Join-Path -ChildPath $Pattern | `
-            Join-Path -ChildPath $_ } `
-        | Get-Item -Exclude $Excludes -ErrorAction SilentlyContinue `
-        | Group-Object Directory `
-        | Sort-Object Name `
-        | Foreach-Object { $_ | Foreach-Object Group | Sort-Object Name | Select-Object -First 1 } `
-        | Foreach-Object {
-            $Migration          = New-SqlMigrationObject
-            $Migration.Name     = $_.Directory.Name
-            $Migration.Path     = $_.FullName
-            $Migration.Hash     = Get-SqlMigrationHash $_.Directory.FullName
-            $Migration.IsPseudo = $Type -ne "Named"
-            $Migration
-        }
+        # Find migrations
+        "_Main.sql", "_Main.Up.sql" `
+            | Foreach-Object { $SourceDirectory | `
+                Join-Path -ChildPath Migrations | `
+                Join-Path -ChildPath $Pattern | `
+                Join-Path -ChildPath $_ } `
+            | Get-Item -Exclude $Excludes -ErrorAction SilentlyContinue `
+            | Group-Object Directory `
+            | Sort-Object Name `
+            | Foreach-Object { $_ | Foreach-Object Group | Sort-Object Name | Select-Object -First 1 } `
+            | Foreach-Object {
+                $Migration          = New-SqlMigrationObject
+                $Migration.Name     = $_.Directory.Name
+                $Migration.Path     = $_.FullName
+                $Migration.Hash     = Get-SqlMigrationHash $_.Directory.FullName
+                $Migration.IsPseudo = $Type -ne "Named"
+                $Migration
+            }
+    }
 }

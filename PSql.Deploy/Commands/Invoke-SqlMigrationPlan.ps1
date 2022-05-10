@@ -4,10 +4,6 @@ using namespace System.Management.Automation.Runspaces
 using namespace Subatomix.PowerShell.TaskHost
 
 <#
-.SYNOPSIS
-    Invokes a migration plan created by New-SqlMigrationPlan.
-
-.NOTES
     Copyright 2022 Jeffrey Sharp
 
     Permission to use, copy, modify, and distribute this software for any
@@ -22,7 +18,12 @@ using namespace Subatomix.PowerShell.TaskHost
     ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #>
+
 function Invoke-SqlMigrationPlan {
+    <#
+    .SYNOPSIS
+        Invokes a migration plan created by New-SqlMigrationPlan.
+    #>
     [CmdletBinding()]
     param (
         # Migration phase to run.  Must be "Pre", "Core", or "Post".

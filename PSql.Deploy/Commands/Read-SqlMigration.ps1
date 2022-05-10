@@ -2,7 +2,7 @@ using namespace System.Collections.Generic
 using namespace System.Text
 
 <#
-    Copyright 2021 Jeffrey Sharp
+    Copyright 2022 Jeffrey Sharp
 
     Permission to use, copy, modify, and distribute this software for any
     purpose with or without fee is hereby granted, provided that the above
@@ -63,65 +63,67 @@ function Read-SqlMigration {
         [string] $Path
     )
 
-    $Comparer = [StringComparer]::OrdinalIgnoreCase
-    $Depends  = New-Object SortedSet[string] $Comparer
-    $PreSql   = New-Object StringBuilder 4096
-    $CoreSql  = New-Object StringBuilder 4096
-    $PostSql  = New-Object StringBuilder 4096
+    process {
+        $Comparer = [StringComparer]::OrdinalIgnoreCase
+        $Depends  = New-Object SortedSet[string] $Comparer
+        $PreSql   = New-Object StringBuilder 4096
+        $CoreSql  = New-Object StringBuilder 4096
+        $PostSql  = New-Object StringBuilder 4096
 
-    # Convert to absolute path
-    $Path = Convert-Path -LiteralPath $Path
+        # Convert to absolute path
+        $Path = Convert-Path -LiteralPath $Path
 
-    # Decide the initial phase
-    $Current  = switch ($Path | Split-Path | Split-Path -Leaf) {
-        _Begin  { $PreSql  }
-        _End    { $PostSql }
-        default { $CoreSql }
-    }
-
-    # Parse into batches
-    $Batches = Get-Content -LiteralPath $Path -Raw -Encoding UTF8 `
-        | PSql\Expand-SqlCmdDirectives -Define @{ Path = Split-Path $Path } 
-
-    foreach ($Batch in $Batches) {
-        # Re-add batch separator if current phase had a previous batch
-        if ($Current.Length -gt 0) {
-            [void] $Current.AppendLine("GO")
+        # Decide the initial phase
+        $Current  = switch ($Path | Split-Path | Split-Path -Leaf) {
+            _Begin  { $PreSql  }
+            _End    { $PostSql }
+            default { $CoreSql }
         }
 
-        # Parse batch into chunks
-        foreach ($Chunk in $ChunksRe.Matches($Batch)) {
-            $Text  = $Chunk.Groups['text' ].Value
-            $Magic = $Chunk.Groups['magic'].Value
+        # Parse into batches
+        $Batches = Get-Content -LiteralPath $Path -Raw -Encoding UTF8 `
+            | PSql\Expand-SqlCmdDirectives -Define @{ Path = Split-Path $Path }
 
-            # Text chunk belongs to block in progress
-            [void] $Current.Append($Text)
+        foreach ($Batch in $Batches) {
+            # Re-add batch separator if current phase had a previous batch
+            if ($Current.Length -gt 0) {
+                [void] $Current.AppendLine("GO")
+            }
 
-            # Detect EOF
-            if (-not $Magic) { break }
+            # Parse batch into chunks
+            foreach ($Chunk in $ChunksRe.Matches($Batch)) {
+                $Text  = $Chunk.Groups['text' ].Value
+                $Magic = $Chunk.Groups['magic'].Value
 
-            # Split magic comment, if any
-            $Match = $CommandRe.Match($Chunk.Groups['cmd'].Value)
-            $Name  =   $Match.Groups['name'].Value
-            $Argz  = @($Match.Groups['args'].Captures | ForEach-Object Value)
+                # Text chunk belongs to block in progress
+                [void] $Current.Append($Text)
 
-            # Interpret magic comment, if any
-            switch ($Name) {
-                PRE      { $Current = $PreSql  }
-                CORE     { $Current = $CoreSql }
-                OFFLINE  { $Current = $CoreSql }
-                POST     { $Current = $PostSql }
-                REQUIRES { [void] $Depends.Add($Argz) }
-                default  { [void] $Current.Append($Magic) } # Not our magic
+                # Detect EOF
+                if (-not $Magic) { break }
+
+                # Split magic comment, if any
+                $Match = $CommandRe.Match($Chunk.Groups['cmd'].Value)
+                $Name  =   $Match.Groups['name'].Value
+                $Argz  = @($Match.Groups['args'].Captures | ForEach-Object Value)
+
+                # Interpret magic comment, if any
+                switch ($Name) {
+                    PRE      { $Current = $PreSql  }
+                    CORE     { $Current = $CoreSql }
+                    OFFLINE  { $Current = $CoreSql }
+                    POST     { $Current = $PostSql }
+                    REQUIRES { [void] $Depends.Add($Argz) }
+                    default  { [void] $Current.Append($Magic) } # Not our magic
+                }
             }
         }
-    }
 
-    # Return a migration object
-    [pscustomobject] @{
-        Depends = $Depends
-        PreSql  = $PreSql.ToString()
-        CoreSql = $CoreSql.ToString()
-        PostSql = $PostSql.ToString()
+        # Return a migration object
+        [pscustomobject] @{
+            Depends = $Depends
+            PreSql  = $PreSql.ToString()
+            CoreSql = $CoreSql.ToString()
+            PostSql = $PostSql.ToString()
+        }
     }
 }

@@ -1,5 +1,5 @@
 <#
-    Copyright 2021 Jeffrey Sharp
+    Copyright 2022 Jeffrey Sharp
 
     Permission to use, copy, modify, and distribute this software for any
     purpose with or without fee is hereby granted, provided that the above
@@ -38,34 +38,36 @@ function Set-SqlMigrationPlan {
         [pscredential] $Credential
     )
 
-    # Discover migrations in source directory
-    Write-Verbose "Discovering migrations in source directory."
-    $SourceMigrations = Find-SqlMigrations $SourceDirectory
+    process {
+        # Discover migrations in source directory
+        Write-Verbose "Discovering migrations in source directory."
+        $SourceMigrations = Find-SqlMigrations $SourceDirectory
 
-    # Discover migrations applied to database
-    Write-Verbose "Discovering migrations applied to database."
-    $Connection = $null
-    try {
-        $As               = if ($Credential) { @{ Credential = $Credential } } else { @{} }
-        $Context          = PSql\New-SqlContext -ServerName $Server -DatabaseName $Database @As
-        $Connection       = PSql\Connect-Sql -Context $Context
-        $TargetMigrations = Get-SqlMigrationsApplied $Connection
+        # Discover migrations applied to database
+        Write-Verbose "Discovering migrations applied to database."
+        $Connection = $null
+        try {
+            $As               = if ($Credential) { @{ Credential = $Credential } } else { @{} }
+            $Context          = PSql\New-SqlContext -ServerName $Server -DatabaseName $Database @As
+            $Connection       = PSql\Connect-Sql -Context $Context
+            $TargetMigrations = Get-SqlMigrationsApplied $Connection
+        }
+        finally {
+            PSql\Disconnect-Sql $Connection
+        }
+
+        # Merge into a unified migrations table
+        Write-Verbose "Merging migrations list."
+        $Migrations = Merge-SqlMigrations $SourceMigrations $TargetMigrations
+
+        # Add the _Begin and _End pseudo-migrations
+        Find-SqlMigrations $SourceDirectory -Type Begin | % { $Migrations.Insert(0, $_.Name, $_) }
+        Find-SqlMigrations $SourceDirectory -Type End   | % { $Migrations.Add(      $_.Name, $_) }
+
+        # Validate migrations and read SQL as needed
+        Resolve-SqlMigrations $Migrations
+
+        # Make the plan
+        ConvertTo-SqlMigrationPlan $Migrations
     }
-    finally {
-        PSql\Disconnect-Sql $Connection
-    }
-
-    # Merge into a unified migrations table
-    Write-Verbose "Merging migrations list."
-    $Migrations = Merge-SqlMigrations $SourceMigrations $TargetMigrations
-
-    # Add the _Begin and _End pseudo-migrations
-    Find-SqlMigrations $SourceDirectory -Type Begin | % { $Migrations.Insert(0, $_.Name, $_) }
-    Find-SqlMigrations $SourceDirectory -Type End   | % { $Migrations.Add(      $_.Name, $_) }
-
-    # Validate migrations and read SQL as needed
-    Resolve-SqlMigrations $Migrations
-
-    # Make the plan
-    ConvertTo-SqlMigrationPlan $Migrations
 }

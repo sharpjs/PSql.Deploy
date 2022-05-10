@@ -1,5 +1,5 @@
 <#
-    Copyright 2021 Jeffrey Sharp
+    Copyright 2022 Jeffrey Sharp
 
     Permission to use, copy, modify, and distribute this software for any
     purpose with or without fee is hereby granted, provided that the above
@@ -19,29 +19,32 @@ function Get-SqlMigrationsApplied {
     .SYNOPSIS
         Discovers migrations applied to a database.
     #>
+    [CmdletBinding()]
     param (
         [Parameter(Mandatory, Position=0, ValueFromPipeline)]
         [PSCustomObject] $Target
     )
 
-    $Connection = $null
-    try {
-        $Connection = $Target | PSql\Connect-Sql
+    process {
+        $Connection = $null
+        try {
+            $Connection = $Target | PSql\Connect-Sql
 
-        PSql\Invoke-Sql -Connection $Connection `
-        "
-            IF OBJECT_ID('_deploy.Migration', 'U') IS NOT NULL
-                EXEC('SELECT * FROM _deploy.Migration ORDER BY Name;');
-        " `
-        | % {
-            $Migration       = New-SqlMigrationObject
-            $Migration.Name  = $_.Name
-            $Migration.Hash  = $_.Hash.Trim()
-            $Migration.State = $_.State
-            $Migration
+            PSql\Invoke-Sql -Connection $Connection `
+            "
+                IF OBJECT_ID('_deploy.Migration', 'U') IS NOT NULL
+                    EXEC('SELECT * FROM _deploy.Migration ORDER BY Name;');
+            " `
+            | % {
+                $Migration       = New-SqlMigrationObject
+                $Migration.Name  = $_.Name
+                $Migration.Hash  = $_.Hash.Trim()
+                $Migration.State = $_.State
+                $Migration
+            }
         }
-    }
-    finally {
-        PSql\Disconnect-Sql $Connection
+        finally {
+            PSql\Disconnect-Sql $Connection
+        }
     }
 }
