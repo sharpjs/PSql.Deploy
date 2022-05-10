@@ -52,16 +52,16 @@
     DscResourcesToExport = @()
     CmdletsToExport      = @()
     FunctionsToExport    = @(
-        "Find-SqlMigrations"
-        "Get-SqlMigrationsApplied"
-        "Get-SqlMigrationHash"
-        "Install-SqlMigrationSupport"
-        "Invoke-SqlMigrations"
-        "Invoke-SqlMigrationPlan"
-        "Invoke-SqlSeed"
-        "New-SqlMigrationPlan"
-        "Read-SqlMigration"
-        "Set-SqlMigrationPlan"
+        'Find-SqlMigrations'
+        'Get-SqlMigrationsApplied'
+        'Get-SqlMigrationHash'
+        'Install-SqlMigrationSupport'
+        'Invoke-SqlMigrations'
+        'Invoke-SqlMigrationPlan'
+        'Invoke-SqlSeed'
+        'New-SqlMigrationPlan'
+        'Read-SqlMigration'
+        'Set-SqlMigrationPlan'
     )
 
     # Discoverability and URLs
