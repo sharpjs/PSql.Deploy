@@ -69,7 +69,7 @@ function Get-SqlMigrationHash {
         $Stream = New-Object System.IO.MemoryStream @(,$Bytes)
 
         # Compute a single hash from the per-file hashes
-        Get-FileHash -InputStream $Stream -Algorithm SHA1 | % Hash
+        Get-FileHash -InputStream $Stream -Algorithm SHA1 | ForEach-Object Hash
     }
 }
 

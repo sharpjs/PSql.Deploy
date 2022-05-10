@@ -81,7 +81,7 @@ function Resolve-SqlMigrations {
             $Migration.PostSql = $Sql.PostSql
 
             # Resolve migration dependencies
-            $Migration.Depends = @($Sql.Depends | % {
+            $Migration.Depends = @($Sql.Depends | ForEach-Object {
                 # Look up the dependency
                 $Depend = $Migrations[$_]
 

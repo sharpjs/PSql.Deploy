@@ -45,7 +45,7 @@ function New-SqlMigrationPlan {
 
         # Initialize plan directory
         Write-Verbose "Initializing plan directory."
-        $PlanPath = New-Item $PlanPath -Type Directory -Force | % FullName
+        $PlanPath = New-Item $PlanPath -Type Directory -Force | ForEach-Object FullName
         $PlanPath | Join-Path -ChildPath * | Remove-Item -Recurse
 
         # Create subplan for each target database
@@ -62,8 +62,8 @@ function New-SqlMigrationPlan {
             $Migrations = Merge-SqlMigrations $SourceMigrations $TargetMigrations
 
             # Add the _Begin and _End pseudo-migrations
-            Find-SqlMigrations $SourcePath -Type Begin | % { $Migrations.Insert(0, $_.Name, $_) }
-            Find-SqlMigrations $SourcePath -Type End   | % { $Migrations.Add(      $_.Name, $_) }
+            Find-SqlMigrations $SourcePath -Type Begin | ForEach-Object { $Migrations.Insert(0, $_.Name, $_) }
+            Find-SqlMigrations $SourcePath -Type End   | ForEach-Object { $Migrations.Add(      $_.Name, $_) }
 
             # Validate migrations and read SQL as needed
             Resolve-SqlMigrations $Migrations
@@ -76,7 +76,7 @@ function New-SqlMigrationPlan {
 
         [PSCustomObject] @{
             Path            = $PlanPath
-            RequiresOffline = !!($Subplans | ? RequiresOffline)
+            RequiresOffline = !!($Subplans | Where-Object RequiresOffline)
         }
     }
 }

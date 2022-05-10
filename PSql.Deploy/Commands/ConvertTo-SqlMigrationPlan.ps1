@@ -116,23 +116,23 @@ function ConvertTo-SqlMigrationPlan {
         # Compute ideal ordering, irrespective of dependencies
         $Tasks = @(foreach ($Phase in $Pre, $Core, $Post) {
             $Migrations.Values `
-                | ? { $_.State -lt $Phase.Number } `
-                | % {
+                | Where-Object { $_.State -lt $Phase.Number } `
+                | ForEach-Object {
                     $Phase.Count++
                     [PSCustomObject] @{
                         Done      = $false
                         Phase     = $Phase
                         Migration = $_
                         Depends   = $_ `
-                            | % Depends `
-                            | ? { $Migrations[$_].State -lt $Post.Number } `
+                            | ForEach-Object Depends `
+                            | Where-Object { $Migrations[$_].State -lt $Post.Number } `
                             | ConvertTo-StringHashSet
                     }
                 }
         })
 
         # Initialize target directory
-        $Path = New-Item $Path -Type Directory -Force | % FullName
+        $Path = New-Item $Path -Type Directory -Force | ForEach-Object FullName
         $Path | Join-Path -ChildPath * | Remove-Item -Recurse
 
         # Write Pre phase
@@ -223,7 +223,7 @@ function Optimize-SqlMigrationPlanPhase {
                 # Handle when entire migration is done
                 if ($Task.Phase.Number -eq 3 <# Post #>) {
                     # Remove dependencies on that migration
-                    if ($Tasks | ? { $_.Depends.Remove($Task.Migration.Name) }) {
+                    if ($Tasks | Where-Object { $_.Depends.Remove($Task.Migration.Name) }) {
                         # Dependency was actually removed; restart scan from $Start
                         # to catch earlier tasks that can be visited now.
                         break
@@ -251,7 +251,7 @@ function ConvertTo-StringHashSet {
     }
 
     process {
-        $Items | % { [void] $HashSet.Add($_) }
+        $Items | ForEach-Object { [void] $HashSet.Add($_) }
     }
 
     end {
@@ -271,7 +271,7 @@ function Format-SqlMigrationPhase {
 
     process {
         $Name = $Migration.Name -replace "'", "''"
-        $Sql  = $Migration | % "$($Phase.Name)Sql"
+        $Sql  = $Migration | ForEach-Object "$($Phase.Name)Sql"
 
         # If migration has actual code to run in this phase, mark the phase as used.
         if ($Sql) { $Phase.IsUsed = $true }

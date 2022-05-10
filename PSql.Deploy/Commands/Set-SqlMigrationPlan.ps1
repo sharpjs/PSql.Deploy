@@ -61,8 +61,8 @@ function Set-SqlMigrationPlan {
         $Migrations = Merge-SqlMigrations $SourceMigrations $TargetMigrations
 
         # Add the _Begin and _End pseudo-migrations
-        Find-SqlMigrations $SourceDirectory -Type Begin | % { $Migrations.Insert(0, $_.Name, $_) }
-        Find-SqlMigrations $SourceDirectory -Type End   | % { $Migrations.Add(      $_.Name, $_) }
+        Find-SqlMigrations $SourceDirectory -Type Begin | ForEach-Object { $Migrations.Insert(0, $_.Name, $_) }
+        Find-SqlMigrations $SourceDirectory -Type End   | ForEach-Object { $Migrations.Add(      $_.Name, $_) }
 
         # Validate migrations and read SQL as needed
         Resolve-SqlMigrations $Migrations
