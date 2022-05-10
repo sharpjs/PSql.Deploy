@@ -1,5 +1,14 @@
+#Requires -Version 7
+using namespace System.Management.Automation
+using namespace System.Management.Automation.Runspaces
+using namespace Subatomix.PowerShell.TaskHost
+
 <#
-    Copyright 2021 Jeffrey Sharp
+.SYNOPSIS
+    Invokes a migration plan created by New-SqlMigrationPlan.
+
+.NOTES
+    Copyright 2022 Jeffrey Sharp
 
     Permission to use, copy, modify, and distribute this software for any
     purpose with or without fee is hereby granted, provided that the above
@@ -13,49 +22,90 @@
     ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #>
-
 function Invoke-SqlMigrationPlan {
-    <#
-    .SYNOPSIS
-        Invokes a migration plan created by New-SqlMigrationPlan.
-    #>
+    [CmdletBinding()]
     param (
         # Migration phase to run.  Must be "Pre", "Core", or "Post".
         [Parameter(Mandatory, Position = 0)]
         [ValidateSet("Pre", "Core", "Post")]
         [string] $Phase,
 
-        # Target database specification(s).  Create using New-SqlContext.
+        # Objects specifying how to connect to the target databases.  Obtain via the New-SqlContext cmdlet.
         [Parameter(Mandatory, Position = 1, ValueFromPipeline)]
         [PSql.SqlContext[]] $Target,
 
         # Path of directory containing the migration plan.  The default value is ".migration-plan".
-        [string] $PlanPath = $DefaultPlanPath
+        [Parameter()]
+        [string] $PlanPath = $DefaultPlanPath,
+
+        # The maximum count of target databases to migrate in parallel.  The default value is the number of virtual processors on the local machine.
+        [Parameter()]
+        [ValidateRange(1, [int]::MaxValue)]
+        [int] $ThrottleLimit = [Environment]::ProcessorCount
     )
 
-    $ScriptFile = $(switch ($Phase) {
-        Pre  { "1_Pre.sql"  }
-        Core { "2_Core.sql" }
-        Post { "3_Post.sql" }
-    })
+    begin {
+        # Capture items for use in tasks
+        $PSql      = Get-Module PSql
+        $TSettings = [PSInvocationSettings]
+        $TVariable = [SessionStateVariableEntry]
 
-    foreach ($T in $Target) {
-        Write-Host "--------------------------------------------------------------------------------"
-        Write-Host "Migration phase $Phase for database '$($T.DatabaseName)' on server '$($T.ServerName)'."
-        Write-Host "--------------------------------------------------------------------------------"
+        # Create a factory for per-task hosts
+        $TaskHostFactory = [Subatomix.PowerShell.TaskHost.TaskHostFactory]::new($Host)
 
-        $Connection = $null
-        $DatabaseId = "$($T.ServerName);$($T.DatabaseName)" -replace '[\\/:*?"<>|]', '_'
-        try {
-            $Connection = $T | PSql\Connect-Sql
-            Convert-Path -LiteralPath $PlanPath `
-                | Join-Path -ChildPath $DatabaseId `
-                | Join-Path -ChildPath $ScriptFile `
-                | Foreach-Object { Get-Content -LiteralPath $_ -Raw -Encoding UTF8 } `
-                | PSql\Invoke-Sql -Connection $Connection -Timeout 0
-        }
-        finally {
-            PSql\Disconnect-Sql $Connection
+        # Prepare a task to run for each target
+        $Task = {
+            Write-Host "--------------------------------------------------------------------------------"
+            Write-Host "Migration phase $Phase for database '$(
+                            $Target.DatabaseName)' on server '$($Target.ServerName)'."
+            Write-Host "--------------------------------------------------------------------------------"
+
+            Import-Module $PSql
+
+            Get-Content -LiteralPath $ScriptPath -Raw `
+                | PSql\Invoke-Sql -Context $Target -Timeout 0
+        }.ToString()
+    }
+
+    process {
+        # Select the SQL script file that contains the commands for this phase
+        $ScriptFile = $(switch ($Phase) {
+            Pre  { "1_Pre.sql"  }
+            Core { "2_Core.sql" }
+            Post { "3_Post.sql" }
+        })
+
+        # Run the SQL script file for each target
+        $Target | ForEach-Object -ThrottleLimit $ThrottleLimit -Parallel {
+            # Create a task for this target
+            $Task = [ScriptBlock]::Create($using:Task)
+
+            # Identity which script file the task should run
+            $DatabaseId = "$($_.ServerName);$($_.DatabaseName)" -replace '[\\/:*?"<>|]', '_'
+            $ScriptPath = Join-Path $using:PlanPath $DatabaseId $using:ScriptFile -Resolve
+
+            # Make a header to prefix the task's output lines
+            $Header = "$($using:Phase):$($_.DatabaseName)"
+
+            # Prepare invocation settings for the task
+            $Settings                       = ($using:TSettings)::new()
+            $Settings.Host                  = ($using:TaskHostFactory).Create($Header)
+            $Settings.ErrorActionPreference = "Stop"
+
+            # Prepare session state for the task
+            $State = [InitialSessionState]::CreateDefault2()
+            $State.Variables.Add(($using:TVariable)::new("PSql",       $using:PSql, "", "Constant,AllScope"))
+            $State.Variables.Add(($using:TVariable)::new("ScriptPath", $ScriptPath, "", "Constant,AllScope"))
+            $State.Variables.Add(($using:TVariable)::new("Target",     $_,          "", "Constant,AllScope"))
+
+            # Run the task
+            $Shell = [PowerShell]::Create($State)
+            try {
+                $Shell.AddScript($Task).Invoke($null, $Settings)
+            }
+            catch {
+                $Shell.Dispose()
+            }
         }
     }
 }
