@@ -5,7 +5,7 @@
 .DESCRIPTION
     This script is similar to a makefile.
 
-    Copyright 2022 Jeffrey Sharp
+    Copyright 2023 Jeffrey Sharp
 
     Permission to use, copy, modify, and distribute this software for any
     purpose with or without fee is hereby granted, provided that the above
@@ -62,7 +62,7 @@ $Command = $PSCmdlet.ParameterSetName
 if ($Command -eq "Test") { $Test = $true }
 
 # http://patorjk.com/software/taag/#p=display&f=Slant
-Write-Host -ForegroundColor Cyan @' 
+Write-Host -ForegroundColor Cyan @'
 
         ____  _____       __  ____             __           
        / __ \/ ___/____ _/ / / __ \___  ____  / /___  __  __
@@ -94,7 +94,7 @@ function Main {
     if ($Coverage) {
         Export-CoverageReport
     }
-} 
+}
 
 function Update-LocalTools {
     Write-Phase "Update Local Tools"

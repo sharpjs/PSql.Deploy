@@ -1,7 +1,7 @@
 <Project>
 
   <!--
-    Copyright 2022 Jeffrey Sharp
+    Copyright 2023 Jeffrey Sharp
 
     Permission to use, copy, modify, and distribute this software for any
     purpose with or without fee is hereby granted, provided that the above
@@ -31,17 +31,17 @@
 
   <!-- Visibility -->
   <ItemGroup>
-    <InternalsVisibleTo Include="PSql.Deploy.Tests"/>
-    <InternalsVisibleTo Include="DynamicProxyGenAssembly2"/>
+    <InternalsVisibleTo Include="PSql.Deploy.Tests" />
+    <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
     <!-- Required for Moq to mock a class with an internal abstract method. -->
   </ItemGroup>
   <ItemGroup>
-    <Using Include="System.FormattableString" Static="true" />
+    <Using Remove="System.Net.Http" />
   </ItemGroup>
 
   <!-- Versioning -->
   <ItemGroup>
-    <PackageReference Include="Subatomix.Build.Versioning.Semantic" Version="1.0.0" PrivateAssets="all" />
+    <PackageReference Include="Subatomix.Build.Versioning.Semantic" Version="1.0.1" PrivateAssets="all" />
   </ItemGroup>
 
   <!-- <inheritdoc/> support -->
@@ -49,7 +49,7 @@
     <PackageReference Include="SauceControl.InheritDoc" Version="1.3.0" PrivateAssets="all" />
   </ItemGroup>
 
-  <!-- SourceLink https://github.com/dotnet/sourcelink/blob/master/README.md -->
+  <!-- SourceLink https://github.com/dotnet/sourcelink/blob/main/README.md -->
   <ItemGroup Condition="'$(IsPackable)' == 'true'">
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="all" />
   </ItemGroup>
