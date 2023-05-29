@@ -66,6 +66,12 @@ jobs:
           -p:Counter=${{ github.run_number }}
           -p:RepositoryCommit=${{ github.sha }}
 
+      - name: Restore PowerShell Modules
+        shell: pwsh
+        run: |
+          Set-PSRepository PSGallery -InstallationPolicy Trusted
+          Install-Module PSql -Repository PSGallery
+
       - name: Restore NuGet Packages
         run: dotnet restore
 

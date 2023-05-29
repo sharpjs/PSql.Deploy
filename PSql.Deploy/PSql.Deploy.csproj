@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    Copyright 2022 Jeffrey Sharp
+    Copyright 2023 Jeffrey Sharp
 
     Permission to use, copy, modify, and distribute this software for any
     purpose with or without fee is hereby granted, provided that the above
@@ -22,6 +22,14 @@
     <RuntimeIdentifiers>win-arm;win-arm64;win-x64;win-x86;unix</RuntimeIdentifiers>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <PowerShellItemIncludes>$(PowerShellItemIncludes);**/*.sql</PowerShellItemIncludes>
+    <PSqlVersion>2.1.0</PSqlVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(OS) == 'Windows_NT'">
+    <PowerShellModuleDirectory>$(USERPROFILE)\Documents\PowerShell\Modules</PowerShellModuleDirectory>
+  </PropertyGroup>
+  <PropertyGroup Condition="$(OS) != 'Windows_NT'">
+    <PowerShellModuleDirectory>$(HOME)/.local/share/powershell/Modules</PowerShellModuleDirectory>
   </PropertyGroup>
 
   <ItemGroup>
@@ -34,6 +42,13 @@
   <ItemGroup>
     <PackageReference Include="DependencyQueue"               Version="1.0.0-rc.1" />
     <PackageReference Include="Subatomix.PowerShell.TaskHost" Version="1.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="PSql">
+      <HintPath>$(PowerShellModuleDirectory)\PSql\$(PSqlVersion)\PSql.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>
