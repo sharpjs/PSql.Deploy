@@ -4,7 +4,7 @@ using namespace System.Management.Automation.Runspaces
 using namespace Subatomix.PowerShell.TaskHost
 
 <#
-    Copyright 2022 Jeffrey Sharp
+    Copyright 2023 Jeffrey Sharp
 
     Permission to use, copy, modify, and distribute this software for any
     purpose with or without fee is hereby granted, provided that the above
@@ -24,7 +24,7 @@ function Invoke-SqlMigrationPlan {
     .SYNOPSIS
         Invokes a migration plan created by New-SqlMigrationPlan.
     #>
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = "Target")]
     param (
         # Migration phase to run.  Must be "Pre", "Core", or "Post".
         [Parameter(Mandatory, Position = 0)]
@@ -32,8 +32,12 @@ function Invoke-SqlMigrationPlan {
         [string] $Phase,
 
         # Objects specifying how to connect to the target databases.  Obtain via the New-SqlContext cmdlet.
-        [Parameter(Mandatory, Position = 1, ValueFromPipeline)]
+        [Parameter(Mandatory, Position = 1, ParameterSetName = "Target", ValueFromPipeline)]
         [PSql.SqlContext[]] $Target,
+
+        # Objects specifying how to connect to sets of target databases.
+        [Parameter(Mandatory, Position = 1, ParameterSetName = "TargetSet", ValueFromPipeline)]
+        [PSql.SqlContextParallelSet[]] $TargetSet,
 
         # Path of directory containing the migration plan.  The default value is ".migration-plan".
         [Parameter()]
@@ -76,36 +80,52 @@ function Invoke-SqlMigrationPlan {
             Post { "3_Post.sql" }
         })
 
-        # Run the SQL script file for each target
-        $Target | ForEach-Object -ThrottleLimit $ThrottleLimit -Parallel {
-            # Create a task for this target
-            $Task = [ScriptBlock]::Create($using:Task)
+        if (-not $TargetSet) {
+            $TargetSet = @([PSql.SqlContextParallelSet]::new($Target, $ThrottleLimit))
+        }
 
-            # Identity which script file the task should run
-            $DatabaseId = "$($_.ServerName);$($_.DatabaseName)" -replace '[\\/:*?"<>|]', '_'
-            $ScriptPath = Join-Path $using:PlanPath $DatabaseId $using:ScriptFile -Resolve
+        # Run all the target sets in parallel
+        $TargetSet | ForEach-Object -ThrottleLimit 32 -Parallel {
+            $Phase           = $using:Phase
+            $PlanPath        = $using:PlanPath
+            $ScriptFile      = $using:ScriptFile
+            $PSql            = $using:PSql
+            $TSettings       = $using:TSettings
+            $TVariable       = $using:TVariable
+            $TaskHostFactory = $using:TaskHostFactory
+            $Task            = $using:Task
 
-            # Make a header to prefix the task's output lines
-            $Header = "$($using:Phase):$($_.DatabaseName)"
+            # Run the SQL script file for each target
+            $_.Contexts | ForEach-Object -ThrottleLimit $_.Parallelism -Parallel {
+                # Create a task for this target
+                $Task = [ScriptBlock]::Create($using:Task)
 
-            # Prepare invocation settings for the task
-            $Settings                       = ($using:TSettings)::new()
-            $Settings.Host                  = ($using:TaskHostFactory).Create($Header)
-            $Settings.ErrorActionPreference = "Stop"
+                # Identity which script file the task should run
+                $DatabaseId = "$($_.ServerName);$($_.DatabaseName)" -replace '[\\/:*?"<>|]', '_'
+                $ScriptPath = Join-Path $using:PlanPath $DatabaseId $using:ScriptFile -Resolve
 
-            # Prepare session state for the task
-            $State = [InitialSessionState]::CreateDefault2()
-            $State.Variables.Add(($using:TVariable)::new("PSql",       $using:PSql, "", "Constant,AllScope"))
-            $State.Variables.Add(($using:TVariable)::new("ScriptPath", $ScriptPath, "", "Constant,AllScope"))
-            $State.Variables.Add(($using:TVariable)::new("Target",     $_,          "", "Constant,AllScope"))
+                # Make a header to prefix the task's output lines
+                $Header = "$($using:Phase):$($_.DatabaseName)"
 
-            # Run the task
-            $Shell = [PowerShell]::Create($State)
-            try {
-                $Shell.AddScript($Task).Invoke($null, $Settings)
-            }
-            catch {
-                $Shell.Dispose()
+                # Prepare invocation settings for the task
+                $Settings                       = ($using:TSettings)::new()
+                $Settings.Host                  = ($using:TaskHostFactory).Create($Header)
+                $Settings.ErrorActionPreference = "Stop"
+
+                # Prepare session state for the task
+                $State = [InitialSessionState]::CreateDefault2()
+                $State.Variables.Add(($using:TVariable)::new("PSql",       $using:PSql, "", "Constant,AllScope"))
+                $State.Variables.Add(($using:TVariable)::new("ScriptPath", $ScriptPath, "", "Constant,AllScope"))
+                $State.Variables.Add(($using:TVariable)::new("Target",     $_,          "", "Constant,AllScope"))
+
+                # Run the task
+                $Shell = [PowerShell]::Create($State)
+                try {
+                    $Shell.AddScript($Task).Invoke($null, $Settings)
+                }
+                catch {
+                    $Shell.Dispose()
+                }
             }
         }
     }
