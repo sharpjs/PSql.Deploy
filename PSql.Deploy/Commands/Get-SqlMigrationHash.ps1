@@ -2,7 +2,7 @@ using namespace System.Collections.Generic
 using namespace System.IO
 
 <#
-    Copyright 2022 Jeffrey Sharp
+    Copyright 2023 Subatomix Research Inc.
 
     Permission to use, copy, modify, and distribute this software for any
     purpose with or without fee is hereby granted, provided that the above

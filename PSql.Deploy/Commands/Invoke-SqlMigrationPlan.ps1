@@ -4,7 +4,7 @@ using namespace System.Management.Automation.Runspaces
 using namespace Subatomix.PowerShell.TaskHost
 
 <#
-    Copyright 2023 Jeffrey Sharp
+    Copyright 2023 Subatomix Research Inc.
 
     Permission to use, copy, modify, and distribute this software for any
     purpose with or without fee is hereby granted, provided that the above
