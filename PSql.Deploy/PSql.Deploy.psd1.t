@@ -61,6 +61,7 @@
         'Invoke-SqlSeed'
         'New-Error'
         'New-SqlMigrationPlan'
+        'New-SqlContextParallelSet'
         'Read-SqlMigration'
         'Set-SqlMigrationPlan'
     )
