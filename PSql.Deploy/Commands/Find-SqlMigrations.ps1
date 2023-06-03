@@ -1,3 +1,5 @@
+using namespace PSql.Deploy.Migrations
+
 <#
     Copyright 2023 Subatomix Research Inc.
 
@@ -44,12 +46,14 @@ function Find-SqlMigrations {
         For each migration discovered, this cmdlet outputs a descriptor object with Name, Path, and IsPseudo properties set.
     #>
     [CmdletBinding()]
+    [OutputType([PSql.Deploy.Migrations.Migration])]
     param (
         # Path to directory containing database source code.  The default is the current directory.
         [Parameter(ValueFromPipeline)]
         [string] $SourceDirectory = ".",
 
         # Type of migration to discover: Named, Begin, or End.  The default is Named.
+        [Parameter()]
         [ValidateSet("Named", "Begin", "End")]
         [string] $Type = "Named"
     )
@@ -82,7 +86,7 @@ function Find-SqlMigrations {
             | Get-Item -Exclude $Excludes -ErrorAction SilentlyContinue `
             | ForEach-Object -Parallel {
                 Import-Module $using:ModulePath
-                $Migration          = New-SqlMigrationObject
+                $Migration          = [PSql.Deploy.Migrations.Migration]::new()
                 $Migration.Name     = $_.Directory.Name
                 $Migration.Path     = $_.FullName
                 $Migration.Hash     = Get-SqlMigrationHash $_.Directory.FullName

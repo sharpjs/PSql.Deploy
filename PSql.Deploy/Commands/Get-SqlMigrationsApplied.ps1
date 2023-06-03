@@ -1,3 +1,5 @@
+using namespace PSql.Deploy.Migrations
+
 <#
     Copyright 2023 Subatomix Research Inc.
 
@@ -20,8 +22,9 @@ function Get-SqlMigrationsApplied {
         Discovers migrations applied to a database.
     #>
     [CmdletBinding()]
+    [OutputType([PSql.Deploy.Migrations.Migration])]
     param (
-        [Parameter(Mandatory, Position=0, ValueFromPipeline)]
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
         [PSCustomObject] $Target
     )
 
@@ -36,7 +39,7 @@ function Get-SqlMigrationsApplied {
                     EXEC('SELECT * FROM _deploy.Migration ORDER BY Name;');
             " `
             | ForEach-Object {
-                $Migration       = New-SqlMigrationObject
+                $Migration       = [Migration]::new()
                 $Migration.Name  = $_.Name
                 $Migration.Hash  = $_.Hash.Trim()
                 $Migration.State = $_.State

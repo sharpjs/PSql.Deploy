@@ -1,3 +1,6 @@
+using namespace System.Collections.Generic
+using namespace PSql.Deploy.Migrations
+
 <#
     Copyright 2023 Subatomix Research Inc.
 
@@ -27,12 +30,12 @@ function Merge-SqlMigrations {
         # Locally-defined migrations.
         [Parameter(Mandatory, Position = 0)]
         [AllowEmptyCollection()]
-        [object[]] $SourceMigrations,
+        [PSql.Deploy.Migrations.Migration[]] $SourceMigrations,
 
         # Migrations already applied to the target database.
         [Parameter(Mandatory, Position = 1)]
         [AllowEmptyCollection()]
-        [object[]] $TargetMigrations
+        [PSql.Deploy.Migrations.Migration[]] $TargetMigrations
     )
 
     process {
@@ -40,8 +43,8 @@ function Merge-SqlMigrations {
         # to odd PS behavior: PS appears to pass a copy of the array to the method,
         # so any in-place modifications are lost.
         $Comparer          = [StringComparer]::OrdinalIgnoreCase
-        $SourceMigrations_ = [System.Collections.Generic.List[object]]::new($SourceMigrations)
-        $TargetMigrations_ = [System.Collections.Generic.List[object]]::new($TargetMigrations)
+        $SourceMigrations_ = [List[Migration]]::new($SourceMigrations)
+        $TargetMigrations_ = [List[Migration]]::new($TargetMigrations)
         $SourceMigrations_.Sort({ param($x, $y) $Comparer.Compare($x.Name, $y.Name) })
         $TargetMigrations_.Sort({ param($x, $y) $Comparer.Compare($x.Name, $y.Name) })
 
@@ -63,14 +66,14 @@ function Merge-SqlMigrations {
             switch ($Comparison) {
                 { $_ -lt 0 } {
                     # Use SourceMigration
-                    $Migration = $SourceItems.Current | Copy-SqlMigrationObject
+                    $Migration = $SourceItems.Current.Clone()
                     $HasSource = $SourceItems.MoveNext()
                     Write-Host ("    (s--0) {0}" -f $Migration.Name)
                     break
                 }
                 { $_ -gt 0 } {
                     # Use TargetMigration
-                    $Migration = $TargetItems.Current | Copy-SqlMigrationObject
+                    $Migration = $TargetItems.Current.Clone()
                     $HasTarget = $TargetItems.MoveNext()
                     if ($Migration.State -lt 3) {
                         Write-Host ("    (-t-{1}) {0}" -f $Migration.Name, $Migration.State)
@@ -79,7 +82,7 @@ function Merge-SqlMigrations {
                 }
                 default {
                     # Merge TargetMigration into SourceMigration
-                    $Migration            = $SourceItems.Current | Copy-SqlMigrationObject
+                    $Migration            = $SourceItems.Current.Clone()
                     $Migration.State      = $TargetItems.Current.State
                     $Migration.HasChanged = $TargetItems.Current.Hash -and $TargetItems.Current.Hash -ne $Migration.Hash
                     $HasSource            = $SourceItems.MoveNext()
