@@ -1,3 +1,4 @@
+#Requires -Version 7
 using namespace PSql.Deploy.Migrations
 
 <#

@@ -1,3 +1,5 @@
+#Requires -Version 7
+
 <#
     Copyright 2023 Subatomix Research Inc.
 

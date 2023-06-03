@@ -1,3 +1,4 @@
+#Requires -Version 7
 using namespace System.Collections.Generic
 using namespace System.Text
 
