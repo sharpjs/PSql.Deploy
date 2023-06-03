@@ -54,6 +54,10 @@ function Find-SqlMigrations {
         [string] $Type = "Named"
     )
 
+    begin {
+        $ModulePath = (Get-Module PSql.Deploy).Path
+    }
+
     process {
         # Verify the source directory exists.
         # If not, the thrown exception will mention the caller's specified path.
@@ -76,12 +80,13 @@ function Find-SqlMigrations {
         # Find migrations
         Join-Path $SourceDirectory Migrations $Pattern "_Main.sql" `
             | Get-Item -Exclude $Excludes -ErrorAction SilentlyContinue `
-            | Foreach-Object {
+            | ForEach-Object -Parallel {
+                Import-Module $using:ModulePath
                 $Migration          = New-SqlMigrationObject
                 $Migration.Name     = $_.Directory.Name
                 $Migration.Path     = $_.FullName
                 $Migration.Hash     = Get-SqlMigrationHash $_.Directory.FullName
-                $Migration.IsPseudo = $Type -ne "Named"
+                $Migration.IsPseudo = $using:Type -ne "Named"
                 $Migration
             } `
             | Sort-Object Name
