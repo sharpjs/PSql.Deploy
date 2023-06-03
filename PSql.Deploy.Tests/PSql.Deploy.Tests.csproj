@@ -27,7 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Subatomix.Testing" Version="2.4.1" />
+    <PackageReference Include="Subatomix.Testing" Version="2.5.0" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
@@ -39,10 +39,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Using Include="FluentAssertions" />
-    <Using Include="FluentAssertions.FluentActions" Static="true" />
-    <Using Include="Moq" />
-    <Using Include="NUnit.Framework" />
     <Using Include="Subatomix.Testing" />
   </ItemGroup>
 
