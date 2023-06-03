@@ -35,7 +35,7 @@ function Get-SqlMigrationsApplied {
                 IF OBJECT_ID('_deploy.Migration', 'U') IS NOT NULL
                     EXEC('SELECT * FROM _deploy.Migration ORDER BY Name;');
             " `
-            | % {
+            | ForEach-Object {
                 $Migration       = New-SqlMigrationObject
                 $Migration.Name  = $_.Name
                 $Migration.Hash  = $_.Hash.Trim()
