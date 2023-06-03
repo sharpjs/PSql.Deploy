@@ -74,15 +74,8 @@ function Find-SqlMigrations {
         })
 
         # Find migrations
-        "_Main.sql", "_Main.Up.sql" `
-            | Foreach-Object { $SourceDirectory | `
-                Join-Path -ChildPath Migrations | `
-                Join-Path -ChildPath $Pattern | `
-                Join-Path -ChildPath $_ } `
+        Join-Path $SourceDirectory Migrations $Pattern "_Main.sql" `
             | Get-Item -Exclude $Excludes -ErrorAction SilentlyContinue `
-            | Group-Object Directory `
-            | Sort-Object Name `
-            | Foreach-Object { $_ | Foreach-Object Group | Sort-Object Name | Select-Object -First 1 } `
             | Foreach-Object {
                 $Migration          = New-SqlMigrationObject
                 $Migration.Name     = $_.Directory.Name
@@ -90,6 +83,7 @@ function Find-SqlMigrations {
                 $Migration.Hash     = Get-SqlMigrationHash $_.Directory.FullName
                 $Migration.IsPseudo = $Type -ne "Named"
                 $Migration
-            }
+            } `
+            | Sort-Object Name
     }
 }
