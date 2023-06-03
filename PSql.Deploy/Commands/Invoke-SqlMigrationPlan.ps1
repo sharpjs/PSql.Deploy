@@ -51,7 +51,7 @@ function Invoke-SqlMigrationPlan {
 
     begin {
         # Capture items for use in tasks
-        $PSql      = Get-Module PSql
+        $PSqlPath  = (Get-Module PSql).Path
         $TSettings = [PSInvocationSettings]
         $TVariable = [SessionStateVariableEntry]
 
@@ -60,12 +60,11 @@ function Invoke-SqlMigrationPlan {
 
         # Prepare a task to run for each target
         $Task = {
-            Write-Host "--------------------------------------------------------------------------------"
-            Write-Host "Migration phase $Phase for database '$(
-                            $Target.DatabaseName)' on server '$($Target.ServerName)'."
-            Write-Host "--------------------------------------------------------------------------------"
+            Import-Module $PSqlPath
 
-            Import-Module $PSql
+            "----- Migration phase {0} for database '{1}' on server '{2}' -----" -f
+                $Phase, $Target.DatabaseName, $Target.ServerName `
+                | Write-Host -ForegroundColor Cyan
 
             Get-Content -LiteralPath $ScriptPath -Raw `
                 | PSql\Invoke-Sql -Context $Target -Timeout 0
@@ -89,7 +88,7 @@ function Invoke-SqlMigrationPlan {
             $Phase           = $using:Phase
             $PlanPath        = $using:PlanPath
             $ScriptFile      = $using:ScriptFile
-            $PSql            = $using:PSql
+            $PSqlPath        = $using:PSqlPath
             $TSettings       = $using:TSettings
             $TVariable       = $using:TVariable
             $TaskHostFactory = $using:TaskHostFactory
@@ -114,9 +113,10 @@ function Invoke-SqlMigrationPlan {
 
                 # Prepare session state for the task
                 $State = [InitialSessionState]::CreateDefault2()
-                $State.Variables.Add(($using:TVariable)::new("PSql",       $using:PSql, "", "Constant,AllScope"))
-                $State.Variables.Add(($using:TVariable)::new("ScriptPath", $ScriptPath, "", "Constant,AllScope"))
-                $State.Variables.Add(($using:TVariable)::new("Target",     $_,          "", "Constant,AllScope"))
+                $State.Variables.Add(($using:TVariable)::new("PSqlPath",   $using:PSqlPath, "", "Constant,AllScope"))
+                $State.Variables.Add(($using:TVariable)::new("ScriptPath", $ScriptPath,     "", "Constant,AllScope"))
+                $State.Variables.Add(($using:TVariable)::new("Phase",      $using:Phase,    "", "Constant,AllScope"))
+                $State.Variables.Add(($using:TVariable)::new("Target",     $_,              "", "Constant,AllScope"))
 
                 # Run the task
                 $Shell = [PowerShell]::Create($State)
