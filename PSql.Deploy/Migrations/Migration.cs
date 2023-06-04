@@ -108,4 +108,21 @@ public class Migration
     ///   Gets or sets whether the migration has changed after it was deployed.
     /// </summary>
     public bool HasChanged { get; set; }
+
+    /// <summary>
+    ///   Gets the migrations defined at the specified base path.
+    /// </summary>
+    /// <param name="path">
+    ///   The base path in which to search for migrations.
+    /// </param>
+    /// <returns>
+    ///   The migrations defined at <paramref name="path"/>, ordered by name.
+    /// </returns>
+    /// <remarks>
+    ///   Each match for the relative path <c>Migrations\*\_Main.sql</c> is a
+    ///   migration.  The name of the migration is the text matched by the `*`
+    ///   wildcard.
+    /// </remarks>
+    public static IReadOnlyList<Migration> GetLocalMigrations(string path)
+        => LocalMigrationDiscovery.GetLocalMigrations(path);
 }

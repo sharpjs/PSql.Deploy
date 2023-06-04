@@ -42,4 +42,8 @@
     <Using Include="Subatomix.Testing" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="TestDbs\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>
