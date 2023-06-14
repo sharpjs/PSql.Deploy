@@ -26,6 +26,10 @@
     <Reference Include="PSql"
                HintPath="$(PowerShellModuleDirectory)\PSql\$(PSqlVersion)\PSql.dll"
                Private="false" />
+
+    <Reference Include="PSql.Core"
+               HintPath="$(PowerShellModuleDirectory)\PSql\$(PSqlVersion)\PSql.Core.dll"
+               Private="false" />
   </ItemGroup>
 
   <ItemGroup>
