@@ -37,7 +37,9 @@
     VariablesToExport    = @()
     AliasesToExport      = @()
     DscResourcesToExport = @()
-    CmdletsToExport      = @()
+    CmdletsToExport      = @(
+        'Get-SqlMigrationsOnServer'
+    )
     FunctionsToExport    = @(
         'Find-SqlMigrations'
         'Get-SqlMigrationsApplied'
