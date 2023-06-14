@@ -3,7 +3,7 @@
 @{
     # Identity
     GUID          = '0d5df8dd-afcc-42cc-9175-a8dac81f779e'
-    RootModule    = 'PSql.Deploy.psm1'
+    RootModule    = 'PSql.Deploy.dll'
     ModuleVersion = '{VersionPrefix}'
 
     # General
@@ -30,7 +30,7 @@
     #ScriptsToProcess = @(...)
     #TypesToProcess   = @(...)
     #FormatsToProcess = @(...)
-    #NestedModules    = @(...)
+    NestedModules     = @('PSql.Deploy.psm1')
 
     # Exports
     # NOTE: Use empty arrays to indicate no exports.
