@@ -2,58 +2,63 @@
 
   <!--
     Copyright 2023 Subatomix Research Inc.
-
-    Permission to use, copy, modify, and distribute this software for any
-    purpose with or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-    MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+    SPDX-License-Identifier: ISC
   -->
 
   <PropertyGroup>
-    <Description>Database migration and seeding system for SQL Server and Azure SQL Database</Description>
+    <Description>Database migration and seeding system for SQL Server and Azure SQL Database.</Description>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <RuntimeIdentifiers>win-arm;win-arm64;win-x64;win-x86;unix</RuntimeIdentifiers>
-    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
     <PowerShellItemIncludes>$(PowerShellItemIncludes);**/*.sql</PowerShellItemIncludes>
-    <PSqlVersion>2.1.0</PSqlVersion>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="$(OS) == 'Windows_NT'">
-    <PowerShellModuleDirectory>$(USERPROFILE)\Documents\PowerShell\Modules</PowerShellModuleDirectory>
-  </PropertyGroup>
-  <PropertyGroup Condition="$(OS) != 'Windows_NT'">
-    <PowerShellModuleDirectory>$(HOME)/.local/share/powershell/Modules</PowerShellModuleDirectory>
+    <PrivateDependenciesPath>..\PSql.Deploy.private\bin\$(Configuration)\$(TargetFramework)\</PrivateDependenciesPath>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Subatomix.Build.Packaging.PowerShellModule"
                       Version="1.1.1" PrivateAssets="all" />
+
     <PackageReference Include="System.Management.Automation"
-                      Version="7.0.0" PrivateAssets="all" />
+                      Version="[7.0.0, 8.0.0)" PrivateAssets="all" />
+
+    <ProjectReference Include="..\PSql.Deploy.Core\PSql.Deploy.Core.csproj" />
+
+    <ProjectReference Include="..\PSql.Deploy.private\PSql.Deploy.private.csproj"
+                      Private="false" PrivateAssets="all" />
+
+    <Reference Include="PSql"
+               HintPath="$(PowerShellModuleDirectory)\PSql\$(PSqlVersion)\PSql.dll"
+               Private="false" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="DependencyQueue"               Version="1.0.0-rc.1" />
+    <!-- TODO: Move these to PSql.Deploy.private -->
+    <PackageReference Include="DependencyQueue" Version="1.0.0-rc.1" />
     <PackageReference Include="Subatomix.PowerShell.TaskHost" Version="1.0.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="PSql">
-      <HintPath>$(PowerShellModuleDirectory)\PSql\$(PSqlVersion)\PSql.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
+    <Using Include="System.Data" />
+    <Using Include="System.Data.Common" />
+    <Using Include="System.Management.Automation" />
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="$(PowerShellItemIncludes)"
              Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder)" />
+
+    <!--
+      Isolate PSql dependencies into a subdirectory where .NET Core/5+ default
+      probing behavior will not find them.  Instead, custom resolution logic
+      will load the dependencies into a private AssemblyLoadContext, preventing
+      conflicts with dependencies of other modules.  Technique documented here:
+      https://learn.microsoft.com/en-us/powershell/scripting/dev-cross-plat/resolving-dependency-conflicts
+    -->
+
+    <Deps Include="$(PrivateDependenciesPath)**"
+          Exclude="$(PrivateDependenciesPath)runtimes\**" SubDir="" />
+
+    <None Include="@(Deps)" Link="deps\%(SubDir)%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest" Visible="true" />
   </ItemGroup>
 
 </Project>

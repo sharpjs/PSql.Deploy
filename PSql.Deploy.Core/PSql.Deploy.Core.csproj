@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Copyright 2023 Subatomix Research Inc.
+    SPDX-License-Identifier: ISC
+  -->
+
+  <PropertyGroup>
+    <Description>PSql.Deploy Core Types Library</Description>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <RootNamespace>PSql</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Management.Automation"
+                      Version="[7.0.0, 8.0.0)" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="PSql.Deploy" />
+    <InternalsVisibleTo Include="PSql.Deploy.private" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="System.Data" />
+    <Using Include="System.Data.Common" />
+    <Using Include="System.Management.Automation" />
+  </ItemGroup>
+
+</Project>

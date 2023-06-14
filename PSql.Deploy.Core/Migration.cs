@@ -109,20 +109,32 @@ public class Migration
     /// </summary>
     public bool HasChanged { get; set; }
 
-    /// <summary>
-    ///   Gets the migrations defined at the specified base path.
-    /// </summary>
-    /// <param name="path">
-    ///   The base path in which to search for migrations.
-    /// </param>
-    /// <returns>
-    ///   The migrations defined at <paramref name="path"/>, ordered by name.
-    /// </returns>
-    /// <remarks>
-    ///   Each match for the relative path <c>Migrations\*\_Main.sql</c> is a
-    ///   migration.  The name of the migration is the text matched by the `*`
-    ///   wildcard.
-    /// </remarks>
-    public static IReadOnlyList<Migration> GetLocalMigrations(string path)
-        => LocalMigrationDiscovery.GetLocalMigrations(path);
+    ///// <summary>
+    /////   Gets the migrations defined at the specified base path.
+    ///// </summary>
+    ///// <param name="path">
+    /////   The base path in which to search for migrations.
+    ///// </param>
+    ///// <returns>
+    /////   The migrations defined at <paramref name="path"/>, ordered by name.
+    ///// </returns>
+    ///// <remarks>
+    /////   Each match for the relative path <c>Migrations\*\_Main.sql</c> is a
+    /////   migration.  The name of the migration is the text matched by the `*`
+    /////   wildcard.
+    ///// </remarks>
+    //public static IReadOnlyList<Migration> GetLocalMigrations(string path)
+    //    => LocalMigrationDiscovery.GetLocalMigrations(path);
+
+    ///// <summary>
+    /////   Gets the migrations known by the specified database.
+    ///// </summary>
+    ///// <param name="context">
+    /////   An object specifying how to connect to the database.
+    ///// </param>
+    ///// <returns>
+    /////  The migrations known by the database of <paramref name="context"/>.
+    ///// </returns>
+    //public static IReadOnlyList<Migration> GetServerMigrations(SqlContext context)
+    //    => RemoteMigrationDiscovery.GetServerMigrations(context);
 }
