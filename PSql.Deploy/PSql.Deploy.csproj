@@ -10,7 +10,6 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <GenerateDependencyFile>false</GenerateDependencyFile>
     <PowerShellItemIncludes>$(PowerShellItemIncludes);**/*.sql</PowerShellItemIncludes>
-    <PrivateDependenciesPath>..\PSql.Deploy.private\bin\$(Configuration)\$(TargetFramework)\</PrivateDependenciesPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -47,18 +46,12 @@
              Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder)" />
 
     <!--
-      Isolate PSql dependencies into a subdirectory where .NET Core/5+ default
-      probing behavior will not find them.  Instead, custom resolution logic
-      will load the dependencies into a private AssemblyLoadContext, preventing
-      conflicts with dependencies of other modules.  Technique documented here:
-      https://learn.microsoft.com/en-us/powershell/scripting/dev-cross-plat/resolving-dependency-conflicts
+      Isolate private dependencies into a subdirectory for consumption by a
+      private AssemblyLoadContext, preventing conflicts with other modules.
+      See: https://learn.microsoft.com/en-us/powershell/scripting/dev-cross-plat/resolving-dependency-conflicts
     -->
-
-    <Deps Include="$(PrivateDependenciesPath)**"
-          Exclude="$(PrivateDependenciesPath)runtimes\**" SubDir="" />
-
-    <None Include="@(Deps)" Link="deps\%(SubDir)%(Filename)%(Extension)"
-          CopyToOutputDirectory="PreserveNewest" Visible="true" />
+    <None Include="..\PSql.Deploy.private\bin\$(Configuration)\$(TargetFramework)\**"
+          LinkBase="deps\" CopyToOutputDirectory="PreserveNewest" Visible="true" />
   </ItemGroup>
 
 </Project>
