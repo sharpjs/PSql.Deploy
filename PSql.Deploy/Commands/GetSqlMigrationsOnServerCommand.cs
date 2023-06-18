@@ -10,7 +10,7 @@ namespace PSql.Deploy;
 public class GetSqlMigrationsOnServerCommand : Cmdlet
 {
     // -Target
-    [Parameter()]
+    [Parameter(Mandatory = true, Position = 0, ValueFromPipeline = true)]
     [ValidateNotNullOrEmpty]
     public SqlContext[]? Target { get; set; }
 

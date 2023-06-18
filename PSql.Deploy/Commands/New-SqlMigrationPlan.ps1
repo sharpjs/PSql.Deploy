@@ -56,7 +56,7 @@ function New-SqlMigrationPlan {
 
             # Discover migrations applied to database
             Write-Verbose "Discovering migrations applied to database '$($T.DatabaseName)' on server '$($T.ServerName)'."
-            $TargetMigrations = @(Get-SqlMigrationsApplied $T)
+            $TargetMigrations = @(Get-SqlMigrationsOnServer $T)
             Write-Verbose "Discovered $($TargetMigrations.Length) applied migration(s)."
 
             # Merge into a unified migrations table

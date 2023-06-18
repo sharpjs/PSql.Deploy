@@ -52,7 +52,7 @@ function Set-SqlMigrationPlan {
             $As               = if ($Credential) { @{ Credential = $Credential } } else { @{} }
             $Context          = PSql\New-SqlContext -ServerName $Server -DatabaseName $Database @As
             $Connection       = PSql\Connect-Sql -Context $Context
-            $TargetMigrations = Get-SqlMigrationsApplied $Connection
+            $TargetMigrations = Get-SqlMigrationsOnServer $Connection
         }
         finally {
             PSql\Disconnect-Sql $Connection

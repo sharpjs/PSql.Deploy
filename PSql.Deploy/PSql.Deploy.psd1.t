@@ -43,7 +43,6 @@
     )
     FunctionsToExport    = @(
         'Find-SqlMigrations'
-        'Get-SqlMigrationsApplied'
         'Get-SqlMigrationHash'
         'Install-SqlMigrationSupport'
         'Invoke-SqlMigrations'
