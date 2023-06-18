@@ -24,7 +24,7 @@
     )
     RequiredAssemblies   = @(
         'PSql.Deploy.Core'
-        #'Subatomix.PowerShell.TaskHost.dll'
+        'Subatomix.PowerShell.TaskHost.dll'
     )
 
     # Initialization

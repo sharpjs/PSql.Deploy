@@ -10,6 +10,8 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <GenerateDependencyFile>false</GenerateDependencyFile>
     <PowerShellItemIncludes>$(PowerShellItemIncludes);**/*.sql</PowerShellItemIncludes>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <!-- ^^ Opt dependencies out via IncludeAssets="compile" -->
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,16 +19,16 @@
                       Version="1.1.1" PrivateAssets="all" />
 
     <PackageReference Include="System.Management.Automation"
-                      Version="[7.0.0, 8.0.0)" PrivateAssets="all" />
+                      Version="[7.0.0, 8.0.0)" IncludeAssets="compile" PrivateAssets="all" />
 
     <ProjectReference Include="..\PSql.Deploy.Core\PSql.Deploy.Core.csproj" />
 
     <ProjectReference Include="..\PSql.Deploy.private\PSql.Deploy.private.csproj"
-                      Private="false" PrivateAssets="all" />
+                      Private="false" IncludeAssets="compile" PrivateAssets="all" />
 
     <Reference Include="PSql"
                HintPath="$(PowerShellModuleDirectory)\PSql\$(PSqlVersion)\PSql.dll"
-               Private="false" />
+               IncludeAssets="compile" Private="false" />
   </ItemGroup>
 
   <ItemGroup>
