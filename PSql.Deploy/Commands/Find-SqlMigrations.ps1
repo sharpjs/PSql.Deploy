@@ -60,7 +60,7 @@ function Find-SqlMigrations {
     )
 
     begin {
-        $ModulePath = (Get-Module PSql.Deploy).Path
+        $ModulePath = [System.IO.Path]::ChangeExtension((Get-Module PSql.Deploy).Path, "psd1")
     }
 
     process {

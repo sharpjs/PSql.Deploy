@@ -51,7 +51,7 @@ function Invoke-SqlMigrationPlan {
 
     begin {
         # Capture items for use in tasks
-        $PSqlPath  = (Get-Module PSql).Path
+        $PSqlPath  = [System.IO.Path]::ChangeExtension((Get-Module PSql).Path, "psd1")
         $TSettings = [PSInvocationSettings]
         $TVariable = [SessionStateVariableEntry]
 
