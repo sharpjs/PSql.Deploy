@@ -19,6 +19,10 @@ public class GetSqlMigrationsCommand : Cmdlet
     [ValidateNotNullOrEmpty]
     public string? Path { get; set; }
 
+    // -IncludeContent
+    [Parameter(ParameterSetName = "Path")]
+    public SwitchParameter IncludeContent { get; set; }
+
     // -Target
     [Parameter(
         ParameterSetName = "Target", ValueFromPipeline               = true,
@@ -34,6 +38,9 @@ public class GetSqlMigrationsCommand : Cmdlet
             = Path   is { } path   ? LocalMigrationDiscovery .GetLocalMigrations (path)
             : Target is { } target ? RemoteMigrationDiscovery.GetServerMigrations(target, this)
             : throw new InvalidOperationException();
+
+        if (IncludeContent.IsPresent)
+            Parallel.ForEach(migrations, MigrationLoader.LoadContent);
 
         foreach (var migration in migrations)
             WriteObject(migration);
