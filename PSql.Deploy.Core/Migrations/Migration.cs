@@ -9,6 +9,16 @@ namespace PSql.Deploy.Migrations;
 public class Migration
 {
     /// <summary>
+    ///   The name of a pseudo-migration that runs before any others.
+    /// </summary>
+    public const string BeginPseudoMigrationName = "_Begin";
+
+    /// <summary>
+    ///   The name of a pseudo-migration that runs after any others.
+    /// </summary>
+    public const string EndPseudoMigrationName = "_End";
+
+    /// <summary>
     ///   Initializes a new <see cref="Migration"/> instance.
     /// </summary>
     public Migration() { }

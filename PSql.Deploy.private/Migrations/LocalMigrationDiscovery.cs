@@ -112,16 +112,9 @@ internal static class LocalMigrationDiscovery
         return memory.CreateViewStream(0, file.Length, MemoryMappedFileAccess.Read);
     }
 
-    private static int GetRank(string? name)
-    {
-        return
-            "_Begin".Equals(name, StringComparison.OrdinalIgnoreCase) ? -1 :
-            "_End"  .Equals(name, StringComparison.OrdinalIgnoreCase) ? +1 : 0;
-    }
-
     private static bool IsPseudo(string? name)
     {
-        return GetRank(name) != 0;
+        return MigrationComparer.GetRank(name) != 0;
     }
 
     private static string ConvertToHexString(ReadOnlySpan<byte> bytes)
@@ -145,17 +138,7 @@ internal static class LocalMigrationDiscovery
     private static IReadOnlyList<Migration> ToOrderedList(ConcurrentBag<Migration> bag)
     {
         var array = bag.ToArray();
-
-        static int Compare(Migration x, Migration y)
-        {
-            var result = GetRank(x.Name) - GetRank(y.Name);
-            return result != 0
-                ? result
-                : StringComparer.Ordinal.Compare(x.Name, y.Name);
-        }
-
-        Array.Sort(array, Compare);
-
+        Array.Sort(array, MigrationComparer.Instance);
         return array;
     }
 }
