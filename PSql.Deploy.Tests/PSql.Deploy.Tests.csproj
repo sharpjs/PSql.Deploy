@@ -24,11 +24,21 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Reference Include="PSql" HintPath="$(PSqlDirectory)PSql.dll"
+               Private="false" />
+
+    <Reference Include="PSql.Core" HintPath="$(PSqlDirectory)PSql.Core.dll"
+               Private="false" />
+  </ItemGroup >
+
+  <ItemGroup>
     <Using Include="Subatomix.Testing" />
   </ItemGroup>
 
   <ItemGroup>
     <None Update="TestDbs\**" CopyToOutputDirectory="PreserveNewest" />
+
+    <None Include="$(PSqlDirectory)**" CopyToOutputDirectory="PreserveNewest" Visible="false" />
   </ItemGroup>
 
 </Project>
