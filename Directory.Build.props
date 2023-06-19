@@ -45,6 +45,9 @@
   <PropertyGroup Condition="$(OS) != 'Windows_NT'">
     <PowerShellModuleDirectory>$(HOME)/.local/share/powershell/Modules</PowerShellModuleDirectory>
   </PropertyGroup>
+  <PropertyGroup>
+    <PSqlDirectory>$(PowerShellModuleDirectory)\PSql\$(PSqlVersion)\</PSqlDirectory>
+  </PropertyGroup>
   <ItemGroup>
     <Using Include="System.FormattableString" Static="true" />
   </ItemGroup>
