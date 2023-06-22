@@ -16,8 +16,7 @@
     <PackageReference Include="System.Management.Automation"
                       Version="[7.0.0, 8.0.0)" PrivateAssets="all" />
 
-    <Reference Include="PSql"
-               HintPath="$(PowerShellModuleDirectory)\PSql\$(PSqlVersion)\PSql.dll"
+    <Reference Include="PSql" HintPath="$(PSqlDirectory)PSql.dll"
                Private="false" />
   </ItemGroup>
 
