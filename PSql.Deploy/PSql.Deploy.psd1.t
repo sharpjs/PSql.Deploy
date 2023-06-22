@@ -40,6 +40,7 @@
     DscResourcesToExport = @()
     CmdletsToExport      = @(
         'Get-SqlMigrations'
+        'Invoke-SqlMigrations2'
     )
     FunctionsToExport    = @(
         'Find-SqlMigrations'
