@@ -18,6 +18,9 @@
 
     <Reference Include="PSql" HintPath="$(PSqlDirectory)PSql.dll"
                Private="false" />
+
+    <Reference Include="PSql.Core" HintPath="$(PSqlDirectory)PSql.Core.dll"
+               Private="false" />
   </ItemGroup>
 
   <ItemGroup>
