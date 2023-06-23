@@ -85,7 +85,17 @@ public class Migration
     ///     </item>
     ///   </list>
     /// </remarks>
-    public int State { get; set; }
+    public int State
+    {
+        // TODO: Replace this property with State2
+        get => (int) State2;
+        set => State2 = (MigrationState) value;
+    }
+
+    /// <summary>
+    ///   Gets or sets the application state of the migration.
+    /// </summary>
+    public MigrationState State2 { get; set; }
 
     /// <summary>
     ///   Gets or sets the names of migrations that must be applied completely
