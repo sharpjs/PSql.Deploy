@@ -1,40 +1,38 @@
 // Copyright 2023 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
+using System.Diagnostics;
+
 namespace PSql.Deploy.Migrations;
 
 /// <summary>
 ///   Runs SQL migrations.
 /// </summary>
-public class MigrationEngine : IDisposable
+public class MigrationEngine
 {
-    private readonly CancellationTokenSource _cancellation;
-
     /// <summary>
     ///   Initializes a new <see cref="MigrationEngine"/> instance for the
     ///   specified cmdlet.
     /// </summary>
-    /// <param name="cmdlet">
-    ///   The cmdlet invoking the engine.  The engine uses the output methods
-    ///   of this cmdlet to report status.
+    /// <param name="logger">
+    ///   The logger to use to output status and messages.
+    /// </param>
+    /// <param name="cancellation">
+    ///   The token to monitor for cancellation requests.
     /// </param>
     /// <exception cref="ArgumentNullException">
-    ///   <paramref name="cmdlet"/> is <see langword="null"/>.
+    ///   <paramref name="logger"/> is <see langword="null"/>.
     /// </exception>
-    public MigrationEngine(Cmdlet cmdlet)
+    public MigrationEngine(IMigrationLogger logger, CancellationToken cancellation)
     {
-        if (cmdlet is null)
-            throw new ArgumentNullException(nameof(cmdlet));
+        if (logger is null)
+            throw new ArgumentNullException(nameof(logger));
 
-        Migrations    = Array.Empty<Migration>();
-        Cmdlet        = cmdlet;
-        _cancellation = new CancellationTokenSource();
+        Migrations        = Array.Empty<Migration>();
+        Logger            = logger;
+        CancellationToken = cancellation;
+        _totalStopwatch   = new();
     }
-
-    /// <summary>
-    ///   Gets the cmdlet that invoked the engine.
-    /// </summary>
-    public Cmdlet Cmdlet { get; }
 
     /// <summary>
     ///   Gets the migrations to be applied to targets.
@@ -47,14 +45,16 @@ public class MigrationEngine : IDisposable
     public MigrationPhase Phase { get; set; }
 
     /// <summary>
-    ///   Requests cancellation of the migration engine activity.
+    ///   Gets the logger to use to output status and messages.
     /// </summary>
-    public void Cancel()
-        => _cancellation.Cancel();
+    public IMigrationLogger Logger { get; }
 
-    /// <inheritdoc/>
-    public void Dispose()
-        => _cancellation.Dispose();
+    /// <summary>
+    ///   Gets the token to monitor for cancellation requests.
+    /// </summary>
+    public CancellationToken CancellationToken { get; }
+
+    private readonly Stopwatch _totalStopwatch;
 
     /// <summary>
     ///   Discovers migrations in the specified path.
@@ -81,6 +81,8 @@ public class MigrationEngine : IDisposable
         if (targets is null)
             throw new ArgumentNullException(nameof(targets));
 
+        _totalStopwatch.Start();
+
         await Task.WhenAll(
             targets.Select(RunAsync)
         );
@@ -100,7 +102,10 @@ public class MigrationEngine : IDisposable
         if (targets is null)
             throw new ArgumentNullException(nameof(targets));
 
+        _totalStopwatch.Start();
+
         await Task.WhenAll(
+            // TODO: Limit parallelism
             targets.Contexts.Select(RunAsync)
         );
     }
@@ -119,20 +124,87 @@ public class MigrationEngine : IDisposable
         if (target is null)
             throw new ArgumentNullException(nameof(target));
 
+        _totalStopwatch.Start();
+
         // Get migrations on target
+        // TODO: Limit to unfinished or not-older-than-what's-on-disk migrations
         var migrations = await RemoteMigrationDiscovery
-            .GetServerMigrationsAsync(target, Cmdlet, _cancellation.Token);
+            .GetServerMigrationsAsync(target, Logger, CancellationToken);
 
         // Merge source and target migration lists
         migrations = Merge(Migrations, migrations);
 
         // Validate
-        Validate(migrations);
+        Validate(migrations, target);
 
-        // TODO...
+        // Run
+        await RunCoreAsync(migrations, target);
     }
 
-    #region Merge
+    private async Task RunCoreAsync(IReadOnlyList<Migration> migrations, SqlContext target)
+    {
+        var connection = null as ISqlConnection;
+        var command    = null as ISqlCommand;
+        var count      = 0;
+        var exception  = null as Exception;
+        var stopwatch  = new Stopwatch();
+
+        try
+        {
+            stopwatch.Start();
+
+            foreach (var migration in migrations)
+            {
+                if (migration.State >= (int) Phase)
+                    continue;
+
+                ReportApplying(migration, target);
+
+                connection ??= target.Connect(null, Logger);
+                command    ??= connection.CreateCommand();
+
+                await RunCoreAsync(migration, command);
+
+                migration.State = (int) Phase + 1;
+                count++;
+            }
+        }
+        catch (Exception e)
+        {
+            exception = e;
+            throw;
+        }
+        finally
+        {
+            stopwatch.Stop();
+
+            ReportApplied(count, target, stopwatch.Elapsed, exception);
+
+            if (command is not null)
+                await command.DisposeAsync();
+
+            if (connection is not null)
+                await connection.DisposeAsync();
+        }
+    }
+
+    private Task RunCoreAsync(Migration migration, ISqlCommand command)
+    {
+        var sql = Phase switch
+        {
+            MigrationPhase.Pre  => migration.PreSql ,
+            MigrationPhase.Core => migration.CoreSql,
+            _                   => migration.PostSql
+        };
+
+        if (sql.IsNullOrEmpty())
+            return Task.CompletedTask;
+ 
+        command.CommandText    = sql;
+        command.CommandTimeout = 0; // No timeout
+
+        return command.UnderlyingCommand.ExecuteNonQueryAsync(CancellationToken);
+    }
 
     private IReadOnlyList<Migration> Merge(
         IReadOnlyList<Migration> sourceMigrations,
@@ -150,7 +222,7 @@ public class MigrationEngine : IDisposable
 
         while (hasSource || hasTarget)
         {
-            Migration migration;
+            Migration? migration;
 
             // Decide which migration comes next: source, target, or both
             var comparison
@@ -179,32 +251,32 @@ public class MigrationEngine : IDisposable
                 hasTarget = targetItems.MoveNext();
             }
 
-            migrations.Add(migration);
+            if (migration is not null)
+                migrations.Add(migration);
         }
 
         return migrations;
     }
 
-    private static Migration OnSourceWithoutTarget(Migration source)
+    private static Migration? OnSourceWithoutTarget(Migration source)
     {
         // Migration will be applied; ensure its content is loaded
         MigrationLoader.LoadContent(source);
 
-        //Write-Host ("    (s--0) {0}" -f $Migration.Name)
-
+        // Old log: "    (s--0) {0}" -f $Migration.Name
         return source;
     }
 
-    private static Migration OnTargetWithoutSource(Migration target)
+    private static Migration? OnTargetWithoutSource(Migration target)
     {
-        //if ($Migration.State -lt 3) {
-        //    Write-Host ("    (-t-{1}) {0}" -f $Migration.Name, $Migration.State)
-        //}
+        if (target.State >= 3)
+            return null; // completed; source migration removed
 
+        // Old log: "    (-t-{1}) {0}" -f $Migration.Name, $Migration.State
         return target;
     }
 
-    private Migration OnMatchedSourceAndTarget(Migration source, Migration target)
+    private Migration? OnMatchedSourceAndTarget(Migration source, Migration target)
     {
         // If migration will be applied, ensure its content is loaded
         if (target.State < (int) Phase)
@@ -219,52 +291,112 @@ public class MigrationEngine : IDisposable
         target.CoreSql    = source.CoreSql;
         target.PostSql    = source.PostSql;
 
+        if (target.State >= 3 && !target.HasChanged)
+            return null; // completed
+
         //if ($Migration.State -lt 3 -or $Migration.HasChanged) {
         //    Write-Host (
-        //        "    (st{2}{1}) {0}" -f
-        //        $Migration.Name,
-        //        $Migration.State,
-        //        ($Migration.HasChanged ? '!' : '=')
+        //        "    (st{2}{1}) {0}" -f //        $Migration.Name, //        $Migration.State, //        ($Migration.HasChanged ? '!' : '=')
         //    )
         //}
 
         return target;
     }
 
-    #endregion
-
-    private void Validate(IReadOnlyList<Migration> migrations)
+    private bool Validate(IReadOnlyList<Migration> migrations, SqlContext target)
     {
+        var valid = true;
+
         foreach (var migration in migrations)
         {
-            if (migration.State > 0 && migration.HasChanged)
-            {
-                Cmdlet.WriteWarning(string.Format(
-                    "Migration '{0}' has been applied through phase {1} of 3, "  +
-                    "but its code in the source directory does not match the "   +
-                    "code previously used. To resolve, revert any accidental "   +
-                    "changes to this migration. To ignore, update the hash in "  +
-                    "the _deploy.Migration table to match the hash of the code " +
-                    "in the source directory: {2}.",
-                    migration.Name,
-                    migration.State,
-                    migration.Hash
-                ));
-            }
+            valid &= ValidateNotChanged(migration, target);
 
-            if (migration.State >= (int) Phase)
-                continue;
+            if (migration.IsAppliedThrough(Phase))
+                continue; // Migration will not be applied
 
-            if (migration.Path is null)
-            {
-                Cmdlet.WriteWarning(string.Format(
-                    "Migration {0} is partially applied (through phase {1} of 3), " +
-                    "but no code for it was found in the source directory.  "       +
-                    "It is not possible to complete this migration.",
-                    migration.Name,
-                    migration.State
-                ));
-            }
+            valid &= ValidateCanApplyThroughPhase(migration, target);
+            valid &= ValidateHasSource           (migration, target);
         }
+
+        return valid;
+    }
+
+    private bool ValidateNotChanged(Migration migration, SqlContext target)
+    {
+        // Valid regardless of hash difference if migration is not yet applied
+        if (migration.State2 == MigrationState.NotApplied)
+            return true;
+
+        // Valid if hash has not changed
+        if (!migration.HasChanged)
+            return true;
+
+        Logger.LogWarning(string.Format(
+            "Migration '{0}' has been applied to database [{1}].[{2}] through " +
+            "the {3} phase, but the migration's code in the source directory "  +
+            "does not match the code previously used. To resolve, revert any "  +
+            "accidental changes to this migration. To ignore, update the hash " +
+            "in the _deploy.Migration table to match the hash of the code in "  +
+            "the source directory ({4}).",
+            /*{0}*/ migration.Name,
+            /*{1}*/ target.GetEffectiveServerName(),
+            /*{2}*/ target.DatabaseName,
+            /*{3}*/ migration.AppliedThroughPhase,
+            /*{4}*/ migration.Hash
+        ));
+
+        return false;
+    }
+
+    private bool ValidateCanApplyThroughPhase(Migration migration, SqlContext target)
+    {
+        if (migration.CanApplyThrough(Phase))
+            return true;
+
+        Logger.LogWarning(string.Format(
+            "Cannot apply {3} phase of migration '{0}' to database [{1}].[{2}] " +
+            "because the migration has code in an earlier phase that must be "   +
+            "applied first.",
+            /*{0}*/ migration.Name,
+            /*{1}*/ target.GetEffectiveServerName(),
+            /*{2}*/ target.DatabaseName,
+            /*{3}*/ Phase
+        ));
+
+        return false;
+    }
+
+    private bool ValidateHasSource(Migration migration, SqlContext target)
+    {
+        // Valid if there is a path to the migration code
+        if (migration.Path is not null)
+            return true;
+
+        Logger.LogWarning(string.Format(
+            "Migration {0} is only partially applied to database [{1}].[{2}] " +
+            "(through the {3} phase), but the code for the migration was not " +
+            "found in the source directory. It is not possible to complete "   +
+            "this migration.",
+            /*{0}*/ migration.Name,
+            /*{1}*/ target.GetEffectiveServerName(),
+            /*{2}*/ target.DatabaseName,
+            /*{3}*/ migration.AppliedThroughPhase
+        ));
+
+        return false;
+    }
+
+    private void ReportApplying(Migration migration, SqlContext target)
+    {
+        Logger.Log(new ApplyingMigrationMessage(
+            migration, target, Phase, _totalStopwatch.Elapsed
+        ));
+    }
+
+    private void ReportApplied(int count, SqlContext target, TimeSpan elapsed, Exception? exception)
+    {
+        Logger.Log(new AppliedMigrationsMessage(
+            count, target, Phase, elapsed, _totalStopwatch.Elapsed, exception
+        ));
     }
 }
