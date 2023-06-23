@@ -8,4 +8,11 @@ namespace PSql.Deploy.Migrations;
 /// </summary>
 public interface IMigrationLogger : ISqlMessageLogger
 {
+    /// <summary>
+    ///   Logs the specified message relating to a migration run.
+    /// </summary>
+    /// <param name="message">
+    ///   A message relating to a migration run.
+    /// </param>
+    void Log(MigrationMessage message);
 }
