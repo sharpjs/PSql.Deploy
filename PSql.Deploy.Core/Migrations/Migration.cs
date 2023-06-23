@@ -128,4 +128,80 @@ public class Migration
     ///   Gets or sets whether the migration has changed after it was deployed.
     /// </summary>
     public bool HasChanged { get; set; }
+
+    /// <summary>
+    ///   Gets the SQL script for the specified phase.
+    /// </summary>
+    /// <param name="phase">
+    ///   The phase for which to get the SQL script.
+    /// </param>
+    /// <exception cref="ArgumentOutOfRangeException">
+    ///   <paramref name="phase"/> is not a valid <see cref="MigrationPhase"/>.
+    /// </exception>
+    public string? GetSql(MigrationPhase phase)
+    {
+        return phase switch
+        {
+            MigrationPhase.Pre  => PreSql,
+            MigrationPhase.Core => CoreSql,
+            MigrationPhase.Post => PostSql,
+            _ => throw new ArgumentOutOfRangeException(nameof(phase)),
+        };
+    }
+
+    /// <summary>
+    ///   Gets the latest phase of the migration that has been applied to a
+    ///   target database, or <see langword="null"/> if the migration has not
+    ///   been applied in any phase.
+    /// </summary>
+    public MigrationPhase? AppliedThroughPhase => State2 switch
+    {
+        MigrationState.NotApplied => null,
+        var state                 => (MigrationPhase) (state - 1)
+    };
+
+    /// <summary>
+    ///   Checks whether the migration has been applied through the specified
+    ///   phase.
+    /// </summary>
+    /// <param name="phase">
+    ///   The phase to check.
+    /// </param>
+    public bool IsAppliedThrough(MigrationPhase phase)
+    {
+        // State also functions as 'next phase to be applied'
+        return (MigrationPhase) State2 > phase;
+    }
+
+    /// <summary>
+    ///   Checks whether the migration can be applied through the specified
+    ///   phase.
+    /// </summary>
+    /// <param name="phase">
+    ///   The phase to check.
+    /// </param>
+    public bool CanApplyThrough(MigrationPhase phase)
+    {
+        // State also functions as 'next phase to be applied'
+        var next = (MigrationPhase) State2;
+
+        // If the next phase to be applied is later than the requested state,
+        // the migration has already been applied and cannot be applied again
+        if (next > phase)
+            return false;
+
+        // If the next phase to be applied is the same as the requested state,
+        // the migration can be applied
+        if (next == phase)
+            return true;
+
+        // If the next phase to be applied is earlier than the requested state,
+        // the migration can be applied only if the intermediate phases are empty
+        for (; next < phase;  next++)
+            if (!GetSql(next).IsNullOrEmpty())
+                return false;
+
+        // Intermediate phases are indeed empty
+        return true;
+    }
 }
