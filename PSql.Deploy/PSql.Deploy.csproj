@@ -28,6 +28,9 @@
 
     <Reference Include="PSql" HintPath="$(PSqlDirectory)PSql.dll"
                IncludeAssets="compile" Private="false" />
+
+    <Reference Include="PSql.Core" HintPath="$(PSqlDirectory)PSql.Core.dll"
+               IncludeAssets="compile" Private="false" />
   </ItemGroup>
 
   <ItemGroup>
