@@ -3,7 +3,6 @@
 
 namespace PSql.Deploy.Migrations;
 
-using System.Threading.Tasks;
 using static CommandBehavior;
 
 internal static class RemoteMigrationDiscovery
@@ -32,9 +31,9 @@ internal static class RemoteMigrationDiscovery
     }
 
     internal static async Task<IReadOnlyList<Migration>> GetServerMigrationsAsync(
-        SqlContext context, Cmdlet cmdlet, CancellationToken cancellation)
+        SqlContext context, ISqlMessageLogger logger, CancellationToken cancellation)
     {
-        await using var connection = context.Connect(null, cmdlet);
+        await using var connection = context.Connect(null, logger);
         await using var command    = connection.CreateCommand();
 
         command.CommandText =
