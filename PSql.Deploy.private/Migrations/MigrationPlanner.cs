@@ -1,15 +1,16 @@
 // Copyright 2023 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
-using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 
 namespace PSql.Deploy.Migrations;
 
 using static MigrationPhase;
 
-using Phase = MigrationPhase;
-
+/// <summary>
+///   Single-use factory that produces a <see cref="MigrationPlan"/> from a
+///   given set of migrations.
+/// </summary>
 internal readonly ref struct MigrationPlanner
 {
     /*
@@ -58,9 +59,9 @@ internal readonly ref struct MigrationPlanner
         Rules
         =====
 
-        Σ_Pre  = Pres from migrations before any that depend on an unfinished migration.
-        Σ_Core = Everything else.
-        Σ_Post = Posts from migrations after any that are depended upon by an unfinished migration.
+        Plan Pre  = Pres from migrations before any that depend on an uncompleted migration.
+        Plan Core = Everything else.
+        Plan Post = Posts from migrations after any that are depended upon by an uncompleted migration.
 
         Migration N's Pres  are guaranteed to run after all of Migration N-1's Pres.
         Migration N's Cores are guaranteed to run after all of Migration N-1's Cores.
@@ -70,11 +71,18 @@ internal readonly ref struct MigrationPlanner
         If Migration A depends on Migration B, then B's Post will run before A's Pre.
     */
 
-    private readonly Span<Migration>               _migrations;
-    private readonly Dictionary<string, Migration> _migrationsByName;
-    private readonly HashSet<(Migration, Phase)>   _scheduled;
-    private readonly MigrationPlan                 _plan;
+    private readonly Span<Migration>                      _migrations;
+    private readonly Dictionary<string, Migration>        _migrationsByName;
+    private readonly HashSet<(Migration, MigrationPhase)> _scheduled;
+    private readonly MigrationPlan                        _plan;
 
+    /// <summary>
+    ///   Initializes a new <see cref="MigrationPlanner"/> instance with the
+    ///   specified migrations.
+    /// </summary>
+    /// <param name="migrations">
+    ///   The migrations to assemble into a <see cref="MigrationPlan"/>.
+    /// </param>
     public MigrationPlanner(Span<Migration> migrations)
     {
         _migrations       = migrations;
@@ -83,10 +91,9 @@ internal readonly ref struct MigrationPlanner
         _plan             = new();
     }
 
-    [Obsolete("Do not use.", error: true)]
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public MigrationPlanner() { throw new NotSupportedException(); }
-
+    /// <summary>
+    ///   Assembles the migration plan.
+    /// </summary>
     public MigrationPlan CreatePlan()
     {
         Prepare();
@@ -96,6 +103,8 @@ internal readonly ref struct MigrationPlanner
         return _plan;
     }
 
+    // Populates the migrations-by-name dictionary, which will be used to
+    // resolve dependency references.
     private void Prepare()
     {
         foreach (var migration in _migrations)
@@ -108,58 +117,76 @@ internal readonly ref struct MigrationPlanner
         }
     }
 
+    // Schedules the Pre components of migrations until one is found that
+    // depends on an uncompleted migration.
     private void SchedulePre()
     {
-        // Schedule Pre components of migrations until one is found that
-        // depends on an uncompleted migration
-
         foreach (var migration in _migrations)
         {
-            if (HasUncompletedDependency(migration))
+            if (HasUnsatisfiedDependency(migration))
                 break;
 
             ScheduleInPre(migration);
         }
     }
 
+    // Schedules the Core components of migrations, plus the Pre and Post
+    // components that must be performed in the Core phase to provide
+    // dependency guarantees.
     private void ScheduleCore()
     {
-        // Stop when there are no more Cores to sequence
-
         foreach (var migration in _migrations)
         {
-            // do dependency posts
-            if (HasUncompletedDependency(migration, out var name))
-                SchedulePostComponentsInCoreThrough(name);
-
-            if (!IsScheduled(migration, Pre))
-                ScheduleInCore(migration, Pre);
+            if (HasUnsatisfiedDependency(migration, out var name))
+                SatisfyDependencyInCore(name);
 
             ScheduleInCore(migration, Core);
         }
     }
 
-    private void SchedulePostComponentsInCoreThrough(string name)
-    {
-        foreach (var migration in _migrations)
-        {
-            if (!IsScheduled(migration, Post))
-                ScheduleInCore(migration, Post);
-
-            if (migration.Name == name)
-                break;
-        }
-    }
-
+    // Schedules the remaining Post components -- those not already scheduled
+    // for the Core phase.
     private void SchedulePost()
     {
-        // Schedule remaining migration Post components
         foreach (var migration in _migrations)
             if (!IsScheduled(migration, Post))
                 ScheduleInPost(migration);
     }
 
-    private bool IsScheduled(Migration migration, Phase phase)
+    // Schedules Pre and Post components to be performed in the Core phase to
+    // provide dependency guarantees.
+    private void SatisfyDependencyInCore(string name)
+    {
+        var satisfied = false;
+
+        foreach (var migration in _migrations)
+        {
+            if (!satisfied)
+            {
+                // Schedule Post components early (in the Core phase) to
+                // satisfy the dependency
+
+                if (!IsScheduled(migration, Post))
+                    ScheduleInCore(migration, Post);
+
+                if (migration.Name == name)
+                    satisfied = true;
+            }
+            else // (satisfied)
+            {
+                // Schedule Pre components late (in the Core phase) that could
+                // not be scheduled earlier due to the unsatisfied dependency
+
+                if (HasUnsatisfiedDependency(migration))
+                    break;
+
+                if (!IsScheduled(migration, Pre))
+                    ScheduleInCore(migration, Pre);
+            }    
+        }
+    }
+
+    private bool IsScheduled(Migration migration, MigrationPhase phase)
     {
         return _scheduled.Contains((migration, phase));
     }
@@ -172,7 +199,7 @@ internal readonly ref struct MigrationPlanner
         _scheduled.Add((migration, Pre));
     }
 
-    private void ScheduleInCore(Migration migration, Phase phase)
+    private void ScheduleInCore(Migration migration, MigrationPhase phase)
     {
         if (!migration.IsAppliedThrough(phase))
             _plan.Core.Add((migration, phase));
@@ -188,7 +215,7 @@ internal readonly ref struct MigrationPlanner
         _scheduled.Add((migration, Post));
     }
 
-    private bool HasUncompletedDependency(Migration migration)
+    private bool HasUnsatisfiedDependency(Migration migration)
     {
         foreach (var name in migration.Depends!)
         {
@@ -196,6 +223,9 @@ internal readonly ref struct MigrationPlanner
                 throw new Exception("Can't find the dependency.");
 
             if (depend.IsAppliedThrough(Post))
+                continue;
+
+            if (IsScheduled(depend, Post))
                 continue;
 
             return true;
@@ -204,22 +234,22 @@ internal readonly ref struct MigrationPlanner
         return false;
     }
 
-    private bool HasUncompletedDependency(Migration migration, [MaybeNullWhen(false)] out string latest)
+    private bool HasUnsatisfiedDependency(Migration migration, [MaybeNullWhen(false)] out string name)
     {
-        latest = null;
+        name = null;
 
         // TODO: This could use a reverse enumeration capability.
-        foreach (var name in migration.Depends!)
+        foreach (var candidate in migration.Depends!)
         {
-            if (!_migrationsByName.TryGetValue(name, out var depend))
+            if (!_migrationsByName.TryGetValue(candidate, out var depend))
                 throw new Exception("Can't find the dependency.");
 
             if (depend.IsAppliedThrough(Post))
                 continue;
 
-            latest = name;
+            name = candidate;
         }
 
-        return latest is not null;
+        return name is not null;
     }
 }
