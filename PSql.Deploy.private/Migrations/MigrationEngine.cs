@@ -294,11 +294,9 @@ public class MigrationEngine
         if (target.State >= 3 && !target.HasChanged)
             return null; // completed
 
-        //if ($Migration.State -lt 3 -or $Migration.HasChanged) {
-        //    Write-Host (
-        //        "    (st{2}{1}) {0}" -f //        $Migration.Name, //        $Migration.State, //        ($Migration.HasChanged ? '!' : '=')
-        //    )
-        //}
+        // Old log:
+        // if ($Migration.State -lt 3 -or $Migration.HasChanged)
+        // "    (st{2}{1}) {0}" -f $Migration.Name, $Migration.State, ($Migration.HasChanged ? '!' : '=')
 
         return target;
     }
