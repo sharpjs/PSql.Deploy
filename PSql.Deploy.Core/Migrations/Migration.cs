@@ -129,6 +129,9 @@ public class Migration
     /// </summary>
     public bool HasChanged { get; set; }
 
+    /// <inheritdoc/>
+    public override string ToString() => Name ?? "(unnamed)";
+
     /// <summary>
     ///   Gets the SQL script for the specified phase.
     /// </summary>
