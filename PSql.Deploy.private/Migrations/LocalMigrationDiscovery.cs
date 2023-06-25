@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: ISC
 
 using System.Collections.Concurrent;
+using System.Collections.Immutable;
 using System.IO.MemoryMappedFiles;
 using System.Security.Cryptography;
 
@@ -9,18 +10,18 @@ namespace PSql.Deploy.Migrations;
 
 internal static class LocalMigrationDiscovery
 {
-    internal static IReadOnlyList<Migration> GetLocalMigrations(string path)
+    internal static ImmutableArray<Migration> GetLocalMigrations(string path)
     {
         if (path is null)
             throw new ArgumentNullException(nameof(path));
 
         if (!Directory.Exists(path))
-            return Array.Empty<Migration>();
+            return ImmutableArray<Migration>.Empty;
 
         path = Path.Combine(path, "Migrations");
 
         if (!Directory.Exists(path))
-            return Array.Empty<Migration>();
+            return ImmutableArray<Migration>.Empty;
 
         var bag = new ConcurrentBag<Migration>();
 
@@ -29,7 +30,7 @@ internal static class LocalMigrationDiscovery
             path => DetectMigration(path, bag)
         );
 
-        return ToOrderedList(bag);
+        return Sort(bag);
     }
 
     private static void DetectMigration(string path, ConcurrentBag<Migration> bag)
@@ -135,10 +136,13 @@ internal static class LocalMigrationDiscovery
         return new string(chars);
     }
 
-    private static IReadOnlyList<Migration> ToOrderedList(ConcurrentBag<Migration> bag)
+    private static ImmutableArray<Migration> Sort(ConcurrentBag<Migration> bag)
     {
-        var array = bag.ToArray();
-        Array.Sort(array, MigrationComparer.Instance);
-        return array;
+        var array = ImmutableArray.CreateBuilder<Migration>(bag.Count);
+
+        array.AddRange(bag);
+        array.Sort(MigrationComparer.Instance);
+
+        return array.MoveToImmutable();
     }
 }
