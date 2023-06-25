@@ -210,7 +210,7 @@ public class MigrationEngine
         IReadOnlyList<Migration> sourceMigrations,
         IReadOnlyList<Migration> targetMigrations)
     {
-        // Assume migrations already sorted, ordinal ignore-case
+        // Assume migrations already sorted using MigrationComparer
 
         var migrations = new List<Migration>();
 

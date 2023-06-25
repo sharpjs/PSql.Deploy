@@ -41,6 +41,20 @@ public sealed class MigrationComparer : IComparer<Migration>
             : NameComparer.Compare(x.Name, y.Name);
     }
 
+    /// <summary>
+    ///   Gets the rank of the specified migration name for ordering purposes.
+    /// </summary>
+    /// <param name="name">
+    ///   A migration name.
+    /// </param>
+    /// <returns>
+    ///   <c>-1</c> if <paramref name="name"/> is <c>"_Begin"</c>;
+    ///   <c>+1</c> if <paramref name="name"/> is <c>"_End"</c>;
+    ///   <c>0</c> otherwise.
+    /// </returns>
+    /// <remarks>
+    ///   This method uses case-insensitive ordinal comparison.
+    /// </remarks>
     internal static int GetRank(string? name)
     {
         if (NameComparer.Equals(name, Migration.BeginPseudoMigrationName))

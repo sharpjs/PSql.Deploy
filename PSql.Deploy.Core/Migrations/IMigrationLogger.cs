@@ -4,7 +4,7 @@
 namespace PSql.Deploy.Migrations;
 
 /// <summary>
-///   An object that logs messages produced during migration.
+///   An object that logs messages produced during a migration run.
 /// </summary>
 public interface IMigrationLogger : ISqlMessageLogger
 {
