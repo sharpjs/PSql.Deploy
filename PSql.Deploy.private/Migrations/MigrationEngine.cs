@@ -155,8 +155,7 @@ public class MigrationEngine
 
             foreach (var migration in migrations)
             {
-                if (migration.State >= (int) Phase)
-                    continue;
+                // TODO: Use MigrationPlanner to decide which migrations to run
 
                 ReportApplying(migration, target);
 
@@ -165,7 +164,6 @@ public class MigrationEngine
 
                 await RunCoreAsync(migration, command);
 
-                migration.State = (int) Phase + 1;
                 count++;
             }
         }
@@ -190,13 +188,7 @@ public class MigrationEngine
 
     private Task RunCoreAsync(Migration migration, ISqlCommand command)
     {
-        var sql = Phase switch
-        {
-            MigrationPhase.Pre  => migration.PreSql ,
-            MigrationPhase.Core => migration.CoreSql,
-            _                   => migration.PostSql
-        };
-
+        var sql = migration.GetSql(Phase);
         if (sql.IsNullOrEmpty())
             return Task.CompletedTask;
  
@@ -269,7 +261,7 @@ public class MigrationEngine
 
     private static Migration? OnTargetWithoutSource(Migration target)
     {
-        if (target.State >= 3)
+        if (target.IsAppliedThrough(MigrationPhase.Post))
             return null; // completed; source migration removed
 
         // Old log: "    (-t-{1}) {0}" -f $Migration.Name, $Migration.State
@@ -279,7 +271,7 @@ public class MigrationEngine
     private Migration? OnMatchedSourceAndTarget(Migration source, Migration target)
     {
         // If migration will be applied, ensure its content is loaded
-        if (target.State < (int) Phase)
+        if (!target.IsAppliedThrough(Phase))
             MigrationLoader.LoadContent(source);
 
         // Copy source-only properties to target
@@ -291,7 +283,7 @@ public class MigrationEngine
         target.CoreSql    = source.CoreSql;
         target.PostSql    = source.PostSql;
 
-        if (target.State >= 3 && !target.HasChanged)
+        if (target.IsAppliedThrough(MigrationPhase.Post) && !target.HasChanged)
             return null; // completed
 
         // Old log:

@@ -34,7 +34,7 @@ public class Migration
             Name       = Name,
             Path       = Path,
             Hash       = Hash,
-            State      = State,
+            State2     = State2,
             Depends    = Depends,
             PreSql     = PreSql,
             CoreSql    = CoreSql,
@@ -85,6 +85,7 @@ public class Migration
     ///     </item>
     ///   </list>
     /// </remarks>
+    [Obsolete("Use State2, which will be renamed to State soon.", error: true)]
     public int State
     {
         // TODO: Replace this property with State2
