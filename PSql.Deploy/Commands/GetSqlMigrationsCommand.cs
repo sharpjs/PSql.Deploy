@@ -1,13 +1,15 @@
 // Copyright 2023 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
+using System.Collections.Immutable;
+using PSql.Deploy.Commands;
 using PSql.Deploy.Migrations;
 
 namespace PSql.Deploy;
 
 [Cmdlet(VerbsCommon.Get, "SqlMigrations", DefaultParameterSetName = "Path")]
 [OutputType(typeof(Migration))]
-public class GetSqlMigrationsCommand : Cmdlet
+public class GetSqlMigrationsCommand : AsyncCmdlet
 {
     // -Path
     [Parameter(
@@ -32,17 +34,28 @@ public class GetSqlMigrationsCommand : Cmdlet
     [ValidateNotNullOrEmpty]
     public SqlContext? Target { get; set; }
 
-    protected override void ProcessRecord()
+    protected override async Task ProcessRecordAsync(CancellationToken cancellation)
     {
         var migrations
-            = Path   is { } path   ? LocalMigrationDiscovery .GetLocalMigrations (path)
-            : Target is { } target ? RemoteMigrationDiscovery.GetServerMigrations(target, this)
+            = Path   is { } path   ? GetMigrations(path)
+            : Target is { } target ? await GetMigrationsAsync(target, cancellation)
             : throw new InvalidOperationException();
 
         if (IncludeContent.IsPresent)
             Parallel.ForEach(migrations, MigrationLoader.LoadContent);
 
         foreach (var migration in migrations)
-            WriteObject(migration);
+            Console.WriteObject(migration);
+    }
+
+    private static IReadOnlyList<Migration> GetMigrations(string path)
+    {
+        return LocalMigrationDiscovery.GetLocalMigrations(path);
+    }
+
+    private Task<IReadOnlyList<Migration>> GetMigrationsAsync(
+        SqlContext target, CancellationToken cancellation)
+    {
+        return RemoteMigrationDiscovery.GetServerMigrationsAsync(target, Console, cancellation);
     }
 }

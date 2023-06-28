@@ -7,29 +7,6 @@ using static CommandBehavior;
 
 internal static class RemoteMigrationDiscovery
 {
-    internal static IReadOnlyList<Migration> GetServerMigrations(SqlContext context, Cmdlet cmdlet)
-    {
-        using var connection = context.Connect(null, cmdlet);
-        using var command    = connection.CreateCommand();
-
-        command.CommandText =
-            """
-            IF OBJECT_ID('_deploy.Migration', 'U') IS NOT NULL
-                EXEC('SELECT Name, Hash, State FROM _deploy.Migration ORDER BY Name;');
-            """;
-
-        using var reader = command
-            .GetRealSqlCommand()
-            .ExecuteReader(SequentialAccess | SingleResult);
-
-        var migrations = new List<Migration>();
-
-        while (reader.Read())
-            migrations.Add(MapToMigration(reader));
-
-        return migrations.AsReadOnly();
-    }
-
     internal static async Task<IReadOnlyList<Migration>> GetServerMigrationsAsync(
         SqlContext context, IConsole console, CancellationToken cancellation)
     {
