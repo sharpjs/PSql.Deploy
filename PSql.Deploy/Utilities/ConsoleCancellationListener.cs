@@ -5,14 +5,18 @@ namespace PSql.Deploy;
 
 internal sealed class ConsoleCancellationListener : IDisposable
 {
-    private readonly CancellationTokenSource _cts;
+    private readonly IConsole _console;
+    private readonly CancellationTokenSource _cancellation;
 
-    public ConsoleCancellationListener(CancellationTokenSource cts)
+    public ConsoleCancellationListener(IConsole console, CancellationTokenSource cancellation)
     {
-        if (cts is null)
-            throw new ArgumentNullException(nameof(cts));
+        if (console is null)
+            throw new ArgumentNullException(nameof(console));
+        if (cancellation is null)
+            throw new ArgumentNullException(nameof(cancellation));
 
-        _cts = cts;
+        _console      = console;
+        _cancellation = cancellation;
 
         Console.CancelKeyPress += Console_CancelKeyPress;
     }
@@ -25,6 +29,7 @@ internal sealed class ConsoleCancellationListener : IDisposable
 
     private void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
     {
-        _cts.Cancel();
+        _console.WriteHost("Cancelling...", foregroundColor: ConsoleColor.Yellow);
+        _cancellation.Cancel();
     }
 }
