@@ -102,11 +102,28 @@ public class MigrationEngine
         if (targets is null)
             throw new ArgumentNullException(nameof(targets));
 
+        // Let calling thread continue
+        await Task.Yield();
+
         _totalStopwatch.Start();
 
+        using var limiter = new SemaphoreSlim(targets.Parallelism, targets.Parallelism);
+
+        async Task RunLimitedAsync(SqlContext target)
+        {
+            await limiter.WaitAsync(CancellationToken);
+            try
+            {
+                await RunAsync(target);
+            }
+            finally
+            {
+                limiter.Release();
+            }
+        }
+
         await Task.WhenAll(
-            // TODO: Limit parallelism
-            targets.Contexts.Select(RunAsync)
+            targets.Contexts.Select(RunLimitedAsync)
         );
     }
 
@@ -119,10 +136,13 @@ public class MigrationEngine
     /// <returns>
     ///   A <see cref="Task"/> representing the asynchronous operation.
     /// </returns>
-    public async Task RunAsync(SqlContext target)
+    private async Task RunAsync(SqlContext target)
     {
         if (target is null)
             throw new ArgumentNullException(nameof(target));
+
+        // Let calling thread continue
+        await Task.Yield();
 
         _totalStopwatch.Start();
 
@@ -137,8 +157,10 @@ public class MigrationEngine
         // Validate
         Validate(migrations, target);
 
+        #if NOT_YET
         // Run
         await RunCoreAsync(migrations, target);
+        #endif
     }
 
     private async Task RunCoreAsync(IReadOnlyList<Migration> migrations, SqlContext target)
@@ -380,7 +402,7 @@ public class MigrationEngine
     {
         Console.WriteHost(string.Format(
             @"[+{0:hh\:mm\:ss}] {1}: Applying {2} {3}",
-            _totalStopwatch.Elapsed.TotalSeconds,
+            _totalStopwatch.Elapsed,
             target.DatabaseName,
             migration.Name,
             Phase
@@ -391,7 +413,7 @@ public class MigrationEngine
     {
         Console.WriteHost(string.Format(
             @"[+{0:hh\:mm\:ss}] {1}: Applied {2} {3} migration(s) in {4:N3} second(s){5}",
-            _totalStopwatch.Elapsed.TotalSeconds,
+            _totalStopwatch.Elapsed,
             target.DatabaseName,
             count,
             Phase,

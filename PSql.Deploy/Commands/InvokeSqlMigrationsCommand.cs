@@ -30,6 +30,11 @@ public class InvokeSqlMigrationsCommand : AsyncCmdlet
     {
         Console.WriteHost("Press Ctrl+C to cancel.");
 
-        await Task.Delay(TimeSpan.FromMinutes(1), cancellation);
+        var engine = new MigrationEngine(Console, cancellation);
+
+        engine.AddMigrationsFromPath(Path!);
+        engine.Phase = Phase ?? MigrationPhase.Post;
+
+        await engine.RunAsync(Target!);
     }
 }
