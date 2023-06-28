@@ -31,9 +31,9 @@ internal static class RemoteMigrationDiscovery
     }
 
     internal static async Task<IReadOnlyList<Migration>> GetServerMigrationsAsync(
-        SqlContext context, ISqlMessageLogger logger, CancellationToken cancellation)
+        SqlContext context, IConsole console, CancellationToken cancellation)
     {
-        await using var connection = context.Connect(null, logger);
+        await using var connection = context.Connect(null, console);
         await using var command    = connection.CreateCommand();
 
         command.CommandText =

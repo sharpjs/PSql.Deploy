@@ -6,30 +6,29 @@ using System.Diagnostics;
 namespace PSql.Deploy.Migrations;
 
 /// <summary>
-///   Runs SQL migrations.
+///   An engine that applies a set of migrations to a set of target databases.
 /// </summary>
 public class MigrationEngine
 {
     /// <summary>
-    ///   Initializes a new <see cref="MigrationEngine"/> instance for the
-    ///   specified cmdlet.
+    ///   Initializes a new <see cref="MigrationEngine"/> instance.
     /// </summary>
-    /// <param name="logger">
-    ///   The logger to use to output status and messages.
+    /// <param name="console">
+    ///   The console on which to display status and messages.
     /// </param>
     /// <param name="cancellation">
     ///   The token to monitor for cancellation requests.
     /// </param>
     /// <exception cref="ArgumentNullException">
-    ///   <paramref name="logger"/> is <see langword="null"/>.
+    ///   <paramref name="console"/> is <see langword="null"/>.
     /// </exception>
-    public MigrationEngine(IMigrationLogger logger, CancellationToken cancellation)
+    public MigrationEngine(IConsole console, CancellationToken cancellation)
     {
-        if (logger is null)
-            throw new ArgumentNullException(nameof(logger));
+        if (console is null)
+            throw new ArgumentNullException(nameof(console));
 
         Migrations        = Array.Empty<Migration>();
-        Logger            = logger;
+        Console           = console;
         CancellationToken = cancellation;
         _totalStopwatch   = new();
     }
@@ -45,15 +44,16 @@ public class MigrationEngine
     public MigrationPhase Phase { get; set; }
 
     /// <summary>
-    ///   Gets the logger to use to output status and messages.
+    ///   Gets the console on which to display status and messages.
     /// </summary>
-    public IMigrationLogger Logger { get; }
+    public IConsole Console { get; }
 
     /// <summary>
     ///   Gets the token to monitor for cancellation requests.
     /// </summary>
     public CancellationToken CancellationToken { get; }
 
+    // Measures total elapsed time of migration run
     private readonly Stopwatch _totalStopwatch;
 
     /// <summary>
@@ -129,7 +129,7 @@ public class MigrationEngine
         // Get migrations on target
         // TODO: Limit to unfinished or not-older-than-what's-on-disk migrations
         var migrations = await RemoteMigrationDiscovery
-            .GetServerMigrationsAsync(target, Logger, CancellationToken);
+            .GetServerMigrationsAsync(target, Console, CancellationToken);
 
         // Merge source and target migration lists
         migrations = Merge(Migrations, migrations);
@@ -159,7 +159,7 @@ public class MigrationEngine
 
                 ReportApplying(migration, target);
 
-                connection ??= target.Connect(null, Logger);
+                connection ??= target.Connect(null, Console);
                 command    ??= connection.CreateCommand();
 
                 await RunCoreAsync(migration, command);
@@ -321,7 +321,7 @@ public class MigrationEngine
         if (!migration.HasChanged)
             return true;
 
-        Logger.LogWarning(string.Format(
+        Console.WriteWarning(string.Format(
             "Migration '{0}' has been applied to database [{1}].[{2}] through " +
             "the {3} phase, but the migration's code in the source directory "  +
             "does not match the code previously used. To resolve, revert any "  +
@@ -343,7 +343,7 @@ public class MigrationEngine
         if (migration.CanApplyThrough(Phase))
             return true;
 
-        Logger.LogWarning(string.Format(
+        Console.WriteWarning(string.Format(
             "Cannot apply {3} phase of migration '{0}' to database [{1}].[{2}] " +
             "because the migration has code in an earlier phase that must be "   +
             "applied first.",
@@ -362,7 +362,7 @@ public class MigrationEngine
         if (migration.Path is not null)
             return true;
 
-        Logger.LogWarning(string.Format(
+        Console.WriteWarning(string.Format(
             "Migration {0} is only partially applied to database [{1}].[{2}] " +
             "(through the {3} phase), but the code for the migration was not " +
             "found in the source directory. It is not possible to complete "   +
@@ -378,15 +378,25 @@ public class MigrationEngine
 
     private void ReportApplying(Migration migration, SqlContext target)
     {
-        Logger.Log(new ApplyingMigrationMessage(
-            migration, target, Phase, _totalStopwatch.Elapsed
+        Console.WriteHost(string.Format(
+            @"[+{0:hh\:mm\:ss}] {1}: Applying {2} {3}",
+            _totalStopwatch.Elapsed.TotalSeconds,
+            target.DatabaseName,
+            migration.Name,
+            Phase
         ));
     }
 
     private void ReportApplied(int count, SqlContext target, TimeSpan elapsed, Exception? exception)
     {
-        Logger.Log(new AppliedMigrationsMessage(
-            count, target, Phase, elapsed, _totalStopwatch.Elapsed, exception
+        Console.WriteHost(string.Format(
+            @"[+{0:hh\:mm\:ss}] {1}: Applied {2} {3} migration(s) in {4:N3} second(s){5}",
+            _totalStopwatch.Elapsed.TotalSeconds,
+            target.DatabaseName,
+            count,
+            Phase,
+            elapsed.TotalSeconds,
+            exception is null ? null : " [EXCEPTION]"
         ));
     }
 }
