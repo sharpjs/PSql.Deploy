@@ -21,6 +21,11 @@ public class InvokeSqlMigrationsCommand : AsyncCmdlet
     [ValidateNotNullOrEmpty]
     public SqlContextParallelSet[]? Target { get; set; }
 
+    // -Phase
+    [Parameter()]
+    [ValidateNotNullOrEmpty]
+    public MigrationPhase? Phase { get; set; }
+
     protected override async Task ProcessRecordAsync(CancellationToken cancellation)
     {
         Console.WriteHost("Press Ctrl+C to cancel.");
