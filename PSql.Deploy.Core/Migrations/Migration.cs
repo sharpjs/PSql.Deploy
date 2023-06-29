@@ -102,7 +102,7 @@ public class Migration
     ///   Gets or sets the names of migrations that must be applied completely
     ///   before any phase of the current migration.
     /// </summary>
-    public ICollection<string>? Depends { get; set; }
+    public IReadOnlyList<string>? Depends { get; set; }
 
     /// <summary>
     ///   Gets or sets the resolved migrations that must be applied completely

@@ -1,6 +1,7 @@
 // Copyright 2023 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
+using System.Collections.Immutable;
 using System.Text.RegularExpressions;
 using Prequel;
 
@@ -54,7 +55,7 @@ internal static class MigrationLoader
         AppendFinalBatch(migration, core, MigrationPhase.Core);
         AppendFinalBatch(migration, post, MigrationPhase.Post);
 
-        migration.Depends = depends;
+        migration.Depends = depends.ToImmutableArray();
         migration.PreSql  = pre .Complete();
         migration.CoreSql = core.Complete();
         migration.PostSql = post.Complete();
