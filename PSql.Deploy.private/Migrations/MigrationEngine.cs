@@ -306,13 +306,15 @@ public class MigrationEngine
         return null;
     }
 
-    private bool Validate(IReadOnlyList<Migration> migrations, SqlContext target)
+    private bool Validate(ReadOnlySpan<Migration> migrations, SqlContext target)
     {
-        var valid = true;
+        var valid  = true;
+        var lookup = CreateLookup(migrations);
 
         foreach (var migration in migrations)
         {
             valid &= ValidateNotChanged(migration, target);
+            valid &= ValidateDepends   (migration, lookup);
 
             if (migration.IsAppliedThrough(Phase))
                 continue; // Migration will not be applied
@@ -321,6 +323,82 @@ public class MigrationEngine
             valid &= ValidateHasSource           (migration, target);
         }
 
+        return valid;
+    }
+
+    private Dictionary<string, Migration> CreateLookup(ReadOnlySpan<Migration> migrations)
+    {
+        var lookup = new Dictionary<string, Migration>(
+            capacity: migrations.Length, StringComparer.OrdinalIgnoreCase
+        );
+
+        foreach (var migration in migrations)
+            if (!migration.IsPseudo && migration.Name is { } name)
+                lookup.Add(name, migration);
+
+        return lookup;
+    }
+
+    private bool ValidateDepends(Migration migration, Dictionary<string, Migration> dictionary)
+    {
+        if (migration.IsPseudo)
+            return true;
+
+        if (migration.Depends is not { } dependNames)
+            return true;
+
+        var resolvedDepends = new List<Migration>(dependNames.Count);
+        var valid           = true;
+
+        static int Compare(string? lhs, string? rhs)
+            => StringComparer.OrdinalIgnoreCase.Compare(lhs, rhs);
+
+        foreach (var dependName in dependNames)
+        {
+            switch (Compare(dependName, migration.Name))
+            {
+                case < 0 when dictionary.TryGetValue(dependName, out var depend):
+                    resolvedDepends.Add(depend);
+                    break;
+
+                case < 0 when Compare(dependName, MinimumMigrationName) < 0:
+                    // Ignore dependency on prehistoric migrations
+                    break;
+
+                case < 0:
+                    valid = false;
+                    Console.WriteWarning(string.Format(
+                        "Migration '{0}' declares a dependency on migration '{1}', " +
+                        "which was not found. "                                      +
+                        "The dependency cannot be satisfied.",
+                        /*{0}*/ migration.Name,
+                        /*{1}*/ dependName
+                    ));
+                    break;
+
+                case > 0:
+                    valid = false;
+                    Console.WriteWarning(string.Format(
+                        "Migration '{0}' declares a dependency on migration '{1}', " +
+                        "which must run later in the sequence. "                     +
+                        "The dependency cannot be satisfied.",
+                        /*{0}*/ migration.Name,
+                        /*{1}*/ dependName
+                    ));
+                    break;
+
+                default:
+                    valid = false;
+                    Console.WriteWarning(string.Format(
+                        "Migration '{0}' declares a dependency on itself. " +
+                        "The dependency cannot be satisfied.",
+                        /*{0}*/ migration.Name
+                    ));
+                    break;
+            }
+        }
+
+        migration.ResolvedDepends = resolvedDepends;
         return valid;
     }
 
