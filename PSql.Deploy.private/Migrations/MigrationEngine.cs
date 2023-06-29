@@ -1,6 +1,7 @@
 // Copyright 2023 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
+using System.Collections.Immutable;
 using System.Diagnostics;
 
 namespace PSql.Deploy.Migrations;
@@ -27,16 +28,23 @@ public class MigrationEngine
         if (console is null)
             throw new ArgumentNullException(nameof(console));
 
-        Migrations        = Array.Empty<Migration>();
-        Console           = console;
-        CancellationToken = cancellation;
-        _totalStopwatch   = new();
+        Migrations           = ImmutableArray<Migration>.Empty;
+        MinimumMigrationName = "";
+        Console              = console;
+        CancellationToken    = cancellation;
+        _totalStopwatch      = new();
     }
 
     /// <summary>
     ///   Gets the migrations to be applied to targets.
     /// </summary>
-    public IReadOnlyList<Migration> Migrations { get; private set; }
+    public ImmutableArray<Migration> Migrations { get; private set; }
+
+    /// <summary>
+    ///   Gets the minimum name of the migrations to be applied to targets, or
+    ///   string if <see cref="Migrations"/> is empty.
+    /// </summary>
+    public string MinimumMigrationName { get; private set; }
 
     /// <summary>
     ///   Gets or sets the phase of the migrations to be applied to targets.
@@ -64,7 +72,8 @@ public class MigrationEngine
     /// </param>
     public void AddMigrationsFromPath(string path)
     {
-        Migrations = LocalMigrationDiscovery.GetLocalMigrations(path);
+        Migrations           = LocalMigrationDiscovery.GetLocalMigrations(path);
+        MinimumMigrationName = GetMinimumMigrationName() ?? "";
     }
 
     /// <summary>
@@ -83,9 +92,7 @@ public class MigrationEngine
 
         _totalStopwatch.Start();
 
-        await Task.WhenAll(
-            targets.Select(RunAsync)
-        );
+        await Task.WhenAll(targets.Select(RunAsync));
     }
 
     /// <summary>
@@ -105,6 +112,7 @@ public class MigrationEngine
         // Let calling thread continue
         await Task.Yield();
 
+        // Start timing if not already started
         _totalStopwatch.Start();
 
         using var limiter = new SemaphoreSlim(targets.Parallelism, targets.Parallelism);
@@ -122,9 +130,7 @@ public class MigrationEngine
             }
         }
 
-        await Task.WhenAll(
-            targets.Contexts.Select(RunLimitedAsync)
-        );
+        await Task.WhenAll(targets.Contexts.Select(RunLimitedAsync));
     }
 
     /// <summary>
@@ -144,6 +150,7 @@ public class MigrationEngine
         // Let calling thread continue
         await Task.Yield();
 
+        // Start timing if not already started
         _totalStopwatch.Start();
 
         // Get migrations on target
@@ -152,40 +159,39 @@ public class MigrationEngine
             .GetServerMigrationsAsync(target, Console, CancellationToken);
 
         // Merge source and target migration lists
-        migrations = Merge(Migrations, migrations);
+        var merged = Merge(Migrations, migrations);
 
         // Validate
-        Validate(migrations, target);
+        if (!Validate(merged, target))
+            return;
 
-        #if NOT_YET
+        // Order
+        var plan = new MigrationPlanner(new Span<Migration>(merged)).CreatePlan();
+
         // Run
-        await RunCoreAsync(migrations, target);
-        #endif
+        await RunCoreAsync(plan, target);
     }
 
-    private async Task RunCoreAsync(IReadOnlyList<Migration> migrations, SqlContext target)
+    private async Task RunCoreAsync(MigrationPlan plan, SqlContext target)
     {
-        var connection = null as ISqlConnection;
-        var command    = null as ISqlCommand;
+        var migrations = plan.Pre; // TODO
+
+        if (migrations.Count == 0)
+            return;
+
+        var stopwatch  = Stopwatch.StartNew();
         var count      = 0;
         var exception  = null as Exception;
-        var stopwatch  = new Stopwatch();
+
+        using var connection = target.Connect(null, Console);
+        using var command    = connection.CreateCommand();
 
         try
         {
-            stopwatch.Start();
-
             foreach (var migration in migrations)
             {
-                // TODO: Use MigrationPlanner to decide which migrations to run
-
                 ReportApplying(migration, target);
-
-                connection ??= target.Connect(null, Console);
-                command    ??= connection.CreateCommand();
-
                 await RunCoreAsync(migration, command);
-
                 count++;
             }
         }
@@ -197,14 +203,7 @@ public class MigrationEngine
         finally
         {
             stopwatch.Stop();
-
             ReportApplied(count, target, stopwatch.Elapsed, exception);
-
-            if (command is not null)
-                await command.DisposeAsync();
-
-            if (connection is not null)
-                await connection.DisposeAsync();
         }
     }
 
@@ -217,10 +216,12 @@ public class MigrationEngine
         command.CommandText    = sql;
         command.CommandTimeout = 0; // No timeout
 
-        return command.UnderlyingCommand.ExecuteNonQueryAsync(CancellationToken);
+        //return command.UnderlyingCommand.ExecuteNonQueryAsync(CancellationToken);
+
+        return Task.CompletedTask;
     }
 
-    private IReadOnlyList<Migration> Merge(
+    private Migration[] Merge(
         IReadOnlyList<Migration> sourceMigrations,
         IReadOnlyList<Migration> targetMigrations)
     {
@@ -269,7 +270,7 @@ public class MigrationEngine
                 migrations.Add(migration);
         }
 
-        return migrations;
+        return migrations.ToArray();
     }
 
     private static Migration? OnSourceWithoutTarget(Migration source)
@@ -313,6 +314,15 @@ public class MigrationEngine
         // "    (st{2}{1}) {0}" -f $Migration.Name, $Migration.State, ($Migration.HasChanged ? '!' : '=')
 
         return target;
+    }
+
+    private string? GetMinimumMigrationName()
+    {
+        foreach (var migration in Migrations)
+            if (!migration.IsPseudo)
+                return migration.Name;
+
+        return null;
     }
 
     private bool Validate(IReadOnlyList<Migration> migrations, SqlContext target)
