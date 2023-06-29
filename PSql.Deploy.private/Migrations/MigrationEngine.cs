@@ -127,23 +127,28 @@ public class MigrationEngine
 
         await Task.Yield(); // Parallelize
 
-        // Get migrations on target
+        // Discover migrations on target
         var migrations = await RemoteMigrationDiscovery.GetServerMigrationsAsync(
             target, MinimumMigrationName, Console, CancellationToken
         );
 
-        // Merge source and target migration lists
-        var merged = Merge(Migrations, migrations);
-
-        // Validate
-        if (!Validate(merged, target))
+        // Plan what to do
+        var plan = CreatePlan(migrations, target);
+        if (plan is null)
             return;
 
-        // Order
-        var plan = new MigrationPlanner(new Span<Migration>(merged)).CreatePlan();
-
-        // Run
+        // Run the plan
         await RunCoreAsync(plan, target);
+    }
+
+    private MigrationPlan? CreatePlan(IReadOnlyList<Migration> migrations, SqlContext target)
+    {
+        var merged = Merge(Migrations, migrations);
+
+        if (!Validate(merged, target))
+            return null;
+
+        return new MigrationPlanner(merged).CreatePlan();
     }
 
     private async Task RunCoreAsync(MigrationPlan plan, SqlContext target)
