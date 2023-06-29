@@ -1,8 +1,7 @@
 // Copyright 2023 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
-using System.Reflection;
-using System.Runtime.Loader;
+[assembly: Parallelizable(ParallelScope.All)]
 
 namespace PSql.Deploy;
 
