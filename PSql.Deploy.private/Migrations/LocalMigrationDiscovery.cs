@@ -75,7 +75,7 @@ internal static class LocalMigrationDiscovery
         });
 
         static int Compare(FileInfo x, FileInfo y)
-            => StringComparer.Ordinal.Compare(x.Name, y.Name);
+            => StringComparer.Ordinal.Compare(x.FullName, y.FullName);
 
         Array.Sort(files, Compare);
 
