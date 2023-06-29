@@ -202,18 +202,21 @@ internal readonly ref struct MigrationPlanner
         Migration migration,
         [MaybeNullWhen(false)] out string name)
     {
-        for (var i = migration.ResolvedDepends!.Count - 1; i >= 0; i--)
+        if (migration.ResolvedDepends is { } depends)
         {
-            var depend = migration.ResolvedDepends[i];
+            for (var i = depends.Count - 1; i >= 0; i--)
+            {
+                var depend = depends[i];
 
-            if (depend.IsAppliedThrough(Post))
-                continue; // already applied
+                if (depend.IsAppliedThrough(Post))
+                    continue; // already applied
 
-            if (IsScheduled(depend, Post))
-                continue; // will be applied prior to time being considered
+                if (IsScheduled(depend, Post))
+                    continue; // will be applied prior to time being considered
 
-            name = depend.Name!;
-            return true;
+                name = depend.Name!;
+                return true;
+            }
         }
 
         name = null;
