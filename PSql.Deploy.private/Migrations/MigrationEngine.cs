@@ -95,25 +95,12 @@ public class MigrationEngine
         await Task.WhenAll(targets.Select(RunAsync));
     }
 
-    /// <summary>
-    ///   Applies migrations to the specified targets asynchronously.
-    /// </summary>
-    /// <param name="targets">
-    ///   The targets to which to apply migrations.
-    /// </param>
-    /// <returns>
-    ///   A <see cref="Task"/> representing the asynchronous operation.
-    /// </returns>
-    public async Task RunAsync(SqlContextParallelSet targets)
+    private async Task RunAsync(SqlContextParallelSet targets)
     {
         if (targets is null)
             throw new ArgumentNullException(nameof(targets));
 
-        // Let calling thread continue
-        await Task.Yield();
-
-        // Start timing if not already started
-        _totalStopwatch.Start();
+        await Task.Yield(); // Parallelize
 
         using var limiter = new SemaphoreSlim(targets.Parallelism, targets.Parallelism);
 
@@ -133,25 +120,12 @@ public class MigrationEngine
         await Task.WhenAll(targets.Contexts.Select(RunLimitedAsync));
     }
 
-    /// <summary>
-    ///   Applies migrations to the specified target asynchronously.
-    /// </summary>
-    /// <param name="target">
-    ///   The target to which to apply migrations.
-    /// </param>
-    /// <returns>
-    ///   A <see cref="Task"/> representing the asynchronous operation.
-    /// </returns>
     private async Task RunAsync(SqlContext target)
     {
         if (target is null)
             throw new ArgumentNullException(nameof(target));
 
-        // Let calling thread continue
-        await Task.Yield();
-
-        // Start timing if not already started
-        _totalStopwatch.Start();
+        await Task.Yield(); // Parallelize
 
         // Get migrations on target
         var migrations = await RemoteMigrationDiscovery.GetServerMigrationsAsync(
