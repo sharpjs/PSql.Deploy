@@ -200,15 +200,17 @@ public class MigrationEngine
         return Task.CompletedTask;
     }
 
-    private Migration[] Merge(
-        IReadOnlyList<Migration> sourceMigrations,
-        IReadOnlyList<Migration> targetMigrations)
+    private ReadOnlySpan<Migration> Merge(
+        ImmutableArray<Migration> sourceMigrations,
+        IReadOnlyList <Migration> targetMigrations)
     {
         // Assume migrations already sorted using MigrationComparer
 
-        var migrations = new List<Migration>();
+        var migrations = ImmutableArray.CreateBuilder<Migration>( 
+            initialCapacity: Math.Max(sourceMigrations.Length, targetMigrations.Count)
+        );
 
-        using var sourceItems = sourceMigrations.GetEnumerator();
+              var sourceItems = sourceMigrations.GetEnumerator();
         using var targetItems = targetMigrations.GetEnumerator();
 
         var hasSource = sourceItems.MoveNext();
@@ -249,7 +251,7 @@ public class MigrationEngine
                 migrations.Add(migration);
         }
 
-        return migrations.ToArray();
+        return migrations.Build().AsSpan();
     }
 
     private static Migration? OnSourceWithoutTarget(Migration source)
