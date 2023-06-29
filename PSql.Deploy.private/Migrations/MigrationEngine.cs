@@ -361,7 +361,12 @@ public class MigrationEngine
                     break;
 
                 case < 0 when Compare(dependName, MinimumMigrationName) < 0:
-                    // Ignore dependency on prehistoric migrations
+                    Console.WriteVerbose(string.Format(
+                        "Ignoring migration '{0}' dependency on migration '{1}', " +
+                        "which is older than the earliest migration on disk.",
+                        /*{0}*/ migration.Name,
+                        /*{1}*/ dependName
+                    ));
                     break;
 
                 case < 0:
@@ -480,7 +485,7 @@ public class MigrationEngine
     private void ReportApplied(int count, SqlContext target, TimeSpan elapsed, Exception? exception)
     {
         Console.WriteHost(string.Format(
-            @"[+{0:hh\:mm\:ss}] {1}: Applied {2} {3} migration(s) in {4:N3} second(s){5}",
+            @"[+{0:hh\:mm\:ss}] {1}: Applied {2} {3} item(s) in {4:N3} second(s){5}",
             _totalStopwatch.Elapsed,
             target.DatabaseName,
             count,
