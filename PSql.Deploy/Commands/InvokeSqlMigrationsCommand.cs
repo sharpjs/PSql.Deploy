@@ -1,6 +1,7 @@
 // Copyright 2023 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
+using System.Reflection;
 using PSql.Deploy.Migrations;
 
 namespace PSql.Deploy.Commands;
@@ -30,7 +31,13 @@ public class InvokeSqlMigrationsCommand : AsyncCmdlet
     {
         Console.WriteHost("Press Ctrl+C to cancel.");
 
-        var engine = new MigrationEngine(Console, cancellation);
+        // Until base classes derive from PSCmdlet instead of Cmdlet, or some other solution
+        var state = (SessionState) typeof(Cmdlet)
+            .GetProperty("InternalState", BindingFlags.NonPublic | BindingFlags.Instance)!
+            .GetValue(this)!;
+        var path = state.Path.CurrentFileSystemLocation.ProviderPath;
+
+        var engine = new MigrationEngine(Console, path, cancellation);
 
         engine.AddMigrationsFromPath(Path!);
         engine.Phase = Phase ?? MigrationPhase.Post;

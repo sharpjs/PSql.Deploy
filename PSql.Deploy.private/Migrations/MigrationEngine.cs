@@ -23,14 +23,17 @@ public class MigrationEngine
     /// <exception cref="ArgumentNullException">
     ///   <paramref name="console"/> is <see langword="null"/>.
     /// </exception>
-    public MigrationEngine(IConsole console, CancellationToken cancellation)
+    public MigrationEngine(IConsole console, string logPath, CancellationToken cancellation)
     {
         if (console is null)
             throw new ArgumentNullException(nameof(console));
+        if (logPath is null)
+            throw new ArgumentNullException(nameof(logPath));
 
         Migrations           = ImmutableArray<Migration>.Empty;
         MinimumMigrationName = "";
         Console              = console;
+        LogPath              = logPath;
         CancellationToken    = cancellation;
         _totalStopwatch      = new();
     }
@@ -55,6 +58,8 @@ public class MigrationEngine
     ///   Gets the console on which to display status and messages.
     /// </summary>
     public IConsole Console { get; }
+
+    public string LogPath { get; }
 
     /// <summary>
     ///   Gets the token to monitor for cancellation requests.
@@ -92,6 +97,8 @@ public class MigrationEngine
 
         _totalStopwatch.Start();
 
+        Directory.CreateDirectory(LogPath);
+
         await Task.WhenAll(targets.Select(RunAsync));
     }
 
@@ -127,9 +134,11 @@ public class MigrationEngine
 
         await Task.Yield(); // Parallelize
 
+        using var log = OpenLog(target);
+
         // Discover migrations on target
         var migrations = await RemoteMigrationDiscovery.GetServerMigrationsAsync(
-            target, MinimumMigrationName, Console, CancellationToken
+            target, MinimumMigrationName, log, CancellationToken
         );
 
         // Plan what to do
@@ -138,7 +147,16 @@ public class MigrationEngine
             return;
 
         // Run the plan
-        await RunCoreAsync(plan, target);
+        await RunCoreAsync(plan, target, log);
+    }
+
+    private FileConsole OpenLog(SqlContext target)
+    {
+        var serverName   = target.AsAzure?.ServerResourceName ?? target.ServerName ?? "local";
+        var databaseName = target.DatabaseName ?? "default";
+        var fileName     = $"{serverName}.{databaseName}.log".SanitizeFileName();
+
+        return new(Path.Combine(LogPath, fileName));
     }
 
     private MigrationPlan? CreatePlan(IReadOnlyList<Migration> migrations, SqlContext target)
@@ -151,7 +169,7 @@ public class MigrationEngine
         return new MigrationPlanner(merged).CreatePlan();
     }
 
-    private async Task RunCoreAsync(MigrationPlan plan, SqlContext target)
+    private async Task RunCoreAsync(MigrationPlan plan, SqlContext target, FileConsole log)
     {
         var items = plan.GetItems(Phase);
         if (!items.Any())
@@ -161,7 +179,7 @@ public class MigrationEngine
         var count      = 0;
         var exception  = null as Exception;
 
-        using var connection = target.Connect(null, Console);
+        using var connection = target.Connect(null, log);
         using var command    = connection.CreateCommand();
 
         try
