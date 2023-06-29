@@ -3,6 +3,7 @@
 
 namespace PSql.Deploy.Migrations;
 
+using System.Collections.Immutable;
 using static MigrationPhase;
 using static MigrationState;
 
@@ -43,7 +44,7 @@ public class MigrationPlannerTests
         var a = MakeMigration("a");
         var b = MakeMigration("b");
         var c = MakeMigration("c");
-        var d = MakeMigration("d", depends: "b");
+        var d = MakeMigration("d", NotApplied, b);
         var e = MakeMigration("e");
 
         var plan = new MigrationPlanner(new[] { a, b, c, d, e }).CreatePlan();
@@ -63,8 +64,8 @@ public class MigrationPlannerTests
     {
         var a = MakeMigration("a");
         var b = MakeMigration("b");
-        var c = MakeMigration("c", NotApplied, "a");
-        var d = MakeMigration("d", NotApplied, "a", "b");
+        var c = MakeMigration("c", NotApplied, a);
+        var d = MakeMigration("d", NotApplied, a, b);
         var e = MakeMigration("e");
 
         var plan = new MigrationPlanner(new[] { a, b, c, d, e }).CreatePlan();
@@ -85,8 +86,8 @@ public class MigrationPlannerTests
     {
         var a = MakeMigration("a", AppliedPre);
         var b = MakeMigration("b", AppliedPost);
-        var c = MakeMigration("c", NotApplied, "a");
-        var d = MakeMigration("d", AppliedCore, "a", "b");
+        var c = MakeMigration("c", NotApplied,  a);
+        var d = MakeMigration("d", AppliedCore, a, b);
         var e = MakeMigration("e", AppliedPost);
 
         var plan = new MigrationPlanner(new[] { a, b, c, d, e }).CreatePlan();
@@ -116,18 +117,22 @@ public class MigrationPlannerTests
     }
 
     private static Migration MakeMigration(
-        string          name,
-        MigrationState  state = NotApplied,
-        params string[] depends)
+        string             name,
+        MigrationState     state = NotApplied,
+        params Migration[] depends)
     {
+        var dependObjects = depends.ToImmutableArray();
+        var dependNames   = ImmutableArray.CreateRange(dependObjects, m => m.Name);
+
         return new Migration
         {
-            Name     = name,
-            PreSql   = name + ":Pre",
-            CoreSql  = name + ":Core",
-            PostSql  = name + ":Post",
-            Depends  = depends,
-            State2   = state
+            Name            = name,
+            PreSql          = name + ":Pre",
+            CoreSql         = name + ":Core",
+            PostSql         = name + ":Post",
+            Depends         = dependNames,
+            ResolvedDepends = dependObjects,
+            State2          = state
         };
     }
 }

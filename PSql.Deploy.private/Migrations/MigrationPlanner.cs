@@ -71,8 +71,7 @@ internal readonly ref struct MigrationPlanner
         If Migration A depends on Migration B, then B's Post will run before A's Pre.
     */
 
-    private readonly Span<Migration>                      _migrations;
-    private readonly Dictionary<string, Migration>        _migrationsByName;
+    private readonly ReadOnlySpan<Migration>              _migrations;
     private readonly HashSet<(Migration, MigrationPhase)> _scheduled;
     private readonly MigrationPlan                        _plan;
 
@@ -83,10 +82,9 @@ internal readonly ref struct MigrationPlanner
     /// <param name="migrations">
     ///   The migrations to assemble into a <see cref="MigrationPlan"/>.
     /// </param>
-    public MigrationPlanner(Span<Migration> migrations)
+    public MigrationPlanner(ReadOnlySpan<Migration> migrations)
     {
         _migrations       = migrations;
-        _migrationsByName = new(capacity: migrations.Length, StringComparer.OrdinalIgnoreCase);
         _scheduled        = new();
         _plan             = new();
     }
@@ -96,25 +94,10 @@ internal readonly ref struct MigrationPlanner
     /// </summary>
     public MigrationPlan CreatePlan()
     {
-        Prepare();
         SchedulePre();
         ScheduleCore();
         SchedulePost();
         return _plan;
-    }
-
-    // Populates the migrations-by-name dictionary, which will be used to
-    // resolve dependency references.
-    private void Prepare()
-    {
-        foreach (var migration in _migrations)
-        {
-            // Pseudo migrations cannot be dependencies
-            if (migration.IsPseudo)
-                continue;
-
-            _migrationsByName.Add(migration.Name!, migration);
-        }
     }
 
     // Schedules the Pre components of migrations until one is found that
@@ -123,7 +106,7 @@ internal readonly ref struct MigrationPlanner
     {
         foreach (var migration in _migrations)
         {
-            if (HasUnsatisfiedDependency(migration))
+            if (HasUnsatisfiedDependency(migration, out _))
                 break;
 
             ScheduleInPre(migration);
@@ -177,7 +160,7 @@ internal readonly ref struct MigrationPlanner
                 // Schedule Pre components late (in the Core phase) that could
                 // not be scheduled earlier due to the unsatisfied dependency
 
-                if (HasUnsatisfiedDependency(migration))
+                if (HasUnsatisfiedDependency(migration, out _))
                     break;
 
                 if (!IsScheduled(migration, Pre))
@@ -215,41 +198,25 @@ internal readonly ref struct MigrationPlanner
         _scheduled.Add((migration, Post));
     }
 
-    private bool HasUnsatisfiedDependency(Migration migration)
+    private bool HasUnsatisfiedDependency(
+        Migration migration,
+        [MaybeNullWhen(false)] out string name)
     {
-        foreach (var name in migration.Depends!)
+        for (var i = migration.ResolvedDepends!.Count - 1; i >= 0; i--)
         {
-            if (!_migrationsByName.TryGetValue(name, out var depend))
-                throw new Exception("Can't find the dependency.");
+            var depend = migration.ResolvedDepends[i];
 
             if (depend.IsAppliedThrough(Post))
-                continue;
+                continue; // already applied
 
             if (IsScheduled(depend, Post))
-                continue;
+                continue; // will be applied prior to time being considered
 
+            name = depend.Name!;
             return true;
         }
 
-        return false;
-    }
-
-    private bool HasUnsatisfiedDependency(Migration migration, [MaybeNullWhen(false)] out string name)
-    {
         name = null;
-
-        // TODO: This could use a reverse enumeration capability.
-        foreach (var candidate in migration.Depends!)
-        {
-            if (!_migrationsByName.TryGetValue(candidate, out var depend))
-                throw new Exception("Can't find the dependency.");
-
-            if (depend.IsAppliedThrough(Post))
-                continue;
-
-            name = candidate;
-        }
-
-        return name is not null;
+        return false;
     }
 }
