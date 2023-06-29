@@ -1,7 +1,6 @@
 // Copyright 2023 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
-using System.Collections.Immutable;
 using PSql.Deploy.Commands;
 using PSql.Deploy.Migrations;
 
@@ -56,6 +55,8 @@ public class GetSqlMigrationsCommand : AsyncCmdlet
     private Task<IReadOnlyList<Migration>> GetMigrationsAsync(
         SqlContext target, CancellationToken cancellation)
     {
-        return RemoteMigrationDiscovery.GetServerMigrationsAsync(target, Console, cancellation);
+        return RemoteMigrationDiscovery.GetServerMigrationsAsync(
+            target, minimumName: "", Console, cancellation
+        );
     }
 }

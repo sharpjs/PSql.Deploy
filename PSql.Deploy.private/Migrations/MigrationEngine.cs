@@ -154,9 +154,9 @@ public class MigrationEngine
         _totalStopwatch.Start();
 
         // Get migrations on target
-        // TODO: Limit to unfinished or not-older-than-what's-on-disk migrations
-        var migrations = await RemoteMigrationDiscovery
-            .GetServerMigrationsAsync(target, Console, CancellationToken);
+        var migrations = await RemoteMigrationDiscovery.GetServerMigrationsAsync(
+            target, MinimumMigrationName, Console, CancellationToken
+        );
 
         // Merge source and target migration lists
         var merged = Merge(Migrations, migrations);
