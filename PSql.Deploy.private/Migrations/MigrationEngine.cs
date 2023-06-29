@@ -153,9 +153,8 @@ public class MigrationEngine
 
     private async Task RunCoreAsync(MigrationPlan plan, SqlContext target)
     {
-        var migrations = plan.Pre; // TODO
-
-        if (migrations.Count == 0)
+        var items = plan.GetItems(Phase);
+        if (!items.Any())
             return;
 
         var stopwatch  = Stopwatch.StartNew();
@@ -167,10 +166,10 @@ public class MigrationEngine
 
         try
         {
-            foreach (var migration in migrations)
+            foreach (var (migration, phase) in items)
             {
-                ReportApplying(migration, target);
-                await RunCoreAsync(migration, command);
+                ReportApplying    (migration, phase, target);
+                await RunCoreAsync(migration, phase, command);
                 count++;
             }
         }
@@ -186,9 +185,9 @@ public class MigrationEngine
         }
     }
 
-    private Task RunCoreAsync(Migration migration, ISqlCommand command)
+    private Task RunCoreAsync(Migration migration, MigrationPhase phase, ISqlCommand command)
     {
-        var sql = migration.GetSql(Phase);
+        var sql = migration.GetSql(phase);
         if (sql.IsNullOrEmpty())
             return Task.CompletedTask;
  
@@ -467,14 +466,14 @@ public class MigrationEngine
         return false;
     }
 
-    private void ReportApplying(Migration migration, SqlContext target)
+    private void ReportApplying(Migration migration, MigrationPhase phase, SqlContext target)
     {
         Console.WriteHost(string.Format(
             @"[+{0:hh\:mm\:ss}] {1}: Applying {2} {3}",
             _totalStopwatch.Elapsed,
             target.DatabaseName,
             migration.Name,
-            Phase
+            phase
         ));
     }
 
