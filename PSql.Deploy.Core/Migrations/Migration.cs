@@ -105,6 +105,12 @@ public class Migration
     public ICollection<string>? Depends { get; set; }
 
     /// <summary>
+    ///   Gets or sets the resolved migrations that must be applied completely
+    ///   before any phase of the current migration.
+    /// </summary>
+    internal IReadOnlyList<Migration>? ResolvedDepends { get; set; }
+
+    /// <summary>
     ///   Gets or sets the SQL script for the <b>Pre</b> phase.
     /// </summary>
     public string? PreSql { get; set; }
