@@ -192,6 +192,10 @@ public class Migration
     /// </param>
     public bool CanApplyThrough(MigrationPhase phase)
     {
+        // Pseudo-migrations always can be applied
+        if (IsPseudo)
+            return true;
+
         // State also functions as 'next phase to be applied'
         var next = (MigrationPhase) State2;
 
