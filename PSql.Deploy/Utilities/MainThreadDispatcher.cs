@@ -23,7 +23,7 @@ internal sealed class MainThreadDispatcher : IDispatcher, IDisposable
         _mainThreadId = CurrentThreadId;
     }
 
-    private int CurrentThreadId => Thread.CurrentThread.ManagedThreadId;
+    private static int CurrentThreadId => Thread.CurrentThread.ManagedThreadId;
 
     /// <summary>
     ///   Executes dispatched actions until <see cref="End"/> is invoked.
