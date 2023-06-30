@@ -59,6 +59,9 @@ public class MigrationEngine
     /// </summary>
     public IConsole Console { get; }
 
+    /// <summary>
+    ///   Gets the path to the directory for per-database log files.
+    /// </summary>
     public string LogPath { get; }
 
     /// <summary>
@@ -153,25 +156,6 @@ public class MigrationEngine
         await RunCoreAsync(plan, target, log);
     }
 
-    private FileConsole OpenLog(SqlContext target)
-    {
-        var serverName   = target.AsAzure?.ServerResourceName ?? target.ServerName ?? "local";
-        var databaseName = target.DatabaseName ?? "default";
-        var fileName     = $"{serverName}.{databaseName}.log".SanitizeFileName();
-
-        return new(Path.Combine(LogPath, fileName));
-    }
-
-    private MigrationPlan? CreatePlan(IReadOnlyList<Migration> migrations, SqlContext target)
-    {
-        var merged = Merge(Migrations, migrations);
-
-        if (!Validate(merged, target))
-            return null;
-
-        return new MigrationPlanner(merged).CreatePlan();
-    }
-
     private async Task RunCoreAsync(MigrationPlan plan, SqlContext target, FileConsole log)
     {
         var items = plan.GetItems(Phase);
@@ -227,7 +211,22 @@ public class MigrationEngine
         return command.UnderlyingCommand.ExecuteNonQueryAsync(CancellationToken);
     }
 
-        return Task.CompletedTask;
+    private string? GetMinimumMigrationName()
+    {
+        foreach (var migration in Migrations)
+            if (!migration.IsPseudo)
+                return migration.Name;
+
+        return null;
+    }
+
+    private FileConsole OpenLog(SqlContext target)
+    {
+        var serverName   = target.AsAzure?.ServerResourceName ?? target.ServerName ?? "local";
+        var databaseName = target.DatabaseName ?? "default";
+        var fileName     = $"{serverName}.{databaseName}.{Phase}.log".SanitizeFileName();
+
+        return new(Path.Combine(LogPath, fileName));
     }
 
     private ReadOnlySpan<Migration> Merge(
@@ -327,13 +326,14 @@ public class MigrationEngine
         return target;
     }
 
-    private string? GetMinimumMigrationName()
+    private MigrationPlan? CreatePlan(IReadOnlyList<Migration> migrations, SqlContext target)
     {
-        foreach (var migration in Migrations)
-            if (!migration.IsPseudo)
-                return migration.Name;
+        var merged = Merge(Migrations, migrations);
 
-        return null;
+        if (!Validate(merged, target))
+            return null;
+
+        return new MigrationPlanner(merged).CreatePlan();
     }
 
     private bool Validate(ReadOnlySpan<Migration> migrations, SqlContext target)
