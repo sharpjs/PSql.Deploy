@@ -178,8 +178,8 @@ internal static class MigrationLoader
 
         # Match a chunk of SQL text
         (?<text>
-            (   [^''\[/-]                               # regular character
-            |   '' ( [^''] | '''' )* ( ''    | \z )     # string
+            (   [^'\[/-]                                # regular character
+            |   '  ( [^']  | ''   )* ( '     | \z )     # string
             |   \[ ( [^\]] | \]\] )* ( \]    | \z )     # quoted identifier
             |   -- (?!\#) .*?        ( \r?\n | \z )     # line comment (non-magic)
             |   -  (?! -)                               # just a dash
