@@ -69,6 +69,9 @@ public class MigrationEngine
     // Measures total elapsed time of migration run
     private readonly Stopwatch _totalStopwatch;
 
+    // Whether any thread encountered an error
+    private int _errorCount;
+
     /// <summary>
     ///   Discovers migrations in the specified path.
     /// </summary>
@@ -186,13 +189,22 @@ public class MigrationEngine
         {
             foreach (var (migration, phase) in items)
             {
-                ReportApplying    (migration, phase, target);
+                // Stop if another thread encountered an error
+                if (_errorCount > 0)
+                    return;
+
+                ReportApplying(migration, phase, target);
+                connection.ClearErrors();
+
                 await RunCoreAsync(migration, phase, command);
+
+                connection.ThrowIfHasErrors();
                 count++;
             }
         }
         catch (Exception e)
         {
+            Interlocked.Increment(ref _errorCount);
             exception = e;
             throw;
         }
@@ -212,7 +224,8 @@ public class MigrationEngine
         command.CommandText    = sql;
         command.CommandTimeout = 0; // No timeout
 
-        //return command.UnderlyingCommand.ExecuteNonQueryAsync(CancellationToken);
+        return command.UnderlyingCommand.ExecuteNonQueryAsync(CancellationToken);
+    }
 
         return Task.CompletedTask;
     }
@@ -502,6 +515,11 @@ public class MigrationEngine
 
     private void ReportApplied(int count, SqlContext target, TimeSpan elapsed, Exception? exception)
     {
+        var abnormality = 
+            exception is not null ? " [EXCEPTION]"  :
+            _errorCount > 0       ? " [INCOMPLETE]" :
+            null;
+
         Console.WriteHost(string.Format(
             @"[+{0:hh\:mm\:ss}] {1}: Applied {2} {3} item(s) in {4:N3} second(s){5}",
             _totalStopwatch.Elapsed,
@@ -509,7 +527,7 @@ public class MigrationEngine
             count,
             Phase,
             elapsed.TotalSeconds,
-            exception is null ? null : " [EXCEPTION]"
+            abnormality
         ));
     }
 }
