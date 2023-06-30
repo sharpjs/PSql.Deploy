@@ -1,10 +1,9 @@
 // Copyright 2023 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
-using PSql.Deploy.Commands;
 using PSql.Deploy.Migrations;
 
-namespace PSql.Deploy;
+namespace PSql.Deploy.Commands;
 
 [Cmdlet(VerbsCommon.Get, "SqlMigrations", DefaultParameterSetName = "Path")]
 [OutputType(typeof(Migration))]
