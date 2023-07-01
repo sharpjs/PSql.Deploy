@@ -51,9 +51,9 @@ internal static class MigrationLoader
 
         AppendAuthoredSql(migration, depends, pre, core, post);
 
-        AppendFinalBatch(migration, pre,  MigrationPhase.Pre );
-        AppendFinalBatch(migration, core, MigrationPhase.Core);
-        AppendFinalBatch(migration, post, MigrationPhase.Post);
+        AppendFinalBatches(migration, pre,  MigrationPhase.Pre );
+        AppendFinalBatches(migration, core, MigrationPhase.Core);
+        AppendFinalBatches(migration, post, MigrationPhase.Post);
 
         migration.Depends = depends.ToImmutableArray();
         migration.PreSql  = pre .Complete();
@@ -67,9 +67,10 @@ internal static class MigrationLoader
 
         builder.StartNewBatch();
         builder.Append($"PRINT '*** {name} {phase} ***';");
+        builder.StartNewBatch();
     }
 
-    private static void AppendFinalBatch(Migration migration, SqlErrorHandlingBuilder builder, MigrationPhase phase)
+    private static void AppendFinalBatches(Migration migration, SqlErrorHandlingBuilder builder, MigrationPhase phase)
     {
         if (migration.IsPseudo)
             return;
@@ -79,10 +80,11 @@ internal static class MigrationLoader
 
         builder.StartNewBatch();
         builder.Append(
+            $"PRINT '+ data _deploy.Migration ({name} {phase} done)';"
+        );
+        builder.StartNewBatch();
+        builder.Append(
             $"""
-            PRINT '+ data _deploy.Migration ({name} {phase} done)';
-            GO
-
             MERGE _deploy.Migration dst
             USING
                 (
