@@ -235,12 +235,31 @@ public class MigrationEngine
     {
         var merged = new MigrationMerger(Phase).Merge(Migrations, migrations);
 
+        if (!HasOutstandingMigrations(merged))
+            return OnNothingToDo(target, log);
+
         ReportMigrations(merged, log);
 
         if (!new MigrationValidator(target, Phase, Console).Validate(merged, target))
             return null;
 
         return new MigrationPlanner(merged).CreatePlan();
+    }
+
+    private bool HasOutstandingMigrations(ReadOnlySpan<Migration> migrations)
+    {
+        foreach (var migration in migrations)
+            if (!migration.IsPseudo)
+                return true;
+
+        return false;
+    }
+
+    private MigrationPlan? OnNothingToDo(SqlContext target, FileConsole console)
+    {
+        ReportApplied(0, target,  default, null);
+        ReportNoMigrations(console);
+        return null;
     }
 
     private void ReportTarget(SqlContext target, IConsole console)
@@ -254,12 +273,20 @@ public class MigrationEngine
         console.WriteVerbose("Machine:         " + Environment.MachineName);
         console.WriteVerbose("User:            " + Environment.UserName);
         console.WriteVerbose("Process ID:      " + Process.GetCurrentProcess().Id);
+    }
+
+    private void ReportNoMigrations(FileConsole console)
+    {
+        console.WriteVerbose($"Migrations:      0");
         console.WriteVerbose("");
-        console.WriteVerbose("Migrations:");
+        console.WriteVerbose("Nothing to do.");
     }
 
     private void ReportMigrations(ReadOnlySpan<Migration> migrations, FileConsole console)
     {
+        console.WriteVerbose($"Migrations:      {migrations.Length}");
+        console.WriteVerbose("");
+
         var nameColumnWidth = 4;
 
         foreach (var migration in migrations)
