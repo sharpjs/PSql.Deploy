@@ -35,7 +35,8 @@ public class Migration
         if (name.Length == 0)
             throw new ArgumentException("Argument cannot be empty.", nameof(name));
 
-        Name = name;
+        Name     = name;
+        IsPseudo = MigrationComparer.GetRank(name) != 0;
     }
 
     /// <summary>
@@ -53,7 +54,6 @@ public class Migration
             PreSql     = PreSql,
             CoreSql    = CoreSql,
             PostSql    = PostSql,
-            IsPseudo   = IsPseudo,
             HasChanged = HasChanged,
         };
     }
@@ -62,6 +62,12 @@ public class Migration
     ///   Gets the name of the migration.
     /// </summary>
     public string Name { get; }
+
+    /// <summary>
+    ///   Gets whether the migration is a <c>_Begin</c> or <c>_End</c>
+    ///   pseudo-migration.
+    /// </summary>
+    public bool IsPseudo { get; }
 
     /// <summary>
     ///   Gets or sets the full path <c>_Main.sql</c> file of the migration, or
@@ -96,12 +102,6 @@ public class Migration
     ///   Gets or sets the SQL script for the <b>Post</b> phase.
     /// </summary>
     public string? PostSql { get; set; }
-
-    /// <summary>
-    ///   Gets or sets whether the migration is a <c>_Begin</c> or <c>_End</c>
-    ///   pseudo-migration.
-    /// </summary>
-    public bool IsPseudo { get; set; }
 
     /// <summary>
     ///   Gets or sets whether the migration has changed after it was deployed.

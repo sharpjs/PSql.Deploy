@@ -46,9 +46,8 @@ internal static class LocalMigrationDiscovery
 
         return new Migration(directory.Name)
         {
-            Path     = file.FullName,
-            Hash     = GetMigrationHash(directory),
-            IsPseudo = IsPseudo(directory.Name),
+            Path = file.FullName,
+            Hash = GetMigrationHash(directory),
         };
     }
 
@@ -110,11 +109,6 @@ internal static class LocalMigrationDiscovery
     private static MemoryMappedViewStream GetStream(FileInfo file, MemoryMappedFile memory)
     {
         return memory.CreateViewStream(0, file.Length, MemoryMappedFileAccess.Read);
-    }
-
-    private static bool IsPseudo(string name)
-    {
-        return MigrationComparer.GetRank(name) != 0;
     }
 
     private static string ConvertToHexString(ReadOnlySpan<byte> bytes)

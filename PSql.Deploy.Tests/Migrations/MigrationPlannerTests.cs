@@ -104,16 +104,12 @@ public class MigrationPlannerTests
 
     private static Migration MakeBeginPseudoMigration()
     {
-        var migration = MakeMigration("_Begin");
-        migration.IsPseudo = true;
-        return migration;
+        return MakeMigration(Migration.BeginPseudoMigrationName);
     }
 
     private static Migration MakeEndPseudoMigration()
     {
-        var migration = MakeMigration("_End");
-        migration.IsPseudo = true;
-        return migration;
+        return MakeMigration(Migration.EndPseudoMigrationName);
     }
 
     private static Migration MakeMigration(
