@@ -214,7 +214,7 @@ internal readonly ref struct MigrationPlanner
                 if (IsScheduled(depend, Post))
                     continue; // will be applied prior to time being considered
 
-                name = depend.Name!;
+                name = depend.Name;
                 return true;
             }
         }

@@ -55,7 +55,7 @@ public sealed class MigrationComparer : IComparer<Migration>
     /// <remarks>
     ///   This method uses case-insensitive ordinal comparison.
     /// </remarks>
-    internal static int GetRank(string? name)
+    internal static int GetRank(string name)
     {
         if (NameComparer.Equals(name, Migration.BeginPseudoMigrationName))
             return -1;

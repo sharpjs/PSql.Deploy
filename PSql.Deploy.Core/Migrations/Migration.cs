@@ -19,9 +19,24 @@ public class Migration
     public const string EndPseudoMigrationName = "_End";
 
     /// <summary>
-    ///   Initializes a new <see cref="Migration"/> instance.
+    ///   Initializes a new <see cref="Migration"/> instance with the specified
+    ///   name.
     /// </summary>
-    public Migration() { }
+    /// <exception cref="ArgumentNullException">
+    ///   <paramref name="name"/> is <see langword="null"/>.
+    /// </exception>
+    /// <exception cref="ArgumentException">
+    ///   <paramref name="name"/> is the empty string.
+    /// </exception>
+    public Migration(string name)
+    {
+        if (name is null)
+            throw new ArgumentNullException(nameof(name));
+        if (name.Length == 0)
+            throw new ArgumentException("Argument cannot be empty.", nameof(name));
+
+        Name = name;
+    }
 
     /// <summary>
     ///   Creates a new <see cref="Migration"/> instance that is a shallow
@@ -29,9 +44,8 @@ public class Migration
     /// </summary>
     public Migration Clone()
     {
-        return new()
+        return new(Name)
         {
-            Name       = Name,
             Path       = Path,
             Hash       = Hash,
             State2     = State2,
@@ -45,9 +59,9 @@ public class Migration
     }
 
     /// <summary>
-    ///   Gets or sets the name of the migration.
+    ///   Gets the name of the migration.
     /// </summary>
-    public string? Name { get; set; }
+    public string Name { get; }
 
     /// <summary>
     ///   Gets or sets the full path <c>_Main.sql</c> file of the migration.
@@ -137,7 +151,7 @@ public class Migration
     public bool HasChanged { get; set; }
 
     /// <inheritdoc/>
-    public override string ToString() => Name ?? "(unnamed)";
+    public override string ToString() => Name;
 
     /// <summary>
     ///   Gets the SQL script for the specified phase.

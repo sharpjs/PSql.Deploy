@@ -291,7 +291,7 @@ public class MigrationEngine
 
         foreach (var migration in migrations)
             if (!migration.IsPseudo)
-                nameColumnWidth = Math.Max(nameColumnWidth, migration.Name!.Length);
+                nameColumnWidth = Math.Max(nameColumnWidth, migration.Name.Length);
 
         // NAME               FILES     PROGRESS          DEPENDS-ON
         // 2023-01-01-10042   Ok        (new)             (none)
@@ -309,7 +309,7 @@ public class MigrationEngine
                 console.WriteHost(string.Format(
                     "{0}{1}   {2}   {3}   {4}",
                     migration.Name,
-                    new string(' ', nameColumnWidth - migration.Name!.Length),
+                    new string(' ', nameColumnWidth - migration.Name.Length),
                     migration.HasChanged switch
                     {
                         true                                => "Changed",

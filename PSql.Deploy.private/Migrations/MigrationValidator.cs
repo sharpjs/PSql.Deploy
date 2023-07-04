@@ -46,8 +46,8 @@ internal readonly ref struct MigrationValidator
         );
 
         foreach (var migration in migrations)
-            if (!migration.IsPseudo && migration.Name is { } name)
-                lookup.Add(name, migration);
+            if (!migration.IsPseudo)
+                lookup.Add(migration.Name, migration);
 
         return lookup;
     }
@@ -63,7 +63,7 @@ internal readonly ref struct MigrationValidator
         var resolvedDepends = new List<Migration>(dependNames.Count);
         var valid           = true;
 
-        static int Compare(string? lhs, string? rhs)
+        static int Compare(string lhs, string rhs)
             => StringComparer.OrdinalIgnoreCase.Compare(lhs, rhs);
 
         foreach (var dependName in dependNames)

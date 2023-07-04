@@ -51,9 +51,8 @@ internal static class RemoteMigrationDiscovery
 
     private static Migration MapToMigration(SqlDataReader reader)
     {
-        return new Migration
+        return new Migration(reader.GetString(0))
         {
-            Name   = reader.GetString(0),
             Hash   = reader.GetString(1).NullIfSpace(),
             State2 = (MigrationState) reader.GetInt32(2),
         };

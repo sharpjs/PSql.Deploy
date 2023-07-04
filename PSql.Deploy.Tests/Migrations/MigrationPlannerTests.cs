@@ -124,9 +124,8 @@ public class MigrationPlannerTests
         var dependObjects = depends.ToImmutableArray();
         var dependNames   = ImmutableArray.CreateRange(dependObjects, m => m.Name);
 
-        return new Migration
+        return new Migration(name)
         {
-            Name            = name,
             PreSql          = name + ":Pre",
             CoreSql         = name + ":Core",
             PostSql         = name + ":Post",

@@ -44,9 +44,8 @@ internal static class LocalMigrationDiscovery
     {
         var directory = file.Directory;
 
-        return new Migration
+        return new Migration(directory.Name)
         {
-            Name     = directory.Name,
             Path     = file.FullName,
             Hash     = GetMigrationHash(directory),
             IsPseudo = IsPseudo(directory.Name),
@@ -113,7 +112,7 @@ internal static class LocalMigrationDiscovery
         return memory.CreateViewStream(0, file.Length, MemoryMappedFileAccess.Read);
     }
 
-    private static bool IsPseudo(string? name)
+    private static bool IsPseudo(string name)
     {
         return MigrationComparer.GetRank(name) != 0;
     }

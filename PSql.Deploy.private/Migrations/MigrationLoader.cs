@@ -63,7 +63,7 @@ internal static class MigrationLoader
 
     private static void AppendStartBatch(Migration migration, SqlErrorHandlingBuilder builder, MigrationPhase phase)
     {
-        var name = migration.Name?.Replace("'", "''");
+        var name = migration.Name.Replace("'", "''");
 
         builder.StartNewBatch();
         builder.Append($"PRINT '*** {name} {phase} ***';");
@@ -75,7 +75,7 @@ internal static class MigrationLoader
         if (migration.IsPseudo)
             return;
 
-        var name = migration.Name?.Replace("'", "''");
+        var name = migration.Name.Replace("'", "''");
         var hash = migration.Hash?.Replace("'", "''");
 
         builder.StartNewBatch();

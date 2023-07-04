@@ -87,8 +87,7 @@ function Find-SqlMigrations {
             | Get-Item -Exclude $Excludes -ErrorAction SilentlyContinue `
             | ForEach-Object -Parallel {
                 Import-Module $using:ModulePath
-                $Migration          = [PSql.Deploy.Migrations.Migration]::new()
-                $Migration.Name     = $_.Directory.Name
+                $Migration          = [PSql.Deploy.Migrations.Migration]::new($_.Directory.Name)
                 $Migration.Path     = $_.FullName
                 $Migration.Hash     = Get-SqlMigrationHash $_.Directory.FullName
                 $Migration.IsPseudo = $using:Type -ne "Named"
