@@ -8,9 +8,9 @@ using System.Security.Cryptography;
 
 namespace PSql.Deploy.Migrations;
 
-internal static class LocalMigrationDiscovery
+internal static partial class MigrationRepository
 {
-    internal static ImmutableArray<Migration> GetLocalMigrations(string path)
+    internal static ImmutableArray<Migration> GetAll(string path)
     {
         if (path is null)
             throw new ArgumentNullException(nameof(path));

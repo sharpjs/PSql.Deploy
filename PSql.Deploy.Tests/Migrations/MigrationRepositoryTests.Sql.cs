@@ -4,14 +4,14 @@
 namespace PSql.Deploy.Migrations;
 
 [TestFixture]
-public class LocalMigrationDiscoveryTests
+public partial class MigrationRepositoryTests
 {
     [Test]
     public void GetLocalMigrations_DirectoryDoesNotExist()
     {
         var path = Path.Combine(TestDirectory, "DoesNotExist");
 
-        var migrations = LocalMigrationDiscovery.GetLocalMigrations(path);
+        var migrations = MigrationRepository.GetAll(path);
 
         migrations.Should().BeEmpty();
     }
@@ -21,7 +21,7 @@ public class LocalMigrationDiscoveryTests
     {
         var path = Path.Combine(TestDirectory, "TestDbs");
 
-        var migrations = LocalMigrationDiscovery.GetLocalMigrations(path);
+        var migrations = MigrationRepository.GetAll(path);
 
         migrations.Should().BeEmpty();
     }
@@ -31,7 +31,7 @@ public class LocalMigrationDiscoveryTests
     {
         var path = Path.Combine(TestDirectory, "TestDbs", "A");
 
-        var migrations = LocalMigrationDiscovery.GetLocalMigrations(path);
+        var migrations = MigrationRepository.GetAll(path);
 
         migrations.Should().SatisfyRespectively(
             m =>

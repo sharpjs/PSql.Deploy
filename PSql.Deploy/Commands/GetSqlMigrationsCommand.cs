@@ -48,13 +48,13 @@ public class GetSqlMigrationsCommand : AsyncCmdlet
 
     private static IReadOnlyList<Migration> GetMigrations(string path)
     {
-        return LocalMigrationDiscovery.GetLocalMigrations(path);
+        return MigrationRepository.GetAll(path);
     }
 
     private Task<IReadOnlyList<Migration>> GetMigrationsAsync(
         SqlContext target, CancellationToken cancellation)
     {
-        return RemoteMigrationDiscovery.GetServerMigrationsAsync(
+        return MigrationRepository.GetAllAsync(
             target, minimumName: "", Console, cancellation
         );
     }

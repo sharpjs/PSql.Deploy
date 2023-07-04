@@ -5,9 +5,9 @@ namespace PSql.Deploy.Migrations;
 
 using static CommandBehavior;
 
-internal static class RemoteMigrationDiscovery
+internal static partial class MigrationRepository
 {
-    internal static async Task<IReadOnlyList<Migration>> GetServerMigrationsAsync(
+    internal static async Task<IReadOnlyList<Migration>> GetAllAsync(
         SqlContext        context,
         string            minimumName,
         IConsole          console,

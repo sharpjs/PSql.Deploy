@@ -83,7 +83,7 @@ public class MigrationEngine
     /// </param>
     public void AddMigrationsFromPath(string path)
     {
-        Migrations           = LocalMigrationDiscovery.GetLocalMigrations(path);
+        Migrations           = MigrationRepository.GetAll(path);
         MinimumMigrationName = GetMinimumMigrationName() ?? "";
     }
 
@@ -145,7 +145,7 @@ public class MigrationEngine
         ReportTarget(target, log);
 
         // Discover migrations on target
-        var migrations = await RemoteMigrationDiscovery.GetServerMigrationsAsync(
+        var migrations = await MigrationRepository.GetAllAsync(
             target, MinimumMigrationName, log, CancellationToken
         );
 
