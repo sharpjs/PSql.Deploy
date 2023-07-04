@@ -206,7 +206,7 @@ public class Migration
 
         // If the next phase to be applied is earlier than the requested state,
         // the migration can be applied only if the intermediate phases are empty
-        for (; next < phase;  next++)
+        for (; next < phase; next++)
             if (!GetSql(next).IsNullOrEmpty())
                 return false;
 
