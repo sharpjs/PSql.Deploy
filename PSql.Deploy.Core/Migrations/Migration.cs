@@ -116,18 +116,6 @@ public class Migration
     public MigrationState State2 { get; set; }
 
     /// <summary>
-    ///   Gets or sets the names of migrations that must be applied completely
-    ///   before any phase of the current migration.
-    /// </summary>
-    public IReadOnlyList<string>? Depends { get; set; }
-
-    /// <summary>
-    ///   Gets or sets the resolved migrations that must be applied completely
-    ///   before any phase of the current migration.
-    /// </summary>
-    internal IReadOnlyList<Migration>? ResolvedDepends { get; set; }
-
-    /// <summary>
     ///   Gets or sets the SQL script for the <b>Pre</b> phase.
     /// </summary>
     public string? PreSql { get; set; }
@@ -152,6 +140,18 @@ public class Migration
     ///   Gets or sets whether the migration has changed after it was deployed.
     /// </summary>
     public bool HasChanged { get; set; }
+
+    /// <summary>
+    ///   Gets or sets the names of migrations that must be applied completely
+    ///   before any phase of the current migration.
+    /// </summary>
+    public IReadOnlyList<string> Depends { get; set; } = Array.Empty<string>();
+
+    /// <summary>
+    ///   Gets or sets the resolved migrations that must be applied completely
+    ///   before any phase of the current migration.
+    /// </summary>
+    internal IReadOnlyList<Migration> ResolvedDepends { get; set; } = Array.Empty<Migration>();
 
     /// <inheritdoc/>
     public override string ToString() => Name;
