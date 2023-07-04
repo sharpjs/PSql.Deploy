@@ -53,7 +53,7 @@ internal static class RemoteMigrationDiscovery
     {
         return new Migration(reader.GetString(0))
         {
-            Hash   = reader.GetString(1).NullIfSpace(),
+            Hash   = reader.GetString(1),
             State2 = (MigrationState) reader.GetInt32(2),
         };
     }

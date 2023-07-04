@@ -94,7 +94,8 @@ internal readonly ref struct MigrationMerger
 
         // Copy source-only properties to target
         target.Path       = source.Path;
-        target.HasChanged = target.Hash is not null && target.Hash != source.Hash;
+        target.HasChanged = !string.IsNullOrWhiteSpace(target.Hash)
+            && !target.Hash.Equals(source.Hash, StringComparison.OrdinalIgnoreCase);
         target.Hash       = source.Hash;
         target.Depends    = source.Depends;
         target.PreSql     = source.PreSql;

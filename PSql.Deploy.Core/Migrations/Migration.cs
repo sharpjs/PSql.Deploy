@@ -71,9 +71,10 @@ public class Migration
     public string? Path { get; set; }
 
     /// <summary>
-    ///   Gets or sets the hash computed from the SQL files of the migration.
+    ///   Gets or sets the hash computed from the SQL content of the migration.
+    ///   The default value is the empty string.
     /// </summary>
-    public string? Hash { get; set; }
+    public string Hash { get; set; } = "";
 
     /// <summary>
     ///   Gets or sets the deployment state of the migration.

@@ -76,7 +76,7 @@ internal static class MigrationLoader
             return;
 
         var name = migration.Name.Replace("'", "''");
-        var hash = migration.Hash?.Replace("'", "''");
+        var hash = migration.Hash.Replace("'", "''");
 
         builder.StartNewBatch();
         builder.Append(
