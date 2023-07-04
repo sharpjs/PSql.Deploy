@@ -77,7 +77,7 @@ function Merge-SqlMigrations {
                     $Migration = $TargetItems.Current.Clone()
                     $HasTarget = $TargetItems.MoveNext()
                     if ($Migration.State -lt 3) {
-                        Write-Host ("    (-t-{1}) {0}" -f $Migration.Name, $Migration.State)
+                        Write-Host ("    (-t-{1}) {0}" -f $Migration.Name, [int] $Migration.State)
                     }
                     break
                 }
@@ -92,7 +92,7 @@ function Merge-SqlMigrations {
                         Write-Host (
                             "    (st{2}{1}) {0}" -f
                             $Migration.Name,
-                            $Migration.State,
+                            [int] $Migration.State,
                             ($Migration.HasChanged ? '!' : '=')
                         )
                     }

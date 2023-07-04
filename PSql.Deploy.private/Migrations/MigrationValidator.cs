@@ -123,7 +123,7 @@ internal readonly ref struct MigrationValidator
     private bool ValidateNotChanged(Migration migration, SqlContext target)
     {
         // Valid regardless of hash difference if migration is not yet applied
-        if (migration.State2 == MigrationState.NotApplied)
+        if (migration.State == MigrationState.NotApplied)
             return true;
 
         // Valid if hash has not changed

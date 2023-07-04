@@ -48,7 +48,7 @@ public class Migration
         {
             Path       = Path,
             Hash       = Hash,
-            State2     = State2,
+            State      = State,
             Depends    = Depends,
             PreSql     = PreSql,
             CoreSql    = CoreSql,
@@ -77,43 +77,10 @@ public class Migration
     public string Hash { get; set; } = "";
 
     /// <summary>
-    ///   Gets or sets the deployment state of the migration.
+    ///   Gets or sets the application state of the migration.  The default
+    ///   value is <see cref="MigrationState.NotApplied"/>.
     /// </summary>
-    /// <remarks>
-    ///   <para>
-    ///     The following values are possible:
-    ///   </para>
-    ///   <list type="table">
-    ///     <item>
-    ///       <term><c>0</c></term>
-    ///       <description>not deployed</description>
-    ///     </item>
-    ///     <item>
-    ///       <term><c>1</c></term>
-    ///       <description>deployed partially, through phase <c>Pre</c></description>
-    ///     </item>
-    ///     <item>
-    ///       <term><c>2</c></term>
-    ///       <description>deployed partially, through phase <c>Core</c></description>
-    ///     </item>
-    ///     <item>
-    ///       <term><c>3</c></term>
-    ///       <description>deployed completely, through phase <c>Post</c></description>
-    ///     </item>
-    ///   </list>
-    /// </remarks>
-    [Obsolete("Use State2, which will be renamed to State soon.", error: true)]
-    public int State
-    {
-        // TODO: Replace this property with State2
-        get => (int) State2;
-        set => State2 = (MigrationState) value;
-    }
-
-    /// <summary>
-    ///   Gets or sets the application state of the migration.
-    /// </summary>
-    public MigrationState State2 { get; set; }
+    public MigrationState State { get; set; }
 
     /// <summary>
     ///   Gets or sets the SQL script for the <b>Pre</b> phase.
@@ -181,7 +148,7 @@ public class Migration
     ///   target database, or <see langword="null"/> if the migration has not
     ///   been applied in any phase.
     /// </summary>
-    public MigrationPhase? AppliedThroughPhase => State2 switch
+    public MigrationPhase? AppliedThroughPhase => State switch
     {
         MigrationState.NotApplied => null,
         var state                 => (MigrationPhase) (state - 1)
@@ -197,7 +164,7 @@ public class Migration
     public bool IsAppliedThrough(MigrationPhase phase)
     {
         // State also functions as 'next phase to be applied'
-        return (MigrationPhase) State2 > phase;
+        return (MigrationPhase) State > phase;
     }
 
     /// <summary>
@@ -214,7 +181,7 @@ public class Migration
             return true;
 
         // State also functions as 'next phase to be applied'
-        var next = (MigrationPhase) State2;
+        var next = (MigrationPhase) State;
 
         // If the next phase to be applied is later than the requested state,
         // the migration has already been applied and cannot be applied again

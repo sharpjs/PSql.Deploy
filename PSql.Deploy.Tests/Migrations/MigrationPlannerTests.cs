@@ -131,7 +131,7 @@ public class MigrationPlannerTests
             PostSql         = name + ":Post",
             Depends         = dependNames,
             ResolvedDepends = dependObjects,
-            State2          = state
+            State           = state
         };
     }
 }

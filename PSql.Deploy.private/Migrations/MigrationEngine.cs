@@ -316,7 +316,7 @@ public class MigrationEngine
                         false when migration.PreSql is null => "Missing",
                         _                                   => "Ok     ",
                     },
-                    migration.State2 switch
+                    migration.State switch
                     {
                         MigrationState.NotApplied  => "(new)          ",
                         MigrationState.AppliedPre  => "Pre            ",

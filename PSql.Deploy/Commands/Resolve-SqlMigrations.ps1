@@ -44,7 +44,7 @@ function Resolve-SqlMigrations {
             if ($Migration.State -gt 0 -and $Migration.HasChanged) {
                 Write-Warning (
                     "Migration '", $Migration.Name, "' has been applied ",
-                    "through phase ", $Migration.State, " of 3, ",
+                    "through phase ", [int] $Migration.State, " of 3, ",
                     "but its code in the source directory does not match the code previously used.  ",
                     "To resolve, verify that no accidental changes have occurred to this migration's code.  ",
                     "Then update the migration's expected hash in the _deploy.Migration table.  ",
@@ -65,7 +65,7 @@ function Resolve-SqlMigrations {
             if (-not $Migration.Path) {
                 Write-Warning (
                     "Migration ", $Migration.Name, " is partially applied ",
-                    "(through phase ", $Migration.State, " of 3), ",
+                    "(through phase ", [int] $Migration.State, " of 3), ",
                     "but no code for it was found in the source directory.  ",
                     "It is not possible to complete this migration." `
                     -join ""
