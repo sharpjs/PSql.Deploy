@@ -89,34 +89,43 @@ public class Migration
     public MigrationState State { get; set; }
 
     /// <summary>
-    ///   Gets or sets the SQL script for the <b>Pre</b> phase.
-    /// </summary>
-    public string? PreSql { get; set; }
-
-    /// <summary>
-    ///   Gets or sets the SQL script for the <b>Core</b> phase.
-    /// </summary>
-    public string? CoreSql { get; set; }
-
-    /// <summary>
-    ///   Gets or sets the SQL script for the <b>Post</b> phase.
-    /// </summary>
-    public string? PostSql { get; set; }
-
-    /// <summary>
     ///   Gets or sets whether the migration has changed after it was deployed.
+    ///   The default value is <see langword="false"/>.
     /// </summary>
     public bool HasChanged { get; set; }
 
     /// <summary>
+    ///   Gets or sets the SQL script for the <b>Pre</b> phase, or
+    ///   <see langword="null"/> if no script is known.  The default value is
+    ///   <see langword="null"/>.
+    /// </summary>
+    public string? PreSql { get; set; }
+
+    /// <summary>
+    ///   Gets or sets the SQL script for the <b>Core</b> phase, or
+    ///   <see langword="null"/> if no script is known.  The default value is
+    ///   <see langword="null"/>.
+    /// </summary>
+    public string? CoreSql { get; set; }
+
+    /// <summary>
+    ///   Gets or sets the SQL script for the <b>Post</b> phase, or
+    ///   <see langword="null"/> if no script is known.  The default value is
+    ///   <see langword="null"/>.
+    /// </summary>
+    public string? PostSql { get; set; }
+
+    /// <summary>
     ///   Gets or sets the names of migrations that must be applied completely
-    ///   before any phase of the current migration.
+    ///   before any phase of the current migration.  The default value is an
+    ///   empty list.
     /// </summary>
     public IReadOnlyList<string> Depends { get; set; } = Array.Empty<string>();
 
     /// <summary>
     ///   Gets or sets the resolved migrations that must be applied completely
-    ///   before any phase of the current migration.
+    ///   before any phase of the current migration.  The default value is an
+    ///   empty list.
     /// </summary>
     internal IReadOnlyList<Migration> ResolvedDepends { get; set; } = Array.Empty<Migration>();
 
