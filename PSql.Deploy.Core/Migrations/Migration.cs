@@ -64,7 +64,9 @@ public class Migration
     public string Name { get; }
 
     /// <summary>
-    ///   Gets or sets the full path <c>_Main.sql</c> file of the migration.
+    ///   Gets or sets the full path <c>_Main.sql</c> file of the migration, or
+    ///   <see langword="null"/> if no path is known.  The default value is
+    ///   <see langword="null"/>.
     /// </summary>
     public string? Path { get; set; }
 
