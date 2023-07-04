@@ -43,18 +43,20 @@ public class Migration
     ///   Creates a new <see cref="Migration"/> instance that is a shallow
     ///   clone of the current instance.
     /// </summary>
+    [Obsolete("To be removed when no longer needed.")]
     public Migration Clone()
     {
         return new(Name)
         {
-            Path       = Path,
-            Hash       = Hash,
-            State      = State,
-            Depends    = Depends,
-            PreSql     = PreSql,
-            CoreSql    = CoreSql,
-            PostSql    = PostSql,
-            HasChanged = HasChanged,
+            Path            = Path,
+            Hash            = Hash,
+            State           = State,
+            HasChanged      = HasChanged,
+            PreSql          = PreSql,
+            CoreSql         = CoreSql,
+            PostSql         = PostSql,
+            Depends         = Depends,
+            ResolvedDepends = ResolvedDepends,
         };
     }
 
