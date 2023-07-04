@@ -140,7 +140,7 @@ internal readonly ref struct MigrationValidator
             /*{0}*/ migration.Name,
             /*{1}*/ target.GetEffectiveServerName(),
             /*{2}*/ target.DatabaseName,
-            /*{3}*/ migration.AppliedThroughPhase,
+            /*{3}*/ migration.LatestAppliedPhase,
             /*{4}*/ migration.Hash
         ));
 
@@ -179,7 +179,7 @@ internal readonly ref struct MigrationValidator
             /*{0}*/ migration.Name,
             /*{1}*/ target.GetEffectiveServerName(),
             /*{2}*/ target.DatabaseName,
-            /*{3}*/ migration.AppliedThroughPhase
+            /*{3}*/ migration.LatestAppliedPhase
         ));
 
         return false;

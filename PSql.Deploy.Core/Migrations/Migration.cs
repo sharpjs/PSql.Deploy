@@ -159,7 +159,7 @@ public class Migration
     ///   target database, or <see langword="null"/> if the migration has not
     ///   been applied in any phase.
     /// </summary>
-    public MigrationPhase? AppliedThroughPhase => State switch
+    public MigrationPhase? LatestAppliedPhase => State switch
     {
         MigrationState.NotApplied => null,
         var state                 => (MigrationPhase) (state - 1)
