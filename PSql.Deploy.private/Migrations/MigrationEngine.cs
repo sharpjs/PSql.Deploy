@@ -386,13 +386,7 @@ public class MigrationEngine
                     false when migration.PreSql is null => "Missing",
                     _                                   => "Ok     ",
                 },
-                migration.State switch
-                {
-                    MigrationState.NotApplied  => "(new)          ",
-                    MigrationState.AppliedPre  => "Pre            ",
-                    MigrationState.AppliedCore => "Pre->Core      ",
-                    _                          => "Pre->Core->Post",
-                },
+                migration.State.ToFixedWidthProgressString(),
                 migration.Depends?.LastOrDefault() ?? "(none)"
             ));
         }
