@@ -1,19 +1,47 @@
 // Copyright 2023 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
-using System.Collections.Immutable;
-
 namespace PSql.Deploy.Migrations;
 
+/// <summary>
+///   An algorithm that merges an ordered collection of source migrations
+///   (found on the filesystem) with an ordered collection of target migrations
+///   (recorded in a target database).
+/// </summary>
 internal readonly ref struct MigrationMerger
 {
+    /// <summary>
+    ///   Initializes a new <see cref="MigrationMerger"/> instance.
+    /// </summary>
+    /// <param name="phase">
+    ///   The phase for which migrations are to be merged.
+    /// </param>
     public MigrationMerger(MigrationPhase phase)
     {
         Phase = phase;
     }
 
+    /// <summary>
+    ///   Gets the phase for which migrations are to be merged.
+    /// </summary>
     public MigrationPhase Phase { get; }
 
+    /// <summary>
+    ///   Merges an ordered collection of source migrations (found on the
+    ///   filesystem) with an ordered collection of target migrations (recorded
+    ///   in a target database).
+    /// </summary>
+    /// <param name="sourceMigrations">
+    ///   The ordered collection of source migrations.
+    /// </param>
+    /// <param name="targetMigrations">
+    ///   The ordered collection of target migrations.
+    /// </param>
+    /// <returns>
+    ///   An ordered collection containing the union of
+    ///   <paramref name="sourceMigrations"/> and
+    ///   <paramref name="targetMigrations"/>.
+    /// </returns>
     public ImmutableArray<Migration> Merge(
         ReadOnlySpan       <Migration> sourceMigrations,
         IReadOnlyCollection<Migration> targetMigrations)
@@ -68,42 +96,53 @@ internal readonly ref struct MigrationMerger
         return migrations.Build();
     }
 
-    private Migration? OnSourceWithoutTarget(Migration source)
+    private Migration? OnSourceWithoutTarget(Migration sourceMigration)
     {
         // Migration will be applied; ensure its content is loaded
-        MigrationLoader.LoadContent(source);
+        MigrationLoader.LoadContent(sourceMigration);
 
-        return source;
+        return sourceMigration;
     }
 
-    private Migration? OnTargetWithoutSource(Migration target)
+    private Migration? OnTargetWithoutSource(Migration targetMigration)
     {
-        if (target.IsAppliedThrough(MigrationPhase.Post))
+        // Skip a completed migration whose source has disappeared; the user
+        // must be able to clean up old migration files they do not need
+        if (targetMigration.IsAppliedThrough(MigrationPhase.Post))
             return null; // completed; source migration removed
 
-        return target;
+        // An incomplete, sourceless migration cannot be applied but needs to
+        // be present in the merged migration list so that validation can warn
+        // about it
+        return targetMigration;
     }
 
-    private Migration? OnMatchedSourceAndTarget(Migration source, Migration target)
+    private Migration? OnMatchedSourceAndTarget(Migration sourceMigration, Migration targetMigration)
     {
+        // Detect a hash mismatch unless the database opts out of hash checks
+        // for a migration by setting the migration's hash to space characters
+        var hasChanged
+            =  !string.IsNullOrWhiteSpace(targetMigration.Hash)
+            && !targetMigration.Hash.Equals(sourceMigration.Hash, StringComparison.OrdinalIgnoreCase);
+
+        // Skip a completed migration whose source is unchanged; these would be
+        // more bloat than useful information in the logs
+        if (!hasChanged && targetMigration.IsAppliedThrough(MigrationPhase.Post))
+            return null;
+
         // If migration will be applied, ensure its content is loaded
-        if (!target.IsAppliedThrough(Phase))
-            MigrationLoader.LoadContent(source);
+        if (!targetMigration.IsAppliedThrough(Phase))
+            MigrationLoader.LoadContent(sourceMigration);
 
         // Copy source-only properties to target
-        target.Path       = source.Path;
-        target.HasChanged = !string.IsNullOrWhiteSpace(target.Hash)
-            && !target.Hash.Equals(source.Hash, StringComparison.OrdinalIgnoreCase);
-        target.Hash       = source.Hash;
-        target.Depends    = source.Depends;
-        target.PreSql     = source.PreSql;
-        target.CoreSql    = source.CoreSql;
-        target.PostSql    = source.PostSql;
+        targetMigration.Path       = sourceMigration.Path;
+        targetMigration.Hash       = sourceMigration.Hash;
+        targetMigration.Depends    = sourceMigration.Depends;
+        targetMigration.PreSql     = sourceMigration.PreSql;
+        targetMigration.CoreSql    = sourceMigration.CoreSql;
+        targetMigration.PostSql    = sourceMigration.PostSql;
+        targetMigration.HasChanged = hasChanged;
 
-        if (target.IsAppliedThrough(MigrationPhase.Post) && !target.HasChanged)
-            return null; // completed
-
-        // log if ($Migration.State -lt 3 -or $Migration.HasChanged)
-        return target;
+        return targetMigration;
     }
 }
