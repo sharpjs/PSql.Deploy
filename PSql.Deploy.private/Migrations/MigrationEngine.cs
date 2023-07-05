@@ -102,16 +102,7 @@ public class MigrationEngine
     public void DiscoverMigrations(string path)
     {
         Migrations           = MigrationRepository.GetAll(path);
-        MinimumMigrationName = GetMinimumMigrationName();
-    }
-
-    private string GetMinimumMigrationName()
-    {
-        foreach (var migration in Migrations)
-            if (!migration.IsPseudo)
-                return migration.Name;
-
-        return "";
+        MinimumMigrationName = Migrations.FirstOrDefault(m => !m.IsPseudo)?.Name ?? "";
     }
 
     /// <summary>
@@ -208,7 +199,7 @@ public class MigrationEngine
         var targetMigrations = await GetTargetMigrationsAsync(target);
         var mergedMigrations = MergeSourceAndTargetMigrations(targetMigrations);
 
-        if (!HasNonPseudoMigration(mergedMigrations))
+        if (mergedMigrations.All(m => m.IsPseudo))
         {
             // No migrations or only pseudo-migrations
             ReportNoMigrations(target);
@@ -251,15 +242,6 @@ public class MigrationEngine
     {
         return new MigrationPlanner(migrations.AsSpan())
             .CreatePlan();
-    }
-
-    private static bool HasNonPseudoMigration(ImmutableArray<Migration> migrations)
-    {
-        foreach (var migration in migrations)
-            if (!migration.IsPseudo)
-                return true;
-
-        return false;
     }
 
     private async Task ExecuteAsync(MigrationPlan plan, MigrationTarget target)
