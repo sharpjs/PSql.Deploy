@@ -14,8 +14,8 @@ internal readonly ref struct MigrationMerger
 
     public MigrationPhase Phase { get; }
 
-    public ReadOnlySpan<Migration> Merge(
-        ImmutableArray     <Migration> sourceMigrations,
+    public ImmutableArray<Migration> Merge(
+        ReadOnlySpan       <Migration> sourceMigrations,
         IReadOnlyCollection<Migration> targetMigrations)
     {
         // Assume migrations already sorted using MigrationComparer
@@ -65,7 +65,7 @@ internal readonly ref struct MigrationMerger
                 migrations.Add(migration);
         }
 
-        return migrations.Build().AsSpan();
+        return migrations.Build();
     }
 
     private Migration? OnSourceWithoutTarget(Migration source)
@@ -73,7 +73,6 @@ internal readonly ref struct MigrationMerger
         // Migration will be applied; ensure its content is loaded
         MigrationLoader.LoadContent(source);
 
-        // Was: "    (s--0) {0}"
         return source;
     }
 
@@ -82,7 +81,6 @@ internal readonly ref struct MigrationMerger
         if (target.IsAppliedThrough(MigrationPhase.Post))
             return null; // completed; source migration removed
 
-        // Was : "    (-t-{1}) {0}" -f $Migration.Name, $Migration.State
         return target;
     }
 
@@ -105,10 +103,7 @@ internal readonly ref struct MigrationMerger
         if (target.IsAppliedThrough(MigrationPhase.Post) && !target.HasChanged)
             return null; // completed
 
-        // Old log:
-        // if ($Migration.State -lt 3 -or $Migration.HasChanged)
-        // "    (st{2}{1}) {0}" -f $Migration.Name, $Migration.State, ($Migration.HasChanged ? '!' : '=')
-
+        // log if ($Migration.State -lt 3 -or $Migration.HasChanged)
         return target;
     }
 }

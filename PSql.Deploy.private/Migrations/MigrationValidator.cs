@@ -5,41 +5,46 @@ namespace PSql.Deploy.Migrations;
 
 internal readonly ref struct MigrationValidator
 {
-    public SqlContext     Target  { get; }
-    public MigrationPhase Phase   { get; }
-    public IConsole       Console { get; }
+    public MigrationTarget Target  { get; }
+    public MigrationPhase  Phase   { get; }
+    public IConsole        Console { get; }
 
-    public MigrationValidator(SqlContext target, MigrationPhase phase, IConsole console)
+    public MigrationValidator(
+        MigrationTarget target,
+        MigrationPhase         phase,
+        string                 cutoff,
+        IConsole               console)
     {
-        Target  = target;
-        Phase   = phase;
-        Console = console;
+        Target               = target;
+        Phase                = phase;
+        MinimumMigrationName = cutoff;
+        Console              = console;
     }
 
-    // TODO
-    private string MinimumMigrationName { get; } = "";
+    private string MinimumMigrationName { get; }
 
-    internal bool Validate(ReadOnlySpan<Migration> migrations, SqlContext target)
+    internal bool Validate(ReadOnlySpan<Migration> migrations)
+
     {
         var valid  = true;
         var lookup = CreateLookup(migrations);
 
         foreach (var migration in migrations)
         {
-            valid &= ValidateNotChanged(migration, target);
+            valid &= ValidateNotChanged(migration);
             valid &= ValidateDepends   (migration, lookup);
 
             if (migration.IsAppliedThrough(Phase))
                 continue; // Migration will not be applied
 
-            valid &= ValidateCanApplyThroughPhase(migration, target);
-            valid &= ValidateHasSource           (migration, target);
+            valid &= ValidateCanApplyThroughPhase(migration);
+            valid &= ValidateHasSource           (migration);
         }
 
         return valid;
     }
 
-    private Dictionary<string, Migration> CreateLookup(ReadOnlySpan<Migration> migrations)
+    private static Dictionary<string, Migration> CreateLookup(ReadOnlySpan<Migration> migrations)
     {
         var lookup = new Dictionary<string, Migration>(
             capacity: migrations.Length, StringComparer.OrdinalIgnoreCase
@@ -120,7 +125,7 @@ internal readonly ref struct MigrationValidator
         return valid;
     }
 
-    private bool ValidateNotChanged(Migration migration, SqlContext target)
+    private bool ValidateNotChanged(Migration migration)
     {
         // Valid regardless of hash difference if migration is not yet applied
         if (migration.State == MigrationState.NotApplied)
@@ -138,8 +143,8 @@ internal readonly ref struct MigrationValidator
             "in the _deploy.Migration table to match the hash of the code in "  +
             "the source directory ({4}).",
             /*{0}*/ migration.Name,
-            /*{1}*/ target.GetEffectiveServerName(),
-            /*{2}*/ target.DatabaseName,
+            /*{1}*/ Target.ServerName,
+            /*{2}*/ Target.DatabaseName,
             /*{3}*/ migration.LatestAppliedPhase,
             /*{4}*/ migration.Hash
         ));
@@ -147,7 +152,7 @@ internal readonly ref struct MigrationValidator
         return false;
     }
 
-    private bool ValidateCanApplyThroughPhase(Migration migration, SqlContext target)
+    private bool ValidateCanApplyThroughPhase(Migration migration)
     {
         if (migration.CanApplyThrough(Phase))
             return true;
@@ -157,15 +162,15 @@ internal readonly ref struct MigrationValidator
             "because the migration has code in an earlier phase that must be "   +
             "applied first.",
             /*{0}*/ migration.Name,
-            /*{1}*/ target.GetEffectiveServerName(),
-            /*{2}*/ target.DatabaseName,
+            /*{1}*/ Target.ServerName,
+            /*{2}*/ Target.DatabaseName,
             /*{3}*/ Phase
         ));
 
         return false;
     }
 
-    private bool ValidateHasSource(Migration migration, SqlContext target)
+    private bool ValidateHasSource(Migration migration)
     {
         // Valid if there is a path to the migration code
         if (migration.Path is not null)
@@ -177,8 +182,8 @@ internal readonly ref struct MigrationValidator
             "found in the source directory. It is not possible to complete "   +
             "this migration.",
             /*{0}*/ migration.Name,
-            /*{1}*/ target.GetEffectiveServerName(),
-            /*{2}*/ target.DatabaseName,
+            /*{1}*/ Target.ServerName,
+            /*{2}*/ Target.DatabaseName,
             /*{3}*/ migration.LatestAppliedPhase
         ));
 

@@ -39,9 +39,9 @@ public class InvokeSqlMigrationsCommand : AsyncCmdlet
 
         var engine = new MigrationEngine(Console, path, cancellation);
 
-        engine.AddMigrationsFromPath(Path!);
+        engine.DiscoverMigrations(Path!);
         engine.Phase = Phase ?? MigrationPhase.Post;
 
-        await engine.RunAsync(Target!);
+        await engine.ApplyAsync(Target!);
     }
 }

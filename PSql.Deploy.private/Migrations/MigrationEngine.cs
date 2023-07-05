@@ -3,6 +3,7 @@
 
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace PSql.Deploy.Migrations;
 
@@ -15,13 +16,17 @@ public class MigrationEngine
     ///   Initializes a new <see cref="MigrationEngine"/> instance.
     /// </summary>
     /// <param name="console">
-    ///   The console on which to display status and messages.
+    ///   The console on which to display status and important messages.
+    /// </param>
+    /// <param name="logPath">
+    ///   The path of a directory in which to save per-database log files.
     /// </param>
     /// <param name="cancellation">
     ///   The token to monitor for cancellation requests.
     /// </param>
     /// <exception cref="ArgumentNullException">
-    ///   <paramref name="console"/> is <see langword="null"/>.
+    ///   <paramref name="console"/> and/or
+    ///   <paramref name="logPath"/> is <see langword="null"/>.
     /// </exception>
     public MigrationEngine(IConsole console, string logPath, CancellationToken cancellation)
     {
@@ -30,37 +35,50 @@ public class MigrationEngine
         if (logPath is null)
             throw new ArgumentNullException(nameof(logPath));
 
+        _totalTime           = Stopwatch.StartNew();
+
         Migrations           = ImmutableArray<Migration>.Empty;
         MinimumMigrationName = "";
+
         Console              = console;
         LogPath              = logPath;
         CancellationToken    = cancellation;
-        _totalStopwatch      = new();
+
+        Directory.CreateDirectory(LogPath);
     }
 
     /// <summary>
-    ///   Gets the migrations to be applied to targets.
+    ///   Gets the migrations to be applied to target databases.  The default
+    ///   value is an empty array.
     /// </summary>
+    /// <remarks>
+    ///   Invoke <see cref="DiscoverMigrations"/> to populate this property.
+    /// </remarks>
     public ImmutableArray<Migration> Migrations { get; private set; }
 
     /// <summary>
-    ///   Gets the minimum name of the migrations to be applied to targets, or
-    ///   string if <see cref="Migrations"/> is empty.
+    ///   Gets the minimum name of the non-pseudo migrations to be applied to
+    ///   target databases, or the empty string if no such migration is known.
+    ///   The default value is the empty string.
     /// </summary>
+    /// <remarks>
+    ///   Invoke <see cref="DiscoverMigrations"/> to populate this property.
+    /// </remarks>
     public string MinimumMigrationName { get; private set; }
 
     /// <summary>
-    ///   Gets or sets the phase of the migrations to be applied to targets.
+    ///   Gets or sets the phase of migrations to be applied to target
+    ///   databases.
     /// </summary>
     public MigrationPhase Phase { get; set; }
 
     /// <summary>
-    ///   Gets the console on which to display status and messages.
+    ///   Gets the console on which to display status and important messages.
     /// </summary>
     public IConsole Console { get; }
 
     /// <summary>
-    ///   Gets the path to the directory for per-database log files.
+    ///   Gets the path of a directory in which to save per-database log files.
     /// </summary>
     public string LogPath { get; }
 
@@ -69,60 +87,89 @@ public class MigrationEngine
     /// </summary>
     public CancellationToken CancellationToken { get; }
 
-    // Measures total elapsed time of migration run
-    private readonly Stopwatch _totalStopwatch;
+    // Time elapsed since construction
+    private readonly Stopwatch _totalTime;
 
     // Whether any thread encountered an error
     private int _errorCount;
 
     /// <summary>
-    ///   Discovers migrations in the specified path.
+    ///   Discovers migrations in the specified directory path.
     /// </summary>
     /// <param name="path">
-    ///   The path in which to discover migrations.
+    ///   The path of a directory in which to discover migrations.
     /// </param>
-    public void AddMigrationsFromPath(string path)
+    public void DiscoverMigrations(string path)
     {
         Migrations           = MigrationRepository.GetAll(path);
-        MinimumMigrationName = GetMinimumMigrationName() ?? "";
+        MinimumMigrationName = GetMinimumMigrationName();
+    }
+
+    private string GetMinimumMigrationName()
+    {
+        foreach (var migration in Migrations)
+            if (!migration.IsPseudo)
+                return migration.Name;
+
+        return "";
     }
 
     /// <summary>
-    ///   Applies migrations to the specified targets asynchronously.
+    ///   Applies migrations to the specified target databases asynchronously.
     /// </summary>
-    /// <param name="targets">
-    ///   The targets to which to apply migrations.
+    /// <param name="contextSets">
+    ///   The context sets specifying the target databases to which to apply
+    ///   migrations.
     /// </param>
     /// <returns>
     ///   A <see cref="Task"/> representing the asynchronous operation.
     /// </returns>
-    public async Task RunAsync(IReadOnlyList<SqlContextParallelSet> targets)
+    /// <exception cref="ArgumentNullException">
+    ///   <paramref name="contextSets"/> is <see langword="null"/>.
+    /// </exception>
+    public async Task ApplyAsync(IReadOnlyCollection<SqlContextParallelSet> contextSets)
     {
-        if (targets is null)
-            throw new ArgumentNullException(nameof(targets));
+        if (contextSets is null)
+            throw new ArgumentNullException(nameof(contextSets));
 
-        _totalStopwatch.Start();
+        if (contextSets.Count == 0)
+            return;
 
-        Directory.CreateDirectory(LogPath);
-
-        await Task.WhenAll(targets.Select(RunAsync));
+        await Task.WhenAll(contextSets.Select(ApplyAsync));
     }
 
-    private async Task RunAsync(SqlContextParallelSet targets)
+    /// <summary>
+    ///   Applies migrations to the specified target databases asynchronously.
+    /// </summary>
+    /// <param name="contextSet">
+    ///   The context set specifying the target databases to which to apply
+    ///   migrations.
+    /// </param>
+    /// <returns>
+    ///   A <see cref="Task"/> representing the asynchronous operation.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    ///   <paramref name="contextSet"/> is <see langword="null"/>.
+    /// </exception>
+    public async Task ApplyAsync(SqlContextParallelSet contextSet)
     {
-        if (targets is null)
-            throw new ArgumentNullException(nameof(targets));
+        if (contextSet is null)
+            throw new ArgumentNullException(nameof(contextSet));
 
-        await Task.Yield(); // Parallelize
+        if (contextSet.Contexts.Count == 0)
+            return;
 
-        using var limiter = new SemaphoreSlim(targets.Parallelism, targets.Parallelism);
+        // Ensure parallelized when caller invokes in loop
+        await Task.Yield();
+
+        using var limiter = new SemaphoreSlim(contextSet.Parallelism, contextSet.Parallelism);
 
         async Task RunLimitedAsync(SqlContext target)
         {
             await limiter.WaitAsync(CancellationToken);
             try
             {
-                await RunAsync(target);
+                await ApplyAsync(target);
             }
             finally
             {
@@ -130,46 +177,104 @@ public class MigrationEngine
             }
         }
 
-        await Task.WhenAll(targets.Contexts.Select(RunLimitedAsync));
+        await Task.WhenAll(contextSet.Contexts.Select(RunLimitedAsync));
     }
 
-    private async Task RunAsync(SqlContext target)
+    /// <summary>
+    ///   Applies migrations to the specified target database asynchronously.
+    /// </summary>
+    /// <param name="context">
+    ///   The context specifying the target database to which to apply
+    ///   migrations.
+    /// </param>
+    /// <returns>
+    ///   A <see cref="Task"/> representing the asynchronous operation.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    ///   <paramref name="context"/> is <see langword="null"/>.
+    /// </exception>
+    public async Task ApplyAsync(SqlContext context)
     {
-        if (target is null)
-            throw new ArgumentNullException(nameof(target));
+        if (context is null)
+            throw new ArgumentNullException(nameof(context));
 
-        await Task.Yield(); // Parallelize
+        // Ensure parallelized when caller invokes in loop
+        await Task.Yield();
 
-        using var log = OpenLog(target);
+        using var target = new MigrationTarget(context, Phase, LogPath);
 
-        ReportTarget(target, log);
+        ReportStarting(target);
 
-        // Discover migrations on target
-        var migrations = await MigrationRepository.GetAllAsync(
-            target, MinimumMigrationName, log, CancellationToken
-        );
+        var targetMigrations = await GetTargetMigrationsAsync(target);
+        var mergedMigrations = MergeSourceAndTargetMigrations(targetMigrations);
 
-        // Plan what to do
-        var plan = CreatePlan(migrations, target, log);
-        if (plan is null)
+        if (!HasNonPseudoMigration(mergedMigrations))
+        {
+            // No migrations or only pseudo-migrations
+            ReportNoMigrations(target);
             return;
+        }
 
-        // Run the plan
-        await RunCoreAsync(plan, target, log);
+        ReportMigrations      (mergedMigrations, target);
+        ValidateMigrations    (mergedMigrations, target); // throws if invalid
+        var plan = ComputePlan(mergedMigrations);
+
+        ReportPlan        (plan, target);
+        await ExecuteAsync(plan, target);
     }
 
-    private async Task RunCoreAsync(MigrationPlan plan, SqlContext target, FileConsole log)
+    private Task<IReadOnlyList<Migration>> GetTargetMigrationsAsync(MigrationTarget target)
+    {
+        return MigrationRepository.GetAllAsync(
+            target.Target,     MinimumMigrationName,
+            target.LogConsole, CancellationToken
+        );
+    }
+
+    private ImmutableArray<Migration> MergeSourceAndTargetMigrations(
+        IReadOnlyList<Migration> targetMigrations)
+    {
+        return new MigrationMerger(Phase)
+            .Merge(Migrations.AsSpan(), targetMigrations);
+    }
+
+    private void ValidateMigrations(ImmutableArray<Migration> migrations, MigrationTarget target)
+    {
+        var isValid = new MigrationValidator(target, Phase, MinimumMigrationName, Console)
+            .Validate(migrations.AsSpan());
+
+        if (!isValid)
+            throw new ApplicationException("Unable to perform migrations due to validation errors.");
+    }
+
+    private MigrationPlan ComputePlan(ImmutableArray<Migration> migrations)
+    {
+        return new MigrationPlanner(migrations.AsSpan())
+            .CreatePlan();
+    }
+
+    private static bool HasNonPseudoMigration(ImmutableArray<Migration> migrations)
+    {
+        foreach (var migration in migrations)
+            if (!migration.IsPseudo)
+                return true;
+
+        return false;
+    }
+
+    private async Task ExecuteAsync(MigrationPlan plan, MigrationTarget target)
     {
         var items = plan.GetItems(Phase);
         if (!items.Any())
             return;
 
-        var stopwatch  = Stopwatch.StartNew();
-        var count      = 0;
-        var exception  = null as Exception;
-
-        using var connection = target.Connect(null, log);
+        using var connection = target.Connect();
         using var command    = connection.CreateCommand();
+
+        command.CommandTimeout = 0; // No timeout
+
+        var count     = 0;
+        var exception = null as Exception;
 
         try
         {
@@ -179,11 +284,14 @@ public class MigrationEngine
                 if (_errorCount > 0)
                     return;
 
+                // Prepare to run the item
                 ReportApplying(migration, phase, target);
                 connection.ClearErrors();
 
-                await RunCoreAsync(migration, phase, command);
+                // Run the item
+                await ExecuteAsync(migration, phase, command);
 
+                // Report errors if they happened
                 connection.ThrowIfHasErrors();
                 count++;
             }
@@ -196,96 +304,55 @@ public class MigrationEngine
         }
         finally
         {
-            stopwatch.Stop();
-            ReportApplied(count, target, stopwatch.Elapsed, exception);
+            ReportApplied(count, target, exception);
         }
     }
 
-    private Task RunCoreAsync(Migration migration, MigrationPhase phase, ISqlCommand command)
+    private Task ExecuteAsync(Migration migration, MigrationPhase phase, ISqlCommand command)
     {
         var sql = migration.GetSql(phase);
         if (sql.IsNullOrEmpty())
             return Task.CompletedTask;
- 
-        command.CommandText    = sql;
-        command.CommandTimeout = 0; // No timeout
+
+        command.CommandText = sql;
 
         return command.UnderlyingCommand.ExecuteNonQueryAsync(CancellationToken);
     }
 
-    private string? GetMinimumMigrationName()
+    private void ReportStarting(MigrationTarget target)
     {
-        foreach (var migration in Migrations)
-            if (!migration.IsPseudo)
-                return migration.Name;
+        Console.WriteHost(string.Format(
+            @"[+{0:hh\:mm\:ss}] {1}: Computing {2} migrations",
+            _totalTime.Elapsed,
+            target.DatabaseName,
+            Phase
+        ));
 
-        return null;
+        target.Log("PSql.Deploy Migration Log");
+        target.Log("");
+        target.Log($"Migration Phase:    {Phase}");
+        target.Log($"Target Server:      {target.ServerName}");
+        target.Log($"Target Database:    {target.DatabaseName}");
+        target.Log($"Start Time:         {DateTime.UtcNow:o}");
+        target.Log($"Machine:            {Environment.MachineName}");
+        target.Log($"Logical CPUs:       {Environment.ProcessorCount}");
+        target.Log($"User:               {Environment.UserName}");
+        target.Log($"Process:            {Process.GetCurrentProcess().Id} ({RuntimeInformation.ProcessArchitecture})");
+        target.Log($"Operating System:   {RuntimeInformation.OSDescription} ({RuntimeInformation.OSArchitecture})");
+        target.Log($".NET Runtime:       {RuntimeInformation.FrameworkDescription}");
     }
 
-    private FileConsole OpenLog(SqlContext target)
+    private void ReportNoMigrations(MigrationTarget target)
     {
-        var serverName   = target.AsAzure?.ServerResourceName ?? target.ServerName ?? "local";
-        var databaseName = target.DatabaseName ?? "default";
-        var fileName     = $"{serverName}.{databaseName}.{Phase}.log".SanitizeFileName();
-
-        return new(Path.Combine(LogPath, fileName));
+        target.Log("Migrations:         0");
+        target.Log("");
+        target.Log("Nothing to do.");
     }
 
-    private MigrationPlan? CreatePlan(IReadOnlyList<Migration> migrations, SqlContext target, FileConsole log)
+    private void ReportMigrations(ImmutableArray<Migration> migrations, MigrationTarget target)
     {
-        var merged = new MigrationMerger(Phase).Merge(Migrations, migrations);
-
-        if (!HasOutstandingMigrations(merged))
-            return OnNothingToDo(target, log);
-
-        ReportMigrations(merged, log);
-
-        if (!new MigrationValidator(target, Phase, Console).Validate(merged, target))
-            return null;
-
-        return new MigrationPlanner(merged).CreatePlan();
-    }
-
-    private bool HasOutstandingMigrations(ReadOnlySpan<Migration> migrations)
-    {
-        foreach (var migration in migrations)
-            if (!migration.IsPseudo)
-                return true;
-
-        return false;
-    }
-
-    private MigrationPlan? OnNothingToDo(SqlContext target, FileConsole console)
-    {
-        ReportApplied(0, target,  default, null);
-        ReportNoMigrations(console);
-        return null;
-    }
-
-    private void ReportTarget(SqlContext target, IConsole console)
-    {
-        console.WriteVerbose("PSql.Deploy Migration Log");
-        console.WriteVerbose("");
-        console.WriteVerbose("Target Server:   " + target.GetEffectiveServerName());
-        console.WriteVerbose("Target Database: " + target.DatabaseName);
-        console.WriteVerbose("Migration Phase: " + Phase);
-        console.WriteVerbose("Start Time:      " + DateTime.UtcNow.ToString("o"));
-        console.WriteVerbose("Machine:         " + Environment.MachineName);
-        console.WriteVerbose("User:            " + Environment.UserName);
-        console.WriteVerbose("Process ID:      " + Process.GetCurrentProcess().Id);
-    }
-
-    private void ReportNoMigrations(FileConsole console)
-    {
-        console.WriteVerbose($"Migrations:      0");
-        console.WriteVerbose("");
-        console.WriteVerbose("Nothing to do.");
-    }
-
-    private void ReportMigrations(ReadOnlySpan<Migration> migrations, FileConsole console)
-    {
-        console.WriteVerbose($"Migrations:      {migrations.Length}");
-        console.WriteVerbose("");
+        target.Log($"Migrations:         {migrations.Length}");
+        target.Log("");
 
         var nameColumnWidth = 4;
 
@@ -299,47 +366,80 @@ public class MigrationEngine
         // 2023-01-03-10420   Ok        Pre->Core         2023-01-01-10042
         // 2023-01-04-10777   Changed   Pre               (none)
 
-        console.WriteHost(string.Format(
+        target.Log(string.Format(
             "NAME{0}   FILES     PROGRESS          DEPENDS-ON",
             new string(' ', nameColumnWidth - 4)
         ));
 
         foreach (var migration in migrations)
-            if (!migration.IsPseudo)
-                console.WriteHost(string.Format(
-                    "{0}{1}   {2}   {3}   {4}",
-                    migration.Name,
-                    new string(' ', nameColumnWidth - migration.Name.Length),
-                    migration.HasChanged switch
-                    {
-                        true                                => "Changed",
-                        false when migration.PreSql is null => "Missing",
-                        _                                   => "Ok     ",
-                    },
-                    migration.State switch
-                    {
-                        MigrationState.NotApplied  => "(new)          ",
-                        MigrationState.AppliedPre  => "Pre            ",
-                        MigrationState.AppliedCore => "Pre->Core      ",
-                        _                          => "Pre->Core->Post",
-                    },
-                    migration.Depends?.LastOrDefault() ?? "(none)"
-                ));
-        console.WriteVerbose("");
+        {
+            if (migration.IsPseudo)
+                continue;
+
+            target.Log(string.Format(
+                "{0}{1}   {2}   {3}   {4}",
+                migration.Name,
+                new string(' ', nameColumnWidth - migration.Name.Length),
+                migration.HasChanged switch
+                {
+                    true                                => "Changed",
+                    false when migration.PreSql is null => "Missing",
+                    _                                   => "Ok     ",
+                },
+                migration.State switch
+                {
+                    MigrationState.NotApplied  => "(new)          ",
+                    MigrationState.AppliedPre  => "Pre            ",
+                    MigrationState.AppliedCore => "Pre->Core      ",
+                    _                          => "Pre->Core->Post",
+                },
+                migration.Depends?.LastOrDefault() ?? "(none)"
+            ));
+        }
+
+        target.Log("");
     }
 
-    private void ReportApplying(Migration migration, MigrationPhase phase, SqlContext target)
+    private void ReportPlan(MigrationPlan plan, MigrationTarget target)
+    {
+        target.Log("Sequence:");
+        target.Log("");
+
+        var items = plan.GetItems(Phase);
+
+        var nameColumnWidth = 4;
+
+        foreach (var (migration, _) in items)
+            nameColumnWidth = Math.Max(nameColumnWidth, migration.Name.Length);
+
+        target.Log(string.Format(
+            "NAME{0}   PHASE",
+            new string(' ', nameColumnWidth - 4)
+        ));
+
+        foreach (var (migration, phase) in items)
+            target.Log(string.Format(
+                "{0}{1}   {2}",
+                migration.Name,
+                new string(' ', nameColumnWidth - migration.Name.Length),
+                phase
+            ));
+
+        target.Log("");
+    }
+
+    private void ReportApplying(Migration migration, MigrationPhase phase, MigrationTarget target)
     {
         Console.WriteHost(string.Format(
             @"[+{0:hh\:mm\:ss}] {1}: Applying {2} {3}",
-            _totalStopwatch.Elapsed,
+            _totalTime.Elapsed,
             target.DatabaseName,
             migration.Name,
             phase
         ));
     }
 
-    private void ReportApplied(int count, SqlContext target, TimeSpan elapsed, Exception? exception)
+    private void ReportApplied(int count, MigrationTarget target, Exception? exception)
     {
         var abnormality = 
             exception is not null ? " [EXCEPTION]"  :
@@ -348,11 +448,11 @@ public class MigrationEngine
 
         Console.WriteHost(string.Format(
             @"[+{0:hh\:mm\:ss}] {1}: Applied {2} {3} item(s) in {4:N3} second(s){5}",
-            _totalStopwatch.Elapsed,
+            _totalTime.Elapsed,
             target.DatabaseName,
             count,
             Phase,
-            elapsed.TotalSeconds,
+            target.ElapsedTime.TotalSeconds,
             abnormality
         ));
     }

@@ -5,13 +5,29 @@ using System.Collections;
 
 namespace PSql.Deploy;
 
-internal sealed class FileConsole : IConsole, IDisposable
+/// <summary>
+///   Adapts a <see cref="TextWriter"/> to support <see cref="IConsole"/>.
+/// </summary>
+internal sealed class TextWriterConsole : IConsole
 {
-    private readonly StreamWriter _writer;
+    private readonly TextWriter _writer;
 
-    public FileConsole(string path)
+    /// <summary>
+    ///   Initializes a new <see cref="TextWriterConsole"/> instance for the
+    ///   specified text writer.
+    /// </summary>
+    /// <param name="writer">
+    ///   The text writer to adapt to <see cref="IConsole"/>.
+    /// </param>
+    /// <exception cref="ArgumentNullException">
+    ///   <paramref name="writer"/> is <see langword="null"/>.
+    /// </exception>
+    public TextWriterConsole(TextWriter writer)
     {
-        _writer = new StreamWriter(path);
+        if (writer is null)
+            throw new ArgumentNullException(nameof(writer));
+
+        _writer = writer;
     }
 
     /// <inheritdoc/>
