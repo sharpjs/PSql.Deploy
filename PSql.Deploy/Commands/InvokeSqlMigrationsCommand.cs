@@ -5,6 +5,8 @@ using PSql.Deploy.Migrations;
 
 namespace PSql.Deploy.Commands;
 
+using static MigrationPhase;
+
 // TODO: Replace original Invoke-SqlMigrations with this, removing the '2' suffix
 //                                           V
 [Cmdlet(VerbsLifecycle.Invoke, "SqlMigrations2")]
@@ -32,8 +34,15 @@ public class InvokeSqlMigrationsCommand : AsyncCmdlet
         var engine = new MigrationEngine(Console, path, cancellation);
 
         engine.DiscoverMigrations(Path!);
-        engine.Phase = Phase ?? MigrationPhase.Post;
 
-        await engine.ApplyAsync(Target!);
+        var phases = Phase is { } p
+            ? new[] { p }
+            : new[] { Pre, Core, Post };
+
+        foreach (var phase in phases)
+        {
+            engine.Phase = phase;
+            await engine.ApplyAsync(Target!);
+        }
     }
 }
