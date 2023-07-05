@@ -5,26 +5,35 @@ using System.Diagnostics;
 
 namespace PSql.Deploy.Migrations;
 
+/// <summary>
+///   Represents a target database.
+/// </summary>
 internal sealed class MigrationTarget : IDisposable
 {
     /// <summary>
     ///   Initializes a new <see cref="MigrationTarget"/> instance.
     /// </summary>
-    /// <param name="target"></param>
-    /// <param name="phase"></param>
-    /// <param name="logPath"></param>
+    /// <param name="context">
+    ///   An object specifying how to connect to the target database.
+    /// </param>
+    /// <param name="phase">
+    ///   The migration phase being applied.
+    /// </param>
+    /// <param name="logPath">
+    ///   The path of a directory in which to save per-database log files.
+    /// </param>
     /// <exception cref="ArgumentNullException"></exception>
-    public MigrationTarget(SqlContext target, MigrationPhase phase, string logPath)
+    public MigrationTarget(SqlContext context, MigrationPhase phase, string logPath)
     {
-        if (target is null)
-            throw new ArgumentNullException(nameof(target));
+        if (context is null)
+            throw new ArgumentNullException(nameof(context));
         if (logPath is null)
             throw new ArgumentNullException(nameof(logPath));
 
         _stopwatch   = Stopwatch.StartNew();
-        Target       = target;
-        ServerName   = target.AsAzure?.ServerResourceName ?? target.ServerName ?? "local";
-        DatabaseName = target.DatabaseName ?? "default";
+        Context      = context;
+        ServerName   = context.AsAzure?.ServerResourceName ?? context.ServerName ?? "local";
+        DatabaseName = context.DatabaseName ?? "default";
         LogFileName  = $"{ServerName}.{DatabaseName}.{phase}.log".SanitizeFileName();
         LogWriter    = new StreamWriter(Path.Combine(logPath, LogFileName));
         LogConsole   = new TextWriterConsole(LogWriter);
@@ -35,7 +44,7 @@ internal sealed class MigrationTarget : IDisposable
     /// <summary>
     ///   Gets an object that specifies how to connect to the target database.
     /// </summary>
-    public SqlContext Target { get; }
+    public SqlContext Context { get; }
 
     /// <summary>
     ///   Gets a display name for the database server.  This name might be a
@@ -80,7 +89,7 @@ internal sealed class MigrationTarget : IDisposable
     ///   An open connection to the target database.
     /// </returns>
     public ISqlConnection Connect()
-        => Target.Connect(databaseName: null, LogConsole);
+        => Context.Connect(databaseName: null, LogConsole);
 
     /// <summary>
     ///   Writes the specified text and a line ending to the per-database log

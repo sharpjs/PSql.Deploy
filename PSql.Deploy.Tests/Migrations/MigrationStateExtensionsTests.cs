@@ -11,7 +11,7 @@ public class MigrationStateExtensionsTests
     {
         var states = (MigrationState[]) Enum.GetValues(typeof(MigrationState));
 
-        var strings = Array.ConvertAll(states, x => x.ToFixedWidthProgressString());
+        var strings = Array.ConvertAll(states, x => x.ToFixedWidthString());
 
         strings.Should().OnlyHaveUniqueItems()
             .And.NotContainNulls()
