@@ -26,21 +26,21 @@ public class InvokeSqlMigrationsCommand : AsyncCmdlet
     // -Phase
     [Parameter()]
     [ValidateNotNullOrEmpty]
-    public MigrationPhase? Phase { get; set; }
+    public MigrationPhase[]? Phase { get; set; }
 
+    private static MigrationPhase[] AllPhases
+        => new[] { Pre, Core, Post };
+
+    /// <inheritdoc/>
     protected override async Task ProcessRecordAsync(CancellationToken cancellation)
     {
-        var path   = SessionState.Path.CurrentFileSystemLocation.ProviderPath;
+        var path = SessionState.Path.CurrentFileSystemLocation.ProviderPath;
         var engine = new MigrationEngine(Console, path, cancellation);
 
         engine.DiscoverMigrations(Path!);
         engine.SpecifyTargets(Target!);
 
-        var phases = Phase is { } p
-            ? new[] { p }
-            : new[] { Pre, Core, Post };
-
-        foreach (var phase in phases)
+        foreach (var phase in Phase ?? AllPhases)
             await engine.ApplyAsync(phase);
     }
 }
