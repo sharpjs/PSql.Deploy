@@ -6,25 +6,22 @@ namespace PSql.Deploy.Migrations;
 internal readonly ref struct MigrationValidator
 {
     public MigrationTarget Target  { get; }
-    public MigrationPhase  Phase   { get; }
-    public IConsole        Console { get; }
 
-    public MigrationValidator(
-        MigrationTarget target,
-        MigrationPhase         phase,
-        string                 cutoff,
-        IConsole               console)
+    public MigrationValidator(MigrationTarget target)
     {
-        Target               = target;
-        Phase                = phase;
-        MinimumMigrationName = cutoff;
-        Console              = console;
+        if (target is null)
+            throw new ArgumentNullException(nameof(target));
+
+        Target = target;
     }
 
-    private string MinimumMigrationName { get; }
+    private MigrationPhase Phase => Target.Engine.Phase;
+
+    private string EarliestDefinedMigrationName => Target.EarliestDefinedMigrationName;
+
+    private IConsole Console => Target.Engine.Console;
 
     internal bool Validate(ReadOnlySpan<Migration> migrations)
-
     {
         var valid  = true;
         var lookup = CreateLookup(migrations);
@@ -79,7 +76,7 @@ internal readonly ref struct MigrationValidator
                     resolvedDepends.Add(depend);
                     break;
 
-                case < 0 when Compare(dependName, MinimumMigrationName) < 0:
+                case < 0 when Compare(dependName, EarliestDefinedMigrationName) < 0:
                     Console.WriteVerbose(string.Format(
                         "Ignoring migration '{0}' dependency on migration '{1}', " +
                         "which is older than the earliest migration on disk.",

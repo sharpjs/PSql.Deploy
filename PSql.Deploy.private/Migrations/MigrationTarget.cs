@@ -171,8 +171,7 @@ internal class MigrationTarget : IDisposable
 
     private void ValidateMigrations(ImmutableArray<Migration> migrations)
     {
-        var isValid = new MigrationValidator(this, Phase, EarliestDefinedMigrationName, Console)
-            .Validate(migrations.AsSpan());
+        var isValid = new MigrationValidator(this).Validate(migrations.AsSpan());
 
         if (!isValid)
             throw new MigrationValidationException();
