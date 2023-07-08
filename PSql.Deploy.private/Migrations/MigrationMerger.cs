@@ -4,17 +4,21 @@
 namespace PSql.Deploy.Migrations;
 
 /// <summary>
-///   An algorithm that merges an ordered collection of source migrations
-///   (found on the filesystem) with an ordered collection of target migrations
-///   (recorded in a target database).
+///   An algorithm that merges an ordered collection of
+///     <b>defined</b> migrations (found on the filesystem)
+///   with an ordered collection of
+///     <b>applied</b> migrations (recorded in a target database),
+///   producing an ordered collection of
+///     <b>pending</b> migrations (needing validation and/or application).
 /// </summary>
 internal readonly ref struct MigrationMerger
 {
     /// <summary>
-    ///   Initializes a new <see cref="MigrationMerger"/> instance.
+    ///   Initializes a new <see cref="MigrationMerger"/> instance for the
+    ///   specified phase.
     /// </summary>
     /// <param name="phase">
-    ///   The phase for which migrations are to be merged.
+    ///   The phase in which migrations are being applied.
     /// </param>
     public MigrationMerger(MigrationPhase phase)
     {
@@ -22,127 +26,130 @@ internal readonly ref struct MigrationMerger
     }
 
     /// <summary>
-    ///   Gets the phase for which migrations are to be merged.
+    ///   Gets the phase in which migrations are being applied.
     /// </summary>
     public MigrationPhase Phase { get; }
 
     /// <summary>
-    ///   Merges an ordered collection of source migrations (found on the
-    ///   filesystem) with an ordered collection of target migrations (recorded
-    ///   in a target database).
+    ///   Merges the specified ordered collection of
+    ///     <b>defined</b> migrations (found on the filesystem)
+    ///   with the specified ordered collection of
+    ///     <b>applied</b> migrations (recorded in a target database),
+    ///   producing an ordered collection of
+    ///     <b>pending</b> migrations (needing validation and/or application).
     /// </summary>
-    /// <param name="sourceMigrations">
-    ///   The ordered collection of source migrations.
+    /// <param name="definedMigrations">
+    ///   The ordered collection of defined migrations.
     /// </param>
-    /// <param name="targetMigrations">
-    ///   The ordered collection of target migrations.
+    /// <param name="appliedMigrations">
+    ///   The ordered collection of applied migrations.
     /// </param>
     /// <returns>
-    ///   An ordered collection containing the union of
-    ///   <paramref name="sourceMigrations"/> and
-    ///   <paramref name="targetMigrations"/>.
+    ///   An ordered collection of pending migrations.
     /// </returns>
     public ImmutableArray<Migration> Merge(
-        ReadOnlySpan       <Migration> sourceMigrations,
-        IReadOnlyCollection<Migration> targetMigrations)
+        ReadOnlySpan       <Migration> definedMigrations,
+        IReadOnlyCollection<Migration> appliedMigrations)
     {
         // Assume migrations already sorted using MigrationComparer
 
-        var migrations = ImmutableArray.CreateBuilder<Migration>( 
-            initialCapacity: Math.Max(sourceMigrations.Length, targetMigrations.Count)
+        var pendingMigrations = ImmutableArray.CreateBuilder<Migration>( 
+            initialCapacity: Math.Max(definedMigrations.Length, appliedMigrations.Count)
         );
 
-              var sourceItems = sourceMigrations.GetEnumerator();
-        using var targetItems = targetMigrations.GetEnumerator();
+              var definedItems = definedMigrations.GetEnumerator();
+        using var appliedItems = appliedMigrations.GetEnumerator();
 
-        var hasSource = sourceItems.MoveNext();
-        var hasTarget = targetItems.MoveNext();
+        var hasDefined = definedItems.MoveNext();
+        var hasApplied = appliedItems.MoveNext();
 
-        while (hasSource || hasTarget)
+        while (hasDefined || hasApplied)
         {
             Migration? migration;
 
-            // Decide which migration comes next: source, target, or both
+            // Decide which migration comes next: defined, applied, or both
             var comparison
-                = !hasSource ? +1 // use target migration
-                : !hasTarget ? -1 // use source migration
-                : MigrationComparer.Instance.Compare(sourceItems.Current, targetItems.Current);
+                = !hasDefined ? +1 // use applied migration
+                : !hasApplied ? -1 // use defined migration
+                : MigrationComparer.Instance.Compare(definedItems.Current, appliedItems.Current);
 
             // Consume that/those migration(s), potentionally merging
             if (comparison < 0)
             {
-                // source
-                migration = OnSourceWithoutTarget(sourceItems.Current);
-                hasSource = sourceItems.MoveNext();
+                // defined
+                migration  = OnDefinedWithoutApplied(definedItems.Current);
+                hasDefined = definedItems.MoveNext();
             }
             else if (comparison > 0)
             {
-                // target
-                migration = OnTargetWithoutSource(targetItems.Current);
-                hasTarget = targetItems.MoveNext();
+                // applied
+                migration  = OnAppliedWithoutDefined(appliedItems.Current);
+                hasApplied = appliedItems.MoveNext();
             }
             else
             {
                 // both
-                migration = OnMatchedSourceAndTarget(sourceItems.Current, targetItems.Current);
-                hasSource = sourceItems.MoveNext();
-                hasTarget = targetItems.MoveNext();
+                migration  = OnMatchedDefinedAndApplied(definedItems.Current, appliedItems.Current);
+                hasDefined = definedItems.MoveNext();
+                hasApplied = appliedItems.MoveNext();
             }
 
             if (migration is not null)
-                migrations.Add(migration);
+                pendingMigrations.Add(migration);
         }
 
-        return migrations.Build();
+        return pendingMigrations.Build();
     }
 
-    private Migration? OnSourceWithoutTarget(Migration sourceMigration)
+    private Migration? OnDefinedWithoutApplied(Migration definedMigration)
     {
         // Migration will be applied; ensure its content is loaded
-        MigrationLoader.LoadContent(sourceMigration);
+        MigrationLoader.LoadContent(definedMigration);
 
-        return sourceMigration;
+        return definedMigration;
     }
 
-    private Migration? OnTargetWithoutSource(Migration targetMigration)
+    private Migration? OnAppliedWithoutDefined(Migration appliedMigration)
     {
-        // Skip a completed migration whose source has disappeared; the user
-        // must be able to clean up old migration files they do not need
-        if (targetMigration.IsAppliedThrough(MigrationPhase.Post))
-            return null; // completed; source migration removed
+        // Skip a completed migration whose definition has disappeared; the
+        // user must be able to clean up old migration files they do not need
+        if (appliedMigration.IsAppliedThrough(MigrationPhase.Post))
+            return null; // completed; definition removed
 
-        // An incomplete, sourceless migration cannot be applied but needs to
-        // be present in the merged migration list so that validation can warn
-        // about it
-        return targetMigration;
+        // An incomplete, definitionless migration cannot be applied but needs
+        // to be present in the pending migration list so that validation can
+        // warn about it
+        return appliedMigration;
     }
 
-    private Migration? OnMatchedSourceAndTarget(Migration sourceMigration, Migration targetMigration)
+    private Migration? OnMatchedDefinedAndApplied(
+        Migration definedMigration,
+        Migration appliedMigration)
     {
         // Detect a hash mismatch unless the database opts out of hash checks
         // for a migration by setting the migration's hash to space characters
         var hasChanged
-            =  !string.IsNullOrWhiteSpace(targetMigration.Hash)
-            && !targetMigration.Hash.Equals(sourceMigration.Hash, StringComparison.OrdinalIgnoreCase);
+            =  !string.IsNullOrWhiteSpace(appliedMigration.Hash)
+            && !appliedMigration.Hash.Equals(definedMigration.Hash, StringComparison.OrdinalIgnoreCase);
 
-        // Skip a completed migration whose source is unchanged; these would be
-        // more bloat than useful information in the logs
-        if (!hasChanged && targetMigration.IsAppliedThrough(MigrationPhase.Post))
+        // Skip a completed migration whose definition is unchanged; these
+        // would be more bloat than useful information in the logs
+        if (!hasChanged && appliedMigration.IsAppliedThrough(MigrationPhase.Post))
             return null;
 
         // If migration will be applied, ensure its content is loaded
-        if (!targetMigration.IsAppliedThrough(Phase))
-            MigrationLoader.LoadContent(sourceMigration);
+        if (!appliedMigration.IsAppliedThrough(Phase))
+            MigrationLoader.LoadContent(definedMigration);
 
-        // Copy source-only properties to target
-        targetMigration.Path       = sourceMigration.Path;
-        targetMigration.Hash       = sourceMigration.Hash;
-        targetMigration.Depends    = sourceMigration.Depends;
-        targetMigration.PreSql     = sourceMigration.PreSql;
-        targetMigration.CoreSql    = sourceMigration.CoreSql;
-        targetMigration.PostSql    = sourceMigration.PostSql;
-        targetMigration.HasChanged = hasChanged;
+        // Copy definition-only properties to applied
+        appliedMigration.Path       = definedMigration.Path;
+        appliedMigration.Hash       = definedMigration.Hash;
+        appliedMigration.Depends    = definedMigration.Depends;
+        appliedMigration.PreSql     = definedMigration.PreSql;
+        appliedMigration.CoreSql    = definedMigration.CoreSql;
+        appliedMigration.PostSql    = definedMigration.PostSql;
+        appliedMigration.HasChanged = hasChanged;
 
-        return targetMigration;
+        return appliedMigration;
     }
 }
