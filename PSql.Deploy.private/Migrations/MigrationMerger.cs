@@ -62,6 +62,7 @@ internal readonly ref struct MigrationMerger
 
         var hasDefined = definedItems.MoveNext();
         var hasApplied = appliedItems.MoveNext();
+        var hasPending = false;
 
         while (hasDefined || hasApplied)
         {
@@ -95,10 +96,17 @@ internal readonly ref struct MigrationMerger
             }
 
             if (migration is not null)
+            {
+                // The _Begin and _End pseudo-migrations are pending only if
+                // there is at least one other pending migration.
+                hasPending |= !migration.IsPseudo;
                 pendingMigrations.Add(migration);
+            }
         }
 
-        return pendingMigrations.Build();
+        return hasPending
+            ? pendingMigrations.Build()
+            : ImmutableArray<Migration>.Empty;
     }
 
     private Migration? OnDefinedWithoutApplied(Migration definedMigration)
