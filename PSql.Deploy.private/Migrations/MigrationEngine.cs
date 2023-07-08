@@ -47,18 +47,22 @@ public class MigrationEngine
     }
 
     /// <summary>
-    ///   Gets the migrations to be applied to target databases.  The default
-    ///   value is an empty array.
+    ///   Gets the defined migrations.  The default value is an empty array.
     /// </summary>
     /// <remarks>
     ///   Invoke <see cref="DiscoverMigrations"/> to populate this property.
     /// </remarks>
     public ImmutableArray<Migration> Migrations { get; private set; }
 
+    // Ideas for terms:
+    // - defined migrations
+    // - applied migrations
+    // - pending migrations
+
     /// <summary>
-    ///   Gets the minimum name of the non-pseudo migrations to be applied to
-    ///   target databases, or the empty string if no such migration is known.
-    ///   The default value is the empty string.
+    ///   Gets the minimum (earliest) defined migration name, excluding the
+    ///   <c>_Begin</c> and <c>_End</c> pseudo-migrations.  The default value
+    ///   is the empty string.
     /// </summary>
     /// <remarks>
     ///   Invoke <see cref="DiscoverMigrations"/> to populate this property.
@@ -66,8 +70,8 @@ public class MigrationEngine
     public string MinimumMigrationName { get; private set; }
 
     /// <summary>
-    ///   Gets the context sets specifying the target databases to which to
-    ///   apply migrations.
+    ///   Gets the context sets specifying the target databases.  The default
+    ///   value is an empty array.
     /// </summary>
     /// <remarks>
     ///   Invoke <see cref="SpecifyTargets"/> to populate this property.
@@ -75,7 +79,8 @@ public class MigrationEngine
     public ImmutableArray<SqlContextParallelSet> Targets { get; private set; }
 
     /// <summary>
-    ///   Gets the phase of migrations to be applied to target databases.
+    ///   Gets the phase in which this instance most recently applied
+    ///   migrations.  The default value is <see cref="MigrationPhase.Pre"/>.
     /// </summary>
     /// <remarks>
     ///   <see cref="ApplyAsync(MigrationPhase)"/> populates this propery.
@@ -108,7 +113,7 @@ public class MigrationEngine
     private int _migrationNameColumnWidth;
 
     /// <summary>
-    ///   Discovers migrations in the specified directory path.
+    ///   Discovers defined migrations in the specified directory path.
     /// </summary>
     /// <param name="path">
     ///   The path of a directory in which to discover migrations.
@@ -120,11 +125,10 @@ public class MigrationEngine
     }
 
     /// <summary>
-    ///   Specifies the target databases to which to apply migrations.
+    ///   Specifies the target databases.
     /// </summary>
     /// <param name="contextSets">
-    ///   The context sets specifying the target databases to which to apply
-    ///   migrations.
+    ///   The context sets specifying the target databases.
     /// </param>
     /// <exception cref="ArgumentNullException">
     ///   <paramref name="contextSets"/> is <see langword="null"/>.
@@ -139,10 +143,11 @@ public class MigrationEngine
     }
 
     /// <summary>
-    ///   Applies migrations for the specified phase asynchronously.
+    ///   Applies any outstanding migrations for the specified phase to target
+    ///   databases asynchronously.
     /// </summary>
     /// <param name="phase">
-    ///   The phase of migrations to be applied to target databases.
+    ///   The phase in which migrations are being applied.
     /// </param>
     /// <returns>
     ///   A <see cref="Task"/> representing the asynchronous operation.
@@ -194,27 +199,27 @@ public class MigrationEngine
         ReportStarting(target);
 
         // 
-        var targetMigrations = await GetTargetMigrationsAsync(target);
-        var mergedMigrations = MergeSourceAndTargetMigrations(targetMigrations);
+        var appliedMigrations = await GetAppliedMigrations(target);
+        var pendingMigrations = GetPendingMigrations(appliedMigrations);
 
         // No migrations or only pseudo-migrations
-        if (mergedMigrations.All(m => m.IsPseudo))
+        if (pendingMigrations.All(m => m.IsPseudo))
         {
-            ReportNoMigrations(target);
+            ReportNoPendingMigrations(target);
             return;
         }
 
-        _migrationNameColumnWidth = ComputeMigrationNameColumnWidth(mergedMigrations);
+        _migrationNameColumnWidth = ComputeMigrationNameColumnWidth(pendingMigrations);
 
-        ReportMigrations      (mergedMigrations, target);
-        ValidateMigrations    (mergedMigrations, target); // throws if invalid
-        var plan = ComputePlan(mergedMigrations);
+        ReportMigrations      (pendingMigrations, target);
+        ValidateMigrations    (pendingMigrations, target); // throws if invalid
+        var plan = ComputePlan(pendingMigrations);
 
         ReportPlan        (plan, target);
         await ExecuteAsync(plan, target);
     }
 
-    private Task<IReadOnlyList<Migration>> GetTargetMigrationsAsync(MigrationTarget target)
+    private Task<IReadOnlyList<Migration>> GetAppliedMigrations(MigrationTarget target)
     {
         return MigrationRepository.GetAllAsync(
             target.Context,    MinimumMigrationName,
@@ -222,11 +227,11 @@ public class MigrationEngine
         );
     }
 
-    private ImmutableArray<Migration> MergeSourceAndTargetMigrations(
-        IReadOnlyList<Migration> targetMigrations)
+    private ImmutableArray<Migration> GetPendingMigrations(
+        IReadOnlyList<Migration> appliedMigrations)
     {
         return new MigrationMerger(Phase)
-            .Merge(Migrations.AsSpan(), targetMigrations);
+            .Merge(Migrations.AsSpan(), appliedMigrations);
     }
 
     private void ValidateMigrations(ImmutableArray<Migration> migrations, MigrationTarget target)
@@ -346,7 +351,7 @@ public class MigrationEngine
         target.Log($".NET Runtime:       {RuntimeInformation.FrameworkDescription}");
     }
 
-    private void ReportNoMigrations(MigrationTarget target)
+    private void ReportNoPendingMigrations(MigrationTarget target)
     {
         target.Log("Migrations:         0");
         target.Log("");
