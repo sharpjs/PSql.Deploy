@@ -175,8 +175,7 @@ internal class MigrationTarget : IDisposable
             .Validate(migrations.AsSpan());
 
         if (!isValid)
-            // TODO: custom exception type
-            throw new ApplicationException("Unable to perform migrations due to validation errors.");
+            throw new MigrationValidationException();
     }
 
     private MigrationPlan ComputePlan(ImmutableArray<Migration> migrations)
