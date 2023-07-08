@@ -198,24 +198,15 @@ public class MigrationEngine
 
         ReportStarting(target);
 
-        // 
         var appliedMigrations = await GetAppliedMigrations(target);
-        var pendingMigrations = GetPendingMigrations(appliedMigrations);
-
-        // No migrations or only pseudo-migrations
-        if (pendingMigrations.All(m => m.IsPseudo))
-        {
-            ReportNoPendingMigrations(target);
+        var pendingMigrations = GetPendingMigrations(appliedMigrations, target);
+        if (pendingMigrations.IsEmpty)
             return;
-        }
 
-        _migrationNameColumnWidth = ComputeMigrationNameColumnWidth(pendingMigrations);
+        ValidateMigrations(pendingMigrations, target); // throws if invalid
 
-        ReportMigrations      (pendingMigrations, target);
-        ValidateMigrations    (pendingMigrations, target); // throws if invalid
-        var plan = ComputePlan(pendingMigrations);
+        var plan = ComputePlan(pendingMigrations, target);
 
-        ReportPlan        (plan, target);
         await ExecuteAsync(plan, target);
     }
 
@@ -228,10 +219,19 @@ public class MigrationEngine
     }
 
     private ImmutableArray<Migration> GetPendingMigrations(
-        IReadOnlyList<Migration> appliedMigrations)
+        IReadOnlyList<Migration> appliedMigrations, MigrationTarget target)
     {
-        return new MigrationMerger(Phase)
-            .Merge(Migrations.AsSpan(), appliedMigrations);
+        var pendingMigrations = new MigrationMerger(Phase).Merge(
+            definedMigrations: Migrations.AsSpan(),
+            appliedMigrations
+        );
+
+        if (pendingMigrations.IsEmpty)
+            ReportNoPendingMigrations(target);
+        else
+            ReportPendingMigrations(pendingMigrations, target);
+
+        return pendingMigrations;
     }
 
     private void ValidateMigrations(ImmutableArray<Migration> migrations, MigrationTarget target)
@@ -243,10 +243,12 @@ public class MigrationEngine
             throw new ApplicationException("Unable to perform migrations due to validation errors.");
     }
 
-    private MigrationPlan ComputePlan(ImmutableArray<Migration> migrations)
+    private MigrationPlan ComputePlan(ImmutableArray<Migration> migrations, MigrationTarget target)
     {
-        return new MigrationPlanner(migrations.AsSpan())
-            .CreatePlan();
+        var plan = new MigrationPlanner(migrations.AsSpan()).CreatePlan();
+
+        ReportPlan(plan, target);
+        return plan;
     }
 
     private async Task ExecuteAsync(MigrationPlan plan, MigrationTarget target)
@@ -358,8 +360,11 @@ public class MigrationEngine
         target.Log("Nothing to do.");
     }
 
-    private void ReportMigrations(ImmutableArray<Migration> migrations, MigrationTarget target)
+    private void ReportPendingMigrations(
+        ImmutableArray<Migration> migrations, MigrationTarget target)
     {
+        _migrationNameColumnWidth = ComputeMigrationNameColumnWidth(migrations);
+
         // NAME             FILES     PROGRESS          DEPENDS-ON
         // 2023-01-01-123   Ok        (new)             (none)
         // 2023-01-02-234   Missing   Pre->Core->Post   (none)
