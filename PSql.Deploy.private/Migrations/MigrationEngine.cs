@@ -66,10 +66,21 @@ public class MigrationEngine
     public string MinimumMigrationName { get; private set; }
 
     /// <summary>
-    ///   Gets or sets the phase of migrations to be applied to target
-    ///   databases.
+    ///   Gets the context sets specifying the target databases to which to
+    ///   apply migrations.
     /// </summary>
-    public MigrationPhase Phase { get; set; }
+    /// <remarks>
+    ///   Invoke <see cref="SpecifyTargets"/> to populate this property.
+    /// </remarks>
+    public ImmutableArray<SqlContextParallelSet> Targets { get; private set; }
+
+    /// <summary>
+    ///   Gets the phase of migrations to be applied to target databases.
+    /// </summary>
+    /// <remarks>
+    ///   <see cref="ApplyAsync(MigrationPhase)"/> populates this propery.
+    /// </remarks>
+    public MigrationPhase Phase { get; private set; }
 
     /// <summary>
     ///   Gets the console on which to display status and important messages.
@@ -109,29 +120,41 @@ public class MigrationEngine
     }
 
     /// <summary>
-    ///   Applies migrations to the specified target databases asynchronously.
+    ///   Specifies the target databases to which to apply migrations.
     /// </summary>
     /// <param name="contextSets">
     ///   The context sets specifying the target databases to which to apply
     ///   migrations.
     /// </param>
-    /// <returns>
-    ///   A <see cref="Task"/> representing the asynchronous operation.
-    /// </returns>
     /// <exception cref="ArgumentNullException">
     ///   <paramref name="contextSets"/> is <see langword="null"/>.
     /// </exception>
-    public Task ApplyAsync(IReadOnlyCollection<SqlContextParallelSet> contextSets)
+    public void SpecifyTargets(IEnumerable<SqlContextParallelSet> contextSets)
     {
         if (contextSets is null)
             throw new ArgumentNullException(nameof(contextSets));
 
-        if (contextSets.Count == 0)
+        Targets                  = contextSets.ToImmutableArray();
+        _databaseNameColumnWidth = ComputeDatabaseNameColumnWidth(Targets);
+    }
+
+    /// <summary>
+    ///   Applies migrations for the specified phase asynchronously.
+    /// </summary>
+    /// <param name="phase">
+    ///   The phase of migrations to be applied to target databases.
+    /// </param>
+    /// <returns>
+    ///   A <see cref="Task"/> representing the asynchronous operation.
+    /// </returns>
+    public Task ApplyAsync(MigrationPhase phase)
+    {
+        Phase = phase;
+
+        if (Targets.Length == 0)
             return Task.CompletedTask;
 
-        _databaseNameColumnWidth = ComputeDatabaseNameColumnWidth(contextSets);
-
-        return Task.WhenAll(contextSets.Select(ApplyAsync));
+        return Task.WhenAll(Targets.Select(ApplyAsync));
     }
 
     private async Task ApplyAsync(SqlContextParallelSet contextSet)

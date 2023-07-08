@@ -34,15 +34,13 @@ public class InvokeSqlMigrationsCommand : AsyncCmdlet
         var engine = new MigrationEngine(Console, path, cancellation);
 
         engine.DiscoverMigrations(Path!);
+        engine.SpecifyTargets(Target!);
 
         var phases = Phase is { } p
             ? new[] { p }
             : new[] { Pre, Core, Post };
 
         foreach (var phase in phases)
-        {
-            engine.Phase = phase;
-            await engine.ApplyAsync(Target!);
-        }
+            await engine.ApplyAsync(phase);
     }
 }
