@@ -246,13 +246,7 @@ internal class MigrationTarget : IDisposable
 
     private void ReportStarting()
     {
-        Console.WriteHost(string.Format(
-            @"[+{0:hh\:mm\:ss}] {1} {2}:{3} Starting",
-            /*{0}*/ Engine._totalTime.Elapsed,
-            /*{1}*/ Phase.ToFixedWidthString(),
-            /*{2}*/ DatabaseName,
-            /*{3}*/ Space.Pad(DatabaseName, Engine._databaseNameColumnWidth)
-        ));
+        Engine.ReportStarting(DatabaseName);
 
         Log("PSql.Deploy Migration Log");
         Log("");
@@ -277,13 +271,15 @@ internal class MigrationTarget : IDisposable
 
     private void ReportPendingMigrations(ImmutableArray<Migration> migrations)
     {
+        const int HeaderLength = 4; // "NAME".Length
+
         // NAME             FILES     PROGRESS          DEPENDS-ON
         // 2023-01-01-123   Ok        (new)             (none)
         // 2023-01-02-234   Missing   Pre->Core->Post   (none)
         // 2023-01-03-345   Ok        Pre->Core         2023-01-01-123
         // 2023-01-04-456   Changed   Pre               (none)
 
-        _migrationNameColumnWidth = ComputeMigrationNameColumnWidth(migrations);
+        _migrationNameColumnWidth = Math.Max(HeaderLength, migrations.Max(m => m.Name.Length));
 
         Log($"Migrations:         {migrations.Length}");
         Log("");
@@ -336,40 +332,11 @@ internal class MigrationTarget : IDisposable
 
     private void ReportApplying(Migration migration, MigrationPhase phase)
     {
-        Console.WriteHost(string.Format(
-            @"[+{0:hh\:mm\:ss}] {1} {2}:{3} Applying {4} {5}",
-            /*{0}*/ Engine._totalTime.Elapsed,
-            /*{1}*/ Phase.ToFixedWidthString(),
-            /*{2}*/ DatabaseName,
-            /*{3}*/ Space.Pad(DatabaseName, Engine._databaseNameColumnWidth),
-            /*{4}*/ migration.Name,
-            /*{5}*/ phase
-        ));
+        Engine.ReportApplying(DatabaseName, migration.Name, phase);
     }
 
     private void ReportApplied(int count, Exception? exception)
     {
-        var abnormality = 
-            exception is not null ? " [EXCEPTION]"  :
-            //_errorCount > 0       ? " [INCOMPLETE]" :
-            null;
-
-        Console.WriteHost(string.Format(
-            @"[+{0:hh\:mm\:ss}] {1} {2}:{3} Applied {4} migration(s) in {5:N3} second(s){6}",
-            /*{0}*/ Engine._totalTime.Elapsed,
-            /*{1}*/ Phase.ToFixedWidthString(),
-            /*{2}*/ DatabaseName,
-            /*{3}*/ Space.Pad(DatabaseName, Engine._databaseNameColumnWidth),
-            /*{4}*/ count,
-            /*{5}*/ ElapsedTime.TotalSeconds,
-            /*{6}*/ abnormality
-        ));
-    }
-
-    private static int ComputeMigrationNameColumnWidth(ImmutableArray<Migration> migrations)
-    {
-        const int HeaderLength = 4; // "NAME".Length
-
-        return Math.Max(HeaderLength, migrations.Max(m => m.Name.Length));
+        Engine.ReportApplied(DatabaseName, count, _stopwatch.Elapsed, exception);
     }
 }

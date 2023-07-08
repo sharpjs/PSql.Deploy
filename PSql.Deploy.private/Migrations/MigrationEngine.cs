@@ -198,4 +198,54 @@ public class MigrationEngine
             contextSets.Max(s => s.Contexts.Max(c => c.DatabaseName?.Length ?? DefaultLength))
         );
     }
+
+    internal void ReportStarting(string databaseName)
+    {
+        Console.WriteHost(string.Format(
+            @"[+{0:hh\:mm\:ss}] {1} {2}:{3} Starting",
+            /*{0}*/ _totalTime.Elapsed,
+            /*{1}*/ Phase.ToFixedWidthString(),
+            /*{2}*/ databaseName,
+            /*{3}*/ Space.Pad(databaseName, _databaseNameColumnWidth)
+        ));
+    }
+
+    internal void ReportApplying(
+        string         databaseName,
+        string         migrationName,
+        MigrationPhase phase)
+    {
+        Console.WriteHost(string.Format(
+            @"[+{0:hh\:mm\:ss}] {1} {2}:{3} Applying {4} {5}",
+            /*{0}*/ _totalTime.Elapsed,
+            /*{1}*/ Phase.ToFixedWidthString(),
+            /*{2}*/ databaseName,
+            /*{3}*/ Space.Pad(databaseName, _databaseNameColumnWidth),
+            /*{4}*/ migrationName,
+            /*{5}*/ phase
+        ));
+    }
+
+    internal void ReportApplied(
+        string     databaseName,
+        int        count,
+        TimeSpan   elapsed,
+        Exception? exception)
+    {
+        var abnormality = 
+            exception is not null ? " [EXCEPTION]"  :
+            //_errorCount > 0       ? " [INCOMPLETE]" :
+            null;
+
+        Console.WriteHost(string.Format(
+            @"[+{0:hh\:mm\:ss}] {1} {2}:{3} Applied {4} migration(s) in {5:N3} second(s){6}",
+            /*{0}*/ _totalTime.Elapsed,
+            /*{1}*/ Phase.ToFixedWidthString(),
+            /*{2}*/ databaseName,
+            /*{3}*/ Space.Pad(databaseName, _databaseNameColumnWidth),
+            /*{4}*/ count,
+            /*{5}*/ elapsed.TotalSeconds,
+            /*{6}*/ abnormality
+        ));
+    }
 }
