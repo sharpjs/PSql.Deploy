@@ -131,6 +131,12 @@ public class Migration
     /// </summary>
     internal IReadOnlyList<Migration> ResolvedDepends { get; set; } = Array.Empty<Migration>();
 
+    /// <summary>
+    ///   Gets or sets the diagnostic messages associated with the migration.
+    ///   The default value is an empty list.
+    /// </summary>
+    internal IReadOnlyList<MigrationDiagnostic> Diagnostics { get; set; } = Array.Empty<MigrationDiagnostic>();
+
     /// <inheritdoc/>
     public override string ToString() => Name;
 

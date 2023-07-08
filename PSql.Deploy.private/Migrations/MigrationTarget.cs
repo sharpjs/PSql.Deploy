@@ -12,7 +12,7 @@ using static RuntimeInformation;
 /// <summary>
 ///   Represents a target database.
 /// </summary>
-internal class MigrationTarget : IDisposable
+internal class MigrationTarget : IMigrationValidationContext, IDisposable
 {
     /// <summary>
     ///   Initializes a new <see cref="MigrationTarget"/> instance.
@@ -51,10 +51,13 @@ internal class MigrationTarget : IDisposable
 
     public MigrationEngine Engine { get; }
 
-    public ImmutableArray<Migration> DefinedMigrations => Engine.Migrations;
+    /// <inheritdoc cref="MigrationEngine.MinimumMigrationName"/>
     public string EarliestDefinedMigrationName => Engine.MinimumMigrationName;
-    public IConsole Console => Engine.Console;
+
+    /// <inheritdoc/>
     public MigrationPhase Phase => Engine.Phase;
+
+    /// <inheritdoc cref="MigrationEngine.CancellationToken"/>
     public CancellationToken CancellationToken => Engine.CancellationToken;
 
     /// <summary>
@@ -62,18 +65,10 @@ internal class MigrationTarget : IDisposable
     /// </summary>
     public SqlContext Context { get; }
 
-    /// <summary>
-    ///   Gets a display name for the database server.  This name might be a
-    ///   DNS name, an Azure resource name, or a placeholder indicating a local
-    ///   SQL Server instance.
-    /// </summary>
+    /// <inheritdoc/>
     public string ServerName { get; }
 
-    /// <summary>
-    ///   Gets a short name for the database.  This name might be a real
-    ///   database name or a placeholder indicating the default database for
-    ///   the connection.
-    /// </summary>
+    /// <inheritdoc/>
     public string DatabaseName { get; }
 
     /// <summary>
@@ -139,7 +134,7 @@ internal class MigrationTarget : IDisposable
         if (pendingMigrations.IsEmpty)
             return;
 
-        ValidateMigrations(pendingMigrations); // throws if invalid
+        Validate(pendingMigrations); // throws if invalid
 
         var plan = ComputePlan(pendingMigrations);
 
@@ -156,32 +151,31 @@ internal class MigrationTarget : IDisposable
 
     private ImmutableArray<Migration> GetPendingMigrations(IReadOnlyList<Migration> appliedMigrations)
     {
-        var pendingMigrations = new MigrationMerger(Phase).Merge(
-            DefinedMigrations.AsSpan(),
+        return new MigrationMerger(Phase).Merge(
+            definedMigrations: Engine.Migrations.AsSpan(),
             appliedMigrations
         );
+    }
+
+    private void Validate(ImmutableArray<Migration> pendingMigrations)
+    {
+        var valid = new MigrationValidator(this).Validate(pendingMigrations.AsSpan());
 
         if (pendingMigrations.IsEmpty)
             ReportNoPendingMigrations();
         else
             ReportPendingMigrations(pendingMigrations);
 
-        return pendingMigrations;
-    }
-
-    private void ValidateMigrations(ImmutableArray<Migration> migrations)
-    {
-        var isValid = new MigrationValidator(this).Validate(migrations.AsSpan());
-
-        if (!isValid)
+        if (!valid)
             throw new MigrationValidationException();
     }
 
-    private MigrationPlan ComputePlan(ImmutableArray<Migration> migrations)
+    private MigrationPlan ComputePlan(ImmutableArray<Migration> pendingMigrations)
     {
-        var plan = new MigrationPlanner(migrations.AsSpan()).CreatePlan();
+        var plan = new MigrationPlanner(pendingMigrations.AsSpan()).CreatePlan();
 
         ReportPlan(plan);
+
         return plan;
     }
 
