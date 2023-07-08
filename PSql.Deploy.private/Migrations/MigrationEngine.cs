@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: ISC
 
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 
 namespace PSql.Deploy.Migrations;
 
@@ -54,11 +53,6 @@ public class MigrationEngine
     /// </remarks>
     public ImmutableArray<Migration> Migrations { get; private set; }
 
-    // Ideas for terms:
-    // - defined migrations
-    // - applied migrations
-    // - pending migrations
-
     /// <summary>
     ///   Gets the minimum (earliest) defined migration name, excluding the
     ///   <c>_Begin</c> and <c>_End</c> pseudo-migrations.  The default value
@@ -103,14 +97,13 @@ public class MigrationEngine
     public CancellationToken CancellationToken { get; }
 
     // Time elapsed since construction
-    private readonly Stopwatch _totalTime;
+    /*private*/ internal readonly Stopwatch _totalTime;
 
     // Whether any thread encountered an error
-    private int _errorCount;
+    //private int _errorCount;
 
     // Dynamic column widths
-    private int _databaseNameColumnWidth;
-    private int _migrationNameColumnWidth;
+    /*private*/ internal int _databaseNameColumnWidth;
 
     /// <summary>
     ///   Discovers defined migrations in the specified directory path.
@@ -172,14 +165,15 @@ public class MigrationEngine
             maxCount:     contextSet.Parallelism
         );
 
-        async Task RunLimitedAsync(SqlContext target)
+        async Task RunLimitedAsync(SqlContext context)
         {
             await limiter.WaitAsync(CancellationToken);
             try
             {
                 // Move to another thread so sibling task can start next context
                 await Task.Yield();
-                await ApplyAsync(target);
+                using var target = new MigrationTarget(this, context);
+                await target.ApplyAsync();
             }
             finally
             {
@@ -190,122 +184,6 @@ public class MigrationEngine
         // Move to another thread so sibling task can start next context set
         await Task.Yield();
         await Task.WhenAll(contextSet.Contexts.Select(RunLimitedAsync));
-    }
-
-    private async Task ApplyAsync(SqlContext context)
-    {
-        using var target = new MigrationTarget(context, Phase, LogPath);
-
-        ReportStarting(target);
-
-        var appliedMigrations = await GetAppliedMigrations(target);
-        var pendingMigrations = GetPendingMigrations(appliedMigrations, target);
-        if (pendingMigrations.IsEmpty)
-            return;
-
-        ValidateMigrations(pendingMigrations, target); // throws if invalid
-
-        var plan = ComputePlan(pendingMigrations, target);
-
-        await ExecuteAsync(plan, target);
-    }
-
-    private Task<IReadOnlyList<Migration>> GetAppliedMigrations(MigrationTarget target)
-    {
-        return MigrationRepository.GetAllAsync(
-            target.Context,    MinimumMigrationName,
-            target.LogConsole, CancellationToken
-        );
-    }
-
-    private ImmutableArray<Migration> GetPendingMigrations(
-        IReadOnlyList<Migration> appliedMigrations, MigrationTarget target)
-    {
-        var pendingMigrations = new MigrationMerger(Phase).Merge(
-            definedMigrations: Migrations.AsSpan(),
-            appliedMigrations
-        );
-
-        if (pendingMigrations.IsEmpty)
-            ReportNoPendingMigrations(target);
-        else
-            ReportPendingMigrations(pendingMigrations, target);
-
-        return pendingMigrations;
-    }
-
-    private void ValidateMigrations(ImmutableArray<Migration> migrations, MigrationTarget target)
-    {
-        var isValid = new MigrationValidator(target, Phase, MinimumMigrationName, Console)
-            .Validate(migrations.AsSpan());
-
-        if (!isValid)
-            throw new ApplicationException("Unable to perform migrations due to validation errors.");
-    }
-
-    private MigrationPlan ComputePlan(ImmutableArray<Migration> migrations, MigrationTarget target)
-    {
-        var plan = new MigrationPlanner(migrations.AsSpan()).CreatePlan();
-
-        ReportPlan(plan, target);
-        return plan;
-    }
-
-    private async Task ExecuteAsync(MigrationPlan plan, MigrationTarget target)
-    {
-        var items = plan.GetItems(Phase);
-        if (!items.Any())
-            return;
-
-        using var connection = target.Connect();
-        using var command    = connection.CreateCommand();
-
-        command.CommandTimeout = 0; // No timeout
-
-        var count     = 0;
-        var exception = null as Exception;
-
-        try
-        {
-            foreach (var (migration, phase) in items)
-            {
-                // Stop if another thread encountered an error
-                if (_errorCount > 0)
-                    return;
-
-                // Prepare to run the item
-                ReportApplying(migration, phase, target);
-                connection.ClearErrors();
-
-                // Run the item
-                await ExecuteAsync(migration, phase, command);
-
-                // Report errors if they happened
-                connection.ThrowIfHasErrors();
-                count++;
-            }
-        }
-        catch (Exception e)
-        {
-            Interlocked.Increment(ref _errorCount);
-            exception = e;
-            throw;
-        }
-        finally
-        {
-            ReportApplied(count, target, exception);
-        }
-    }
-
-    private Task ExecuteAsync(Migration migration, MigrationPhase phase, ISqlCommand command)
-    {
-        var sql = migration.GetSql(phase);
-        if (sql.IsNullOrEmpty())
-            return Task.CompletedTask;
-
-        command.CommandText = sql;
-
-        return command.UnderlyingCommand.ExecuteNonQueryAsync(CancellationToken);
     }
 
     private static int ComputeDatabaseNameColumnWidth(
@@ -319,136 +197,5 @@ public class MigrationEngine
             HeaderLength,
             contextSets.Max(s => s.Contexts.Max(c => c.DatabaseName?.Length ?? DefaultLength))
         );
-    }
-
-    private static int ComputeMigrationNameColumnWidth(ImmutableArray<Migration> migrations)
-    {
-        const int
-            HeaderLength  = 4; // "NAME".Length
-
-        return Math.Max(HeaderLength, migrations.Max(m => m.Name.Length));
-    }
-
-    private void ReportStarting(MigrationTarget target)
-    {
-        Console.WriteHost(string.Format(
-            @"[+{0:hh\:mm\:ss}] {1} {2}:{3} Starting",
-            /*{0}*/ _totalTime.Elapsed,
-            /*{1}*/ Phase.ToFixedWidthString(),
-            /*{2}*/ target.DatabaseName,
-            /*{3}*/ Space.Pad(target.DatabaseName, _databaseNameColumnWidth)
-        ));
-
-        target.Log("PSql.Deploy Migration Log");
-        target.Log("");
-        target.Log($"Migration Phase:    {Phase}");
-        target.Log($"Target Server:      {target.ServerName}");
-        target.Log($"Target Database:    {target.DatabaseName}");
-        target.Log($"Start Time:         {DateTime.UtcNow:o}");
-        target.Log($"Machine:            {Environment.MachineName}");
-        target.Log($"Logical CPUs:       {Environment.ProcessorCount}");
-        target.Log($"User:               {Environment.UserName}");
-        target.Log($"Process:            {Process.GetCurrentProcess().Id} ({RuntimeInformation.ProcessArchitecture})");
-        target.Log($"Operating System:   {RuntimeInformation.OSDescription} ({RuntimeInformation.OSArchitecture})");
-        target.Log($".NET Runtime:       {RuntimeInformation.FrameworkDescription}");
-    }
-
-    private void ReportNoPendingMigrations(MigrationTarget target)
-    {
-        target.Log("Migrations:         0");
-        target.Log("");
-        target.Log("Nothing to do.");
-    }
-
-    private void ReportPendingMigrations(
-        ImmutableArray<Migration> migrations, MigrationTarget target)
-    {
-        _migrationNameColumnWidth = ComputeMigrationNameColumnWidth(migrations);
-
-        // NAME             FILES     PROGRESS          DEPENDS-ON
-        // 2023-01-01-123   Ok        (new)             (none)
-        // 2023-01-02-234   Missing   Pre->Core->Post   (none)
-        // 2023-01-03-345   Ok        Pre->Core         2023-01-01-123
-        // 2023-01-04-456   Changed   Pre               (none)
-
-        target.Log($"Migrations:         {migrations.Length}");
-        target.Log("");
-
-        target.Log(string.Format(
-            "NAME{0}   FILES     PROGRESS          DEPENDS-ON",
-            Space.Pad("NAME", _migrationNameColumnWidth)
-        ));
-
-        foreach (var migration in migrations)
-        {
-            if (migration.IsPseudo)
-                continue;
-
-            target.Log(string.Format(
-                "{0}{1}   {2}   {3}   {4}",
-                /*{0}*/ migration.Name,
-                /*{1}*/ Space.Pad(migration.Name, _migrationNameColumnWidth),
-                /*{2}*/ migration.GetFixedWithFileStatusString(),
-                /*{3}*/ migration.State.ToFixedWidthString(),
-                /*{4}*/ migration.Depends?.LastOrDefault() ?? "(none)"
-            ));
-        }
-
-        target.Log("");
-    }
-
-    private void ReportPlan(MigrationPlan plan, MigrationTarget target)
-    {
-        target.Log("Sequence:");
-        target.Log("");
-
-        var items = plan.GetItems(Phase);
-
-        target.Log(string.Format(
-            "NAME{0}   PHASE",
-            Space.Pad("NAME", _migrationNameColumnWidth)
-        ));
-
-        foreach (var (migration, phase) in items)
-            target.Log(string.Format(
-                "{0}{1}   {2}",
-                /*{0}*/ migration.Name,
-                /*{1}*/ Space.Pad(migration.Name, _migrationNameColumnWidth),
-                /*{2}*/ phase
-            ));
-
-        target.Log("");
-    }
-
-    private void ReportApplying(Migration migration, MigrationPhase phase, MigrationTarget target)
-    {
-        Console.WriteHost(string.Format(
-            @"[+{0:hh\:mm\:ss}] {1} {2}:{3} Applying {4} {5}",
-            /*{0}*/ _totalTime.Elapsed,
-            /*{1}*/ Phase.ToFixedWidthString(),
-            /*{2}*/ target.DatabaseName,
-            /*{3}*/ Space.Pad(target.DatabaseName, _databaseNameColumnWidth),
-            /*{4}*/ migration.Name,
-            /*{5}*/ phase
-        ));
-    }
-
-    private void ReportApplied(int count, MigrationTarget target, Exception? exception)
-    {
-        var abnormality = 
-            exception is not null ? " [EXCEPTION]"  :
-            _errorCount > 0       ? " [INCOMPLETE]" :
-            null;
-
-        Console.WriteHost(string.Format(
-            @"[+{0:hh\:mm\:ss}] {1} {2}:{3} Applied {4} migration(s) in {5:N3} second(s){6}",
-            /*{0}*/ _totalTime.Elapsed,
-            /*{1}*/ Phase.ToFixedWidthString(),
-            /*{2}*/ target.DatabaseName,
-            /*{3}*/ Space.Pad(target.DatabaseName, _databaseNameColumnWidth),
-            /*{4}*/ count,
-            /*{5}*/ target.ElapsedTime.TotalSeconds,
-            /*{6}*/ abnormality
-        ));
     }
 }
