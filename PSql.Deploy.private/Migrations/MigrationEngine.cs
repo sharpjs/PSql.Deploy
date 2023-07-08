@@ -97,13 +97,13 @@ public class MigrationEngine
     public CancellationToken CancellationToken { get; }
 
     // Time elapsed since construction
-    /*private*/ internal readonly Stopwatch _totalTime;
+    private readonly Stopwatch _totalTime;
 
     // Whether any thread encountered an error
     //private int _errorCount;
 
     // Dynamic column widths
-    /*private*/ internal int _databaseNameColumnWidth;
+    private int _databaseNameColumnWidth;
 
     /// <summary>
     ///   Discovers defined migrations in the specified directory path.
