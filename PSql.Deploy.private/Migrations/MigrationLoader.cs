@@ -45,10 +45,6 @@ internal static class MigrationLoader
         var core    = new SqlErrorHandlingBuilder();
         var post    = new SqlErrorHandlingBuilder();
 
-        AppendStartBatch(migration, pre,  MigrationPhase.Pre );
-        AppendStartBatch(migration, core, MigrationPhase.Core);
-        AppendStartBatch(migration, post, MigrationPhase.Post);
-
         AppendAuthoredSql(migration, depends, pre, core, post);
 
         AppendFinalBatches(migration, pre,  MigrationPhase.Pre );
@@ -59,15 +55,6 @@ internal static class MigrationLoader
         migration.PreSql  = pre .Complete();
         migration.CoreSql = core.Complete();
         migration.PostSql = post.Complete();
-    }
-
-    private static void AppendStartBatch(Migration migration, SqlErrorHandlingBuilder builder, MigrationPhase phase)
-    {
-        var name = migration.Name.Replace("'", "''");
-
-        builder.StartNewBatch();
-        builder.Append($"PRINT '*** {name} {phase} ***';");
-        builder.StartNewBatch();
     }
 
     private static void AppendFinalBatches(Migration migration, SqlErrorHandlingBuilder builder, MigrationPhase phase)
