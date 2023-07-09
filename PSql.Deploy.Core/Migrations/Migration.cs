@@ -170,6 +170,9 @@ public class Migration
     /// <param name="phase">
     ///   The phase for which to get the SQL script.
     /// </param>
+    /// <returns>
+    ///   The SQL script for <paramref name="phase"/>.
+    /// </returns>
     /// <exception cref="ArgumentOutOfRangeException">
     ///   <paramref name="phase"/> is not a valid <see cref="MigrationPhase"/>.
     /// </exception>
