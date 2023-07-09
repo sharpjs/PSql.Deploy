@@ -1,7 +1,6 @@
 // Copyright 2023 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
-using System.Collections.Immutable;
 using System.Text.RegularExpressions;
 using Prequel;
 
@@ -32,24 +31,27 @@ internal static class MigrationLoader
 
     private static void LoadContentCore(Migration migration)
     {
-        var depends = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
         var pre     = new SqlErrorHandlingBuilder();
         var core    = new SqlErrorHandlingBuilder();
         var post    = new SqlErrorHandlingBuilder();
+        var depends = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        AppendAuthoredSql(migration, depends, pre, core, post);
+        AppendAuthoredSql(migration, pre, core, post, depends);
 
         AppendFinalBatches(migration, pre,  MigrationPhase.Pre );
         AppendFinalBatches(migration, core, MigrationPhase.Core);
         AppendFinalBatches(migration, post, MigrationPhase.Post);
 
-        migration.Depends = depends.ToImmutableArray();
         migration.PreSql  = pre .Complete();
         migration.CoreSql = core.Complete();
         migration.PostSql = post.Complete();
+        migration.Depends = depends.ToImmutableArray();
     }
 
-    private static void AppendFinalBatches(Migration migration, SqlErrorHandlingBuilder builder, MigrationPhase phase)
+    private static void AppendFinalBatches(
+        Migration               migration,
+        SqlErrorHandlingBuilder builder,
+        MigrationPhase          phase)
     {
         if (migration.IsPseudo)
             return;
@@ -92,10 +94,10 @@ internal static class MigrationLoader
 
     private static void AppendAuthoredSql(
         Migration               migration,
-        SortedSet<string>       depends,
         SqlErrorHandlingBuilder pre,
         SqlErrorHandlingBuilder core,
-        SqlErrorHandlingBuilder post)
+        SqlErrorHandlingBuilder post,
+        SortedSet<string>       depends)
     {
         var current = migration.Name switch
         {
