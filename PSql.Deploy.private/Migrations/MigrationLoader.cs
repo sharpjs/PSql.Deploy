@@ -51,6 +51,8 @@ internal static class MigrationLoader
         migration.CoreSql = core.Complete();
         migration.PostSql = post.Complete();
         migration.Depends = depends.ToImmutableArray();
+
+        migration.IsContentLoaded = true;
     }
 
     private static void AppendFinalBatches(
