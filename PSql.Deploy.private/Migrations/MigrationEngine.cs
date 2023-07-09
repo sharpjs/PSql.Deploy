@@ -102,7 +102,7 @@ public class MigrationEngine
     // Whether any thread encountered an error
     //private int _errorCount;
 
-    // Dynamic column widths
+    // For report tabulation
     private int _databaseNameColumnWidth;
 
     /// <summary>

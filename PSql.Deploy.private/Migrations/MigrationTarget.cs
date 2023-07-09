@@ -47,8 +47,9 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
         LogConsole   = new TextWriterConsole(LogWriter);
     }
 
-    private readonly Stopwatch _stopwatch;
-
+    /// <summary>
+    ///   Gets the engine for which this instance works.
+    /// </summary>
     public MigrationEngine Engine { get; }
 
     /// <inheritdoc cref="MigrationEngine.MinimumMigrationName"/>
@@ -87,36 +88,11 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
     /// </summary>
     public IConsole LogConsole { get; }
 
-    /// <summary>
-    ///   Gets the time that has elapsed since construction of this object.
-    /// </summary>
-    public TimeSpan ElapsedTime => _stopwatch.Elapsed;
+    // Time elapsed since construction
+    private readonly Stopwatch _stopwatch;
 
-    private int _migrationNameColumnWidth;
-
-    /// <summary>
-    ///   Opens a connection to the target database.  The connection will log
-    ///   server messages to the per-database log file.
-    /// </summary>
-    /// <returns>
-    ///   An open connection to the target database.
-    /// </returns>
-    public ISqlConnection Connect()
-        => Context.Connect(databaseName: null, LogConsole);
-
-    /// <summary>
-    ///   Writes the specified text and a line ending to the per-database log
-    ///   file.
-    /// </summary>
-    /// <param name="text">
-    ///   The text to write.
-    /// </param>
-    public void Log(string text)
-        => LogWriter.WriteLine(text);
-
-    /// <inheritdoc/>
-    public void Dispose()
-        => LogWriter.Dispose();
+    // For report tabulation
+    private int _migrationNameMaxLength;
 
     /// <summary>
     ///   Applies outstanding migrations to the target database asynchronously.
@@ -166,6 +142,8 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
         else
             ReportPendingMigrations(pendingMigrations);
 
+        ReportDiagnostics(pendingMigrations);
+
         if (!valid)
             throw new MigrationValidationException();
     }
@@ -185,7 +163,7 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
         if (!items.Any())
             return;
 
-        using var connection = Connect();
+        using var connection = Context.Connect(databaseName: null, LogConsole);
         using var command    = connection.CreateCommand();
 
         command.CommandTimeout = 0; // No timeout
@@ -241,6 +219,8 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
     {
         Engine.ReportStarting(DatabaseName);
 
+        var process = Process.GetCurrentProcess();
+
         Log("PSql.Deploy Migration Log");
         Log("");
         Log($"Migration Phase:    {Phase}");
@@ -250,86 +230,191 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
         Log($"Machine:            {MachineName}");
         Log($"Logical CPUs:       {ProcessorCount}");
         Log($"User:               {UserName}");
-        Log($"Process:            {Process.GetCurrentProcess().Id} ({ProcessArchitecture})");
+        Log($"Process:            {process.Id} {process.ProcessName} ({ProcessArchitecture})");
         Log($"Operating System:   {OSDescription} ({OSArchitecture})");
         Log($".NET Runtime:       {FrameworkDescription}");
     }
 
     private void ReportNoPendingMigrations()
     {
-        Log("Migrations:         0");
+        Log("");
+        Log("Pending Migrations: 0");
         Log("");
         Log("Nothing to do.");
     }
 
     private void ReportPendingMigrations(ImmutableArray<Migration> migrations)
     {
-        const int HeaderLength = 4; // "NAME".Length
-
+        // A contrived example showing all forms of output:
+        //
+        // Pending Migrations: 4
+        //
         // NAME             FILES     PROGRESS          DEPENDS-ON
         // 2023-01-01-123   Ok        (new)             (none)
         // 2023-01-02-234   Missing   Pre->Core->Post   (none)
         // 2023-01-03-345   Ok        Pre->Core         2023-01-01-123
-        // 2023-01-04-456   Changed   Pre               (none)
+        // 2023-01-04-456   Changed   Pre               (none)           **ERROR**
 
-        _migrationNameColumnWidth = Math.Max(HeaderLength, migrations.Max(m => m.Name.Length));
+        const int
+            NameHeaderWidth      =  4, // NAME
+            DependsOnHeaderWidth = 10; // DEPENDS-ON
 
-        Log($"Migrations:         {migrations.Length}");
+        // Dynamic column widths
+        _migrationNameMaxLength = migrations.Max(m => m.Name.Length);
+        var nameColumnWidth      = Math.Max(NameHeaderWidth,      _migrationNameMaxLength);
+        var dependsOnColumnWidth = Math.Max(DependsOnHeaderWidth, _migrationNameMaxLength);
+
+        // Header
         Log("");
-
+        Log($"Pending Migrations: {migrations.Length}");
+        Log("");
         Log(string.Format(
             "NAME{0}   FILES     PROGRESS          DEPENDS-ON",
-            Space.Pad("NAME", _migrationNameColumnWidth)
+            Space.Pad("NAME", nameColumnWidth)
         ));
 
+        // Body
         foreach (var migration in migrations)
         {
             if (migration.IsPseudo)
                 continue;
 
+            var marker    = GetDiagnosticMarker(migration.Diagnostics);
+            var dependsOn = migration.Depends?.LastOrDefault() ?? "(none)";
+
+            var dependsOnPad = marker is not null
+                ? Space.Pad(dependsOn, dependsOnColumnWidth)
+                : null;
+
             Log(string.Format(
-                "{0}{1}   {2}   {3}   {4}",
+                "{0}{1}   {2}   {3}   {4}{5}{6}",
                 /*{0}*/ migration.Name,
-                /*{1}*/ Space.Pad(migration.Name, _migrationNameColumnWidth),
+                /*{1}*/ Space.Pad(migration.Name, nameColumnWidth),
                 /*{2}*/ migration.GetFixedWithFileStatusString(),
                 /*{3}*/ migration.State.ToFixedWidthString(),
-                /*{4}*/ migration.Depends?.LastOrDefault() ?? "(none)"
+                /*{4}*/ dependsOn,
+                /*{5}*/ dependsOnPad,
+                /*{6}*/ marker
             ));
         }
+    }
 
+    private static string? GetDiagnosticMarker(IReadOnlyList<MigrationDiagnostic> diagnostics)
+    {
+        if (diagnostics.Count == 0)
+            return null;
+
+        foreach (var diagnostic in diagnostics)
+            if (diagnostic.IsError)
+                return "**ERROR**";
+
+        return "**WARNING**";
+    }
+
+    private void ReportDiagnostics(ImmutableArray<Migration> pendingMigrations)
+    {
+        // Header
         Log("");
+        Log("Validation:");
+        Log("");
+
+        var hasDiagnostics = false;
+
+        // Body
+        foreach (var migration in pendingMigrations)
+        {
+            if (migration.Diagnostics.Count == 0)
+                continue;
+
+            hasDiagnostics = true;
+
+            foreach (var diagnostic in migration.Diagnostics)
+                ReportDiagnostic(diagnostic);
+        }
+
+        if (!hasDiagnostics)
+            Log("All pending migrations are valid.");
+    }
+
+    private void ReportDiagnostic(MigrationDiagnostic diagnostic)
+    {
+        Log(string.Concat(
+            diagnostic.IsError ? "Error: " : "Warning: ",
+            diagnostic.Message
+        ));
     }
 
     private void ReportPlan(MigrationPlan plan)
     {
+        const int
+            NameHeaderWidth =  4; // NAME
+
+        // Dynamic column widths
+        var nameColumnWidth = Math.Max(NameHeaderWidth, _migrationNameMaxLength);
+
+        // Header
+        Log("");
         Log("Sequence:");
         Log("");
-
-        var items = plan.GetItems(Phase);
-
         Log(string.Format(
             "NAME{0}   PHASE",
-            Space.Pad("NAME", _migrationNameColumnWidth)
+            Space.Pad("NAME", nameColumnWidth)
         ));
 
-        foreach (var (migration, phase) in items)
+        // Body
+        foreach (var (migration, phase) in plan.GetItems(Phase))
+        {
             Log(string.Format(
                 "{0}{1}   {2}",
                 /*{0}*/ migration.Name,
-                /*{1}*/ Space.Pad(migration.Name, _migrationNameColumnWidth),
+                /*{1}*/ Space.Pad(migration.Name, nameColumnWidth),
                 /*{2}*/ phase
             ));
+        }
 
+        // Separator between table and migration script output
         Log("");
     }
 
     private void ReportApplying(Migration migration, MigrationPhase phase)
     {
         Engine.ReportApplying(DatabaseName, migration.Name, phase);
+
+        Log(string.Concat("[", migration.Name, " ", phase.ToString(), "]"));
+
+        // Server messages appear here
     }
 
     private void ReportApplied(int count, Exception? exception)
     {
-        Engine.ReportApplied(DatabaseName, count, _stopwatch.Elapsed, exception);
+        var elapsed = _stopwatch.Elapsed;
+
+        Engine.ReportApplied(DatabaseName, count, elapsed, exception);
+
+        // Exception
+        if (exception is not null)
+            Log(exception.ToString());
+
+        // Footer
+        Log("");
+        Log(string.Format(
+            "Applied {0} migration(s) in {1:N3} second(s)",
+            count,
+            elapsed.TotalSeconds
+        ));
     }
+
+    /// <summary>
+    ///   Writes the specified text and a line ending to the per-database log
+    ///   file.
+    /// </summary>
+    /// <param name="text">
+    ///   The text to write.
+    /// </param>
+    public void Log(string text)
+        => LogWriter.WriteLine(text);
+
+    /// <inheritdoc/>
+    public void Dispose()
+        => LogWriter.Dispose();
 }
