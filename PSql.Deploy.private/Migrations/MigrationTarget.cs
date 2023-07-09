@@ -107,12 +107,12 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
         var appliedMigrations = await GetAppliedMigrations();
 
         var pendingMigrations = GetPendingMigrations(appliedMigrations);
-        if (pendingMigrations.IsEmpty)
+        if (!ShouldApply(pendingMigrations))
             return;
 
-        Validate(pendingMigrations); // throws if invalid
-
         var plan = ComputePlan(pendingMigrations);
+        if (!ShouldExecute(plan))
+            return;
 
         await ExecuteAsync(plan);
     }
@@ -133,28 +133,42 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
         );
     }
 
-    private void Validate(ImmutableArray<Migration> pendingMigrations)
+    private bool ShouldApply(ImmutableArray<Migration> pendingMigrations)
     {
+        if (pendingMigrations.IsEmpty)
+        {
+            ReportNoPendingMigrations();
+            return false;
+        }
+
         var valid = new MigrationValidator(this).Validate(pendingMigrations.AsSpan());
 
-        if (pendingMigrations.IsEmpty)
-            ReportNoPendingMigrations();
-        else
-            ReportPendingMigrations(pendingMigrations);
-
-        ReportDiagnostics(pendingMigrations);
+        ReportPendingMigrations(pendingMigrations);
+        ReportDiagnostics      (pendingMigrations);
 
         if (!valid)
             throw new MigrationValidationException();
+
+        return true;
     }
 
     private MigrationPlan ComputePlan(ImmutableArray<Migration> pendingMigrations)
     {
-        var plan = new MigrationPlanner(pendingMigrations.AsSpan()).CreatePlan();
+        return new MigrationPlanner(pendingMigrations.AsSpan()).CreatePlan();
+    }
 
-        ReportPlan(plan);
+    private bool ShouldExecute(MigrationPlan plan)
+    {
+        var hasNonPseudo = plan
+            .GetItems(Phase)
+            .Any(x => !x.Migration.IsPseudo);
 
-        return plan;
+        if (hasNonPseudo)
+            ReportPlan(plan);
+        else
+            ReportEmptyPlan();
+
+        return hasNonPseudo;
     }
 
     private async Task ExecuteAsync(MigrationPlan plan)
@@ -315,7 +329,7 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
     {
         // Header
         Log("");
-        Log("Validation:");
+        Log("Validation Results:");
         Log("");
 
         var hasDiagnostics = false;
@@ -333,7 +347,7 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
         }
 
         if (!hasDiagnostics)
-            Log("All pending migrations are valid.");
+            Log("All pending migrations are valid for the current phase.");
     }
 
     private void ReportDiagnostic(MigrationDiagnostic diagnostic)
@@ -342,6 +356,14 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
             diagnostic.IsError ? "Error: " : "Warning: ",
             diagnostic.Message
         ));
+    }
+
+    private void ReportEmptyPlan()
+    {
+        Log("");
+        Log("Migration Sequence:");
+        Log("");
+        Log("Nothing to do for the current phase.");
     }
 
     private void ReportPlan(MigrationPlan plan)
@@ -354,7 +376,7 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
 
         // Header
         Log("");
-        Log("Sequence:");
+        Log("Migration Sequence:");
         Log("");
         Log(string.Format(
             "NAME{0}   PHASE",
