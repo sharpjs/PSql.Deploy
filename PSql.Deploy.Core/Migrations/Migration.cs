@@ -185,6 +185,30 @@ public class Migration
     }
 
     /// <summary>
+    ///   Checks whether the migration cannot skip the specified phase.
+    /// </summary>
+    /// <param name="phase">
+    ///   The phase to check.
+    /// </param>
+    /// <returns>
+    ///   <see langword="true"/> if <paramref name="phase"/> cannot be skipped;
+    ///   <see langword="false"/> otherwise.
+    /// </returns>
+    /// <exception cref="ArgumentOutOfRangeException">
+    ///   <paramref name="phase"/> is not a valid <see cref="MigrationPhase"/>.
+    /// </exception>
+    public bool IsRequired(MigrationPhase phase)
+    {
+        return phase switch
+        {
+            MigrationPhase.Pre  => IsPreRequired,
+            MigrationPhase.Core => IsCoreRequired,
+            MigrationPhase.Post => IsPostRequired,
+            _ => throw new ArgumentOutOfRangeException(nameof(phase)),
+        };
+    }
+
+    /// <summary>
     ///   Gets the latest phase of the migration that has been applied to a
     ///   target database, or <see langword="null"/> if the migration has not
     ///   been applied in any phase.
@@ -235,12 +259,13 @@ public class Migration
             return true;
 
         // If the next phase to be applied is earlier than the requested state,
-        // the migration can be applied only if the intermediate phases are empty
+        // the migration can be applied only if the intermediate phases are
+        // skippable
         for (; next < phase; next++)
-            if (!GetSql(next).IsNullOrEmpty())
+            if (IsRequired(next))
                 return false;
 
-        // Intermediate phases are indeed empty
+        // Intermediate phases are indeed skippable
         return true;
     }
 }
