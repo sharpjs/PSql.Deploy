@@ -38,6 +38,11 @@ internal static class MigrationLoader
 
         AppendAuthoredSql(migration, pre, core, post, depends);
 
+        // A phase is required if it contains authored SQL
+        migration.IsPreRequired  = !pre .IsEmpty;
+        migration.IsCoreRequired = !core.IsEmpty;
+        migration.IsPostRequired = !post.IsEmpty;
+
         AppendFinalBatches(migration, pre,  MigrationPhase.Pre );
         AppendFinalBatches(migration, core, MigrationPhase.Core);
         AppendFinalBatches(migration, post, MigrationPhase.Post);

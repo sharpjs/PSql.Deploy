@@ -124,6 +124,24 @@ public class Migration
     public string? PostSql { get; set; }
 
     /// <summary>
+    ///   Gets or sets whether the migration cannot skip the <b>Pre</b> phase.
+    ///   The default value is <see langword="false"/>.
+    /// </summary>
+    public bool IsPreRequired { get; set; }
+
+    /// <summary>
+    ///   Gets or sets whether the migration cannot skip the <b>Core</b> phase.
+    ///   The default value is <see langword="false"/>.
+    /// </summary>
+    public bool IsCoreRequired { get; set; }
+
+    /// <summary>
+    ///   Gets or sets whether the migration cannot skip the <b>Post</b> phase.
+    ///   The default value is <see langword="false"/>.
+    /// </summary>
+    public bool IsPostRequired { get; set; }
+
+    /// <summary>
     ///   Gets or sets the names of migrations that must be applied completely
     ///   before any phase of the current migration.  The default value is an
     ///   empty list.
