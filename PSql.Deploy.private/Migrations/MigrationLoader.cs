@@ -18,24 +18,16 @@ internal static class MigrationLoader
         if (migration.Path is null)
             throw new ArgumentException("Migration must have a path.", nameof(migration));
 
-        if (HasContent(migration))
+        if (migration.IsContentLoaded)
             return;
 
         lock (migration)
         {
-            if (HasContent(migration))
+            if (migration.IsContentLoaded)
                 return;
 
             LoadContentCore(migration);
         }
-    }
-
-    private static bool HasContent(Migration migration)
-    {
-        return migration.Depends is not null
-            && migration.PreSql  is not null
-            && migration.CoreSql is not null
-            && migration.PostSql is not null;
     }
 
     private static void LoadContentCore(Migration migration)

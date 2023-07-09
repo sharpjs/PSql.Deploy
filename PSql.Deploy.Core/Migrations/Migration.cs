@@ -97,6 +97,12 @@ public class Migration
     public bool HasChanged { get; set; }
 
     /// <summary>
+    ///   Gets or sets whether the migration's SQL scripts and dependency names
+    ///   have been loaded.  The default value is <see langword="false"/>.
+    /// </summary>
+    internal bool IsContentLoaded { get; set; }
+
+    /// <summary>
     ///   Gets or sets the SQL script for the <b>Pre</b> phase, or
     ///   <see langword="null"/> if no script is known.  The default value is
     ///   <see langword="null"/>.
