@@ -41,8 +41,6 @@ public class MigrationEngine
         Console              = console;
         LogPath              = logPath;
         CancellationToken    = cancellation;
-
-        Directory.CreateDirectory(LogPath);
     }
 
     /// <summary>
@@ -151,6 +149,8 @@ public class MigrationEngine
 
         if (Targets.Length == 0)
             return Task.CompletedTask;
+
+        Directory.CreateDirectory(LogPath);
 
         return Task.WhenAll(Targets.Select(ApplyAsync));
     }
