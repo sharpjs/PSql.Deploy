@@ -227,16 +227,11 @@ public class MigrationEngine
     }
 
     internal void ReportApplied(
-        string     databaseName,
-        int        count,
-        TimeSpan   elapsed,
-        Exception? exception)
+        string                     databaseName,
+        int                        count,
+        TimeSpan                   elapsed,
+        MigrationTargetDisposition disposition)
     {
-        var abnormality = 
-            exception is not null ? " [EXCEPTION]"  :
-            //_errorCount > 0       ? " [INCOMPLETE]" :
-            null;
-
         Console.WriteHost(string.Format(
             @"[+{0:hh\:mm\:ss}] {1} {2}:{3} Applied {4} migration(s) in {5:N3} second(s){6}",
             /*{0}*/ _totalTime.Elapsed,
@@ -245,7 +240,19 @@ public class MigrationEngine
             /*{3}*/ Space.Pad(databaseName, _databaseNameColumnWidth),
             /*{4}*/ count,
             /*{5}*/ elapsed.TotalSeconds,
-            /*{6}*/ abnormality
+            /*{6}*/ disposition.ToMarker()
+        ));
+    }
+
+    internal void ReportProblem(string databaseName, string description)
+    {
+        Console.WriteHost(string.Format(
+            @"[+{0:hh\:mm\:ss}] {1} {2}:{3} {4}",
+            /*{0}*/ _totalTime.Elapsed,
+            /*{1}*/ Phase.ToFixedWidthString(),
+            /*{2}*/ databaseName,
+            /*{3}*/ Space.Pad(databaseName, _databaseNameColumnWidth),
+            /*{4}*/ description
         ));
     }
 }

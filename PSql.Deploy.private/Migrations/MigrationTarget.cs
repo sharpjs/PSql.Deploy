@@ -91,8 +91,14 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
     // Time elapsed since construction
     private readonly Stopwatch _stopwatch;
 
-    // For report tabulation
+    // Dynamic column width
     private int _migrationNameMaxLength;
+
+    // Count of migrations successfully applied
+    private int _appliedCount;
+
+    // Outcome
+    private MigrationTargetDisposition _disposition;
 
     /// <summary>
     ///   Applies outstanding migrations to the target database asynchronously.
@@ -100,21 +106,37 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
     /// <returns>
     ///   A <see cref="Task"/> representing the asynchronous operation.
     /// </returns>
+    /// <exception cref="MigrationValidationException">
+    ///   One or more validation errors was reported.
+    /// </exception>
     public async Task ApplyAsync()
     {
         ReportStarting();
 
-        var appliedMigrations = await GetAppliedMigrations();
+        try
+        {
+            var appliedMigrations = await GetAppliedMigrations();
 
-        var pendingMigrations = GetPendingMigrations(appliedMigrations);
-        if (!ShouldApply(pendingMigrations))
-            return;
+            var pendingMigrations = GetPendingMigrations(appliedMigrations);
+            if (!ShouldApply(pendingMigrations)) // throws if invalid
+                return;
 
-        var plan = ComputePlan(pendingMigrations);
-        if (!ShouldExecute(plan))
-            return;
+            var plan = ComputePlan(pendingMigrations);
+            if (!ShouldExecute(plan))
+                return;
 
-        await ExecuteAsync(plan);
+            await ExecuteAsync(plan);
+        }
+        catch (Exception e)
+        {
+            _disposition = MigrationTargetDisposition.Failed;
+            ReportException(e);
+            throw;
+        }
+        finally
+        {
+            ReportEnded();
+        }
     }
 
     private Task<IReadOnlyList<Migration>> GetAppliedMigrations()
@@ -173,48 +195,32 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
 
     private async Task ExecuteAsync(MigrationPlan plan)
     {
-        var items = plan.GetItems(Phase);
-        if (!items.Any())
-            return;
+        ReportApplying();
 
         using var connection = Context.Connect(databaseName: null, LogConsole);
         using var command    = connection.CreateCommand();
 
         command.CommandTimeout = 0; // No timeout
 
-        var count     = 0;
-        var exception = null as Exception;
-
-        try
+        foreach (var (migration, phase) in plan.GetItems(Phase))
         {
-            foreach (var (migration, phase) in items)
-            {
-                // TODO
-                // // Stop if another thread encountered an error
-                // if (_errorCount > 0)
-                //     return;
+            // // Stop if a parallel invocation encountered an error
+            // if (Engine.HasErrors)
+            // {
+            //     _disposition = MigrationTargetDisposition.Incomplete;
+            //     return;
+            // }
 
-                // Prepare to run the item
-                ReportApplying(migration, phase);
-                connection.ClearErrors();
+            // Prepare to run the item
+            ReportApplying(migration, phase);
+            connection.ClearErrors();
 
-                // Run the item
-                await ExecuteAsync(migration, phase, command);
+            // Run the item
+            await ExecuteAsync(migration, phase, command);
 
-                // Report errors if they happened
-                connection.ThrowIfHasErrors();
-                count++;
-            }
-        }
-        catch (Exception e)
-        {
-            //Interlocked.Increment(ref _errorCount);
-            exception = e;
-            throw;
-        }
-        finally
-        {
-            ReportApplied(count, exception);
+            // Report errors or mark applied
+            connection.ThrowIfHasErrors();
+            _appliedCount++;
         }
     }
 
@@ -393,8 +399,12 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
                 /*{2}*/ phase
             ));
         }
+    }
 
-        // Separator between table and migration script output
+    private void ReportApplying()
+    {
+        Log("");
+        Log("Execution Log:");
         Log("");
     }
 
@@ -407,21 +417,23 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
         // Server messages appear here
     }
 
-    private void ReportApplied(int count, Exception? exception)
+    private void ReportException(Exception exception)
+    {
+        Engine.ReportProblem(DatabaseName, exception.Message);
+        Log(exception.ToString());
+    }
+
+    private void ReportEnded()
     {
         var elapsed = _stopwatch.Elapsed;
 
-        Engine.ReportApplied(DatabaseName, count, elapsed, exception);
-
-        // Exception
-        if (exception is not null)
-            Log(exception.ToString());
+        Engine.ReportApplied(DatabaseName, _appliedCount, elapsed, _disposition);
 
         // Footer
         Log("");
         Log(string.Format(
             "Applied {0} migration(s) in {1:N3} second(s)",
-            count,
+            _appliedCount,
             elapsed.TotalSeconds
         ));
     }
