@@ -111,10 +111,10 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
     /// </exception>
     public async Task ApplyAsync()
     {
-        ReportStarting();
-
         try
         {
+            ReportStarting();
+
             var appliedMigrations = await GetAppliedMigrations();
 
             var pendingMigrations = GetPendingMigrations(appliedMigrations);
