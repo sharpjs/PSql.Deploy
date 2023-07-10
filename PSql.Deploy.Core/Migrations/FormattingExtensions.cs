@@ -5,6 +5,7 @@ namespace PSql.Deploy.Migrations;
 
 using static MigrationPhase;
 using static MigrationState;
+using static MigrationTargetDisposition;
 
 internal static class FormattingExtensions
 {
@@ -36,6 +37,16 @@ internal static class FormattingExtensions
             AppliedPre  => "Pre            ",
             AppliedCore => "Pre->Core      ",
             _           => "Pre->Core->Post",
+        };
+    }
+
+    internal static string? ToMarker(this MigrationTargetDisposition disposition)
+    {
+        return disposition switch
+        {
+            Successful => null,
+            Incomplete => " [INCOMPLETE]",
+            _          => " [EXCEPTION]",
         };
     }
 }
