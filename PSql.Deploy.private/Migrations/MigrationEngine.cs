@@ -178,12 +178,7 @@ public class MigrationEngine
             {
                 // Move to another thread so sibling task can start next context
                 await Task.Yield();
-                using var target = new MigrationTarget(this, context);
-                await target.ApplyAsync();
-            }
-            catch
-            {
-                Interlocked.Increment(ref _errorCount);
+                await ApplyAsync(context);
             }
             finally
             {
@@ -194,6 +189,24 @@ public class MigrationEngine
         // Move to another thread so sibling task can start next context set
         await Task.Yield();
         await Task.WhenAll(contextSet.Contexts.Select(RunLimitedAsync));
+    }
+
+    private async Task ApplyAsync(SqlContext context)
+    {
+        using var target = new MigrationTarget(this, context);
+
+        try
+        {
+            await target.ApplyAsync();
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch
+        {
+            Interlocked.Increment(ref _errorCount);
+        }
     }
 
     private static int ComputeDatabaseNameColumnWidth(
