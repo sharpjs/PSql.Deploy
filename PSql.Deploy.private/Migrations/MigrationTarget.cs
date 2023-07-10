@@ -358,6 +358,8 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
 
     private void ReportDiagnostic(MigrationDiagnostic diagnostic)
     {
+        Engine.ReportProblem(diagnostic.Message);
+
         Log(string.Concat(
             diagnostic.IsError ? "Error: " : "Warning: ",
             diagnostic.Message
@@ -419,7 +421,8 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
 
     private void ReportException(Exception exception)
     {
-        Engine.ReportProblem(DatabaseName, exception.Message);
+        Engine.ReportProblem(exception.Message);
+
         Log(exception.ToString());
     }
 

@@ -254,15 +254,8 @@ public class MigrationEngine
         ));
     }
 
-    internal void ReportProblem(string databaseName, string description)
+    internal void ReportProblem(string message)
     {
-        Console.WriteHost(string.Format(
-            @"[+{0:hh\:mm\:ss}] {1} {2}:{3} {4}",
-            /*{0}*/ _totalTime.Elapsed,
-            /*{1}*/ Phase.ToFixedWidthString(),
-            /*{2}*/ databaseName,
-            /*{3}*/ Space.Pad(databaseName, _databaseNameColumnWidth),
-            /*{4}*/ description
-        ));
+        Console.WriteWarning(message);
     }
 }
