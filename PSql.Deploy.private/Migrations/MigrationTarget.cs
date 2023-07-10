@@ -204,12 +204,12 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
 
         foreach (var (migration, phase) in plan.GetItems(Phase))
         {
-            // // Stop if a parallel invocation encountered an error
-            // if (Engine.HasErrors)
-            // {
-            //     _disposition = MigrationTargetDisposition.Incomplete;
-            //     return;
-            // }
+            // Stop if a parallel invocation encountered an error
+            if (Engine.HasErrors)
+            {
+                _disposition = MigrationTargetDisposition.Incomplete;
+                return;
+            }
 
             // Prepare to run the item
             ReportApplying(migration, phase);

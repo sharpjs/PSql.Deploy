@@ -94,11 +94,17 @@ public class MigrationEngine
     /// </summary>
     public CancellationToken CancellationToken { get; }
 
+    /// <summary>
+    ///   Gets whether migration application to one or more target databases
+    ///   failed with an error.
+    /// </summary>
+    public bool HasErrors => Volatile.Read(ref _errorCount) > 0;
+
     // Time elapsed since construction
     private readonly Stopwatch _totalTime;
 
-    // Whether any thread encountered an error
-    //private int _errorCount;
+    // Count of applications to target databases that threw exceptions
+    private int _errorCount;
 
     // For report tabulation
     private int _databaseNameColumnWidth;
@@ -174,6 +180,10 @@ public class MigrationEngine
                 await Task.Yield();
                 using var target = new MigrationTarget(this, context);
                 await target.ApplyAsync();
+            }
+            catch
+            {
+                Interlocked.Increment(ref _errorCount);
             }
             finally
             {
