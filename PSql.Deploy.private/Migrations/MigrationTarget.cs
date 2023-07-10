@@ -127,6 +127,11 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
 
             await ExecuteAsync(plan);
         }
+        catch (OperationCanceledException)
+        {
+            _disposition = MigrationTargetDisposition.Incomplete;
+            throw;
+        }
         catch (Exception e)
         {
             _disposition = MigrationTargetDisposition.Failed;
