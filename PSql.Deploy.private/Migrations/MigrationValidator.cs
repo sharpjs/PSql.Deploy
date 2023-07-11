@@ -58,23 +58,28 @@ internal ref struct MigrationValidator
 
         foreach (var migration in migrations)
         {
-            if (migration.IsPseudo)
-                continue;
-
-            ValidateNotChanged(migration);
-            ValidateDepends   (migration, lookup);
-
-            if (migration.IsAppliedThrough(Context.Phase))
-                continue; // Migration will not be applied
-
-            ValidateCanApplyThroughPhase(migration);
-            ValidateHasSource           (migration);
+            ValidateCore(migration, lookup);
 
             migration.Diagnostics = _diagnostics.ToArray();
             _diagnostics.Clear();
         }
 
         return _isValid;
+    }
+
+    private void ValidateCore(Migration migration, Dictionary<string, Migration> lookup)
+    {
+        if (migration.IsPseudo)
+            return;
+
+        ValidateNotChanged(migration);
+        ValidateDepends   (migration, lookup);
+
+        if (migration.IsAppliedThrough(Context.Phase))
+            return; // Migration will not be applied
+
+        ValidateCanApplyThroughPhase(migration);
+        ValidateHasSource           (migration);
     }
 
     private static Dictionary<string, Migration> CreateLookup(ReadOnlySpan<Migration> migrations)
