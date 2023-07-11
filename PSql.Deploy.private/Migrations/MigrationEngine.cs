@@ -149,16 +149,19 @@ public class MigrationEngine
     /// <returns>
     ///   A <see cref="Task"/> representing the asynchronous operation.
     /// </returns>
-    public Task ApplyAsync(MigrationPhase phase)
+    public async Task ApplyAsync(MigrationPhase phase)
     {
         Phase = phase;
 
         if (Targets.Length == 0)
-            return Task.CompletedTask;
+            return;
 
         Directory.CreateDirectory(LogPath);
 
-        return Task.WhenAll(Targets.Select(ApplyAsync));
+        await Task.WhenAll(Targets.Select(ApplyAsync));
+
+        if (HasErrors)
+            throw new MigrationException();
     }
 
     private async Task ApplyAsync(SqlContextParallelSet contextSet)
