@@ -43,17 +43,9 @@
         'Invoke-SqlMigrations2'
     )
     FunctionsToExport    = @(
-        'Find-SqlMigrations'
-        'Get-SqlMigrationHash'
         'Install-SqlMigrationSupport'
-        'Invoke-SqlMigrations'
-        'Invoke-SqlMigrationPlan'
         'Invoke-SqlSeed'
-        'New-Error'
-        'New-SqlMigrationPlan'
         'New-SqlContextParallelSet'
-        'Read-SqlMigration'
-        'Set-SqlMigrationPlan'
     )
 
     # Discoverability and URLs
