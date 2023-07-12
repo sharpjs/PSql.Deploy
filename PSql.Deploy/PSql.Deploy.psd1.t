@@ -41,11 +41,11 @@
     CmdletsToExport      = @(
         'Get-SqlMigrations'
         'Invoke-SqlMigrations'
+        'New-SqlContextParallelSet'
     )
     FunctionsToExport    = @(
         'Install-SqlMigrationSupport'
         'Invoke-SqlSeed'
-        'New-SqlContextParallelSet'
     )
 
     # Discoverability and URLs
