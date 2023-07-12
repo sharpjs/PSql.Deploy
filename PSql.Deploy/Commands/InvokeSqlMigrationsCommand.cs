@@ -7,9 +7,7 @@ namespace PSql.Deploy.Commands;
 
 using static MigrationPhase;
 
-// TODO: Replace original Invoke-SqlMigrations with this, removing the '2' suffix
-//                                           V
-[Cmdlet(VerbsLifecycle.Invoke, "SqlMigrations2")]
+[Cmdlet(VerbsLifecycle.Invoke, "SqlMigrations")]
 public class InvokeSqlMigrationsCommand : AsyncCmdlet
 {
     // -Path
