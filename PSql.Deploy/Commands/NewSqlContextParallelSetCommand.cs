@@ -20,13 +20,13 @@ public class NewSqlContextParallelSetCommand : PSCmdlet
     [ValidateNotNullOrEmpty]
     public SqlContext[]? Context { get; set; }
 
-    // -ThrottleLimit
+    // -Parallelism
     // Maximum count of operations to perform in parallel.  The default value
     // is the number of virtual processors on the local machine.
     [Parameter()]
-    [Alias("Parallelism")]
+    [Alias("ThrottleLimit")]
     [ValidateRange(1, int.MaxValue)]
-    public int ThrottleLimit { get; set; }
+    public int Parallelism { get; set; }
 
     private readonly SqlContextParallelSet _set = new();
 
@@ -42,8 +42,8 @@ public class NewSqlContextParallelSetCommand : PSCmdlet
         if (Name is not null)
             _set.Name = Name;
 
-        if (ThrottleLimit > 0)
-            _set.Parallelism = ThrottleLimit;
+        if (Parallelism > 0)
+            _set.Parallelism = Parallelism;
 
         WriteObject(_set);
     }
