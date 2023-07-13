@@ -39,7 +39,7 @@ public abstract class AsyncCmdlet : Cmdlet, IConsole, IDisposable
     /// <summary>
     ///   Executes the command for one input record.
     /// </summary>
-    protected sealed override void ProcessRecord()
+    protected override void ProcessRecord()
     {
         var task = Task.Run(ProcessRecordAndEndAsync);
 
