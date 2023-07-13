@@ -41,18 +41,25 @@ public abstract class AsyncCmdlet : Cmdlet, IConsole, IDisposable
     /// </summary>
     protected override void ProcessRecord()
     {
-        var task = Task.Run(ProcessRecordAndEndAsync);
+        InvokeProcessAsyncAndWait();
+    }
+
+    protected void InvokeProcessAsyncAndWait()
+    {
+        using var _ = new NullSynchronizationContextScope();
+
+        var task = Task.Run(ProcessAndEndAsync);
 
         _dispatcher.Run();
 
         task.GetAwaiter().GetResult();
     }
 
-    private async Task ProcessRecordAndEndAsync()
+    private async Task ProcessAndEndAsync()
     {
         try
         {
-            await ProcessRecordAsync(_cancellation.Token);
+            await ProcessAsync(_cancellation.Token);
         }
         finally
         {
@@ -61,7 +68,7 @@ public abstract class AsyncCmdlet : Cmdlet, IConsole, IDisposable
     }
 
     /// <summary>
-    ///   Executes the command for one input record asynchronously.
+    ///   Executes the command asynchronously.
     /// </summary>
     /// <param name="cancellation">
     ///   The token to monitor for cancellation requests.
@@ -69,7 +76,7 @@ public abstract class AsyncCmdlet : Cmdlet, IConsole, IDisposable
     /// <returns>
     ///   A task representing the asynchronous operation.
     /// </returns>
-    protected abstract Task ProcessRecordAsync(CancellationToken cancellation);
+    protected abstract Task ProcessAsync(CancellationToken cancellation);
 
     /// <inheritdoc/>
     public void Dispose()

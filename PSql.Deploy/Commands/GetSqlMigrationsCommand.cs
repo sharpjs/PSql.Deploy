@@ -32,7 +32,7 @@ public class GetSqlMigrationsCommand : AsyncCmdlet
     [ValidateNotNullOrEmpty]
     public SqlContext? Target { get; set; }
 
-    protected override async Task ProcessRecordAsync(CancellationToken cancellation)
+    protected override async Task ProcessAsync(CancellationToken cancellation)
     {
         var migrations
             = Path   is { } path   ? GetMigrations(path)

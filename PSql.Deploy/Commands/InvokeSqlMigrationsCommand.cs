@@ -87,7 +87,7 @@ public class InvokeSqlMigrationsCommand : AsyncCmdlet
     }
 
     /// <inheritdoc/>
-    protected override async Task ProcessRecordAsync(CancellationToken cancellation)
+    protected override async Task ProcessAsync(CancellationToken cancellation)
     {
         var path   = SessionState.Path.CurrentFileSystemLocation.ProviderPath;
         var engine = new MigrationEngine(Console, path, cancellation);
