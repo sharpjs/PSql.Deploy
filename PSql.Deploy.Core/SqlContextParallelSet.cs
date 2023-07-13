@@ -12,39 +12,13 @@ public class SqlContextParallelSet
     private int                _parallelism;
 
     /// <summary>
-    ///   Initializes a new <see cref="SqlContextParallelSet"/> instance.
+    ///   Initializes a new <see cref="SqlContextParallelSet"/> instance with
+    ///   an empty, mutable list of contexts and maximum parallelism equal to
+    ///   the number of logical processors on the current machine.
     /// </summary>
     public SqlContextParallelSet()
     {
         _parallelism = Environment.ProcessorCount;
-    }
-
-    /// <summary>
-    ///   Initializes a new <see cref="SqlContextParallelSet"/> instance with
-    ///   the specified contexts and maximum degree of parallelism.
-    /// </summary>
-    /// <param name="contexts">
-    ///   The contexts to be in the set.
-    /// </param>
-    /// <param name="parallelism">
-    ///   The maximum degree of parallelism with which to process the set.
-    ///   Must be a positive integer.
-    /// </param>
-    /// <exception cref="ArgumentNullException">
-    ///   <paramref name="contexts"/> is <see langword="null"/>.
-    /// </exception>"
-    /// <exception cref="ArgumentOutOfRangeException">
-    ///   <paramref name="parallelism"/> is zero or negative.
-    /// </exception>"
-    public SqlContextParallelSet(IList<SqlContext> contexts, int parallelism)
-    {
-        if (contexts is null)
-            throw new ArgumentNullException(nameof(contexts));
-        if (parallelism < 1)
-            throw new ArgumentOutOfRangeException(nameof(parallelism));
-
-        _contexts    = contexts;
-        _parallelism = parallelism;
     }
 
     /// <summary>
