@@ -115,9 +115,13 @@ public class MigrationEngine
     /// <param name="path">
     ///   The path of a directory in which to discover migrations.
     /// </param>
-    public void DiscoverMigrations(string path)
+    /// <param name="maxName">
+    ///   The maximum (latest) name of migrations to discover, or
+    ///   <see langword="null"/> to discover all migrations.
+    /// </param>
+    public void DiscoverMigrations(string path, string? maxName = null)
     {
-        Migrations           = MigrationRepository.GetAll(path);
+        Migrations           = MigrationRepository.GetAll(path, maxName);
         MinimumMigrationName = Migrations.FirstOrDefault(m => !m.IsPseudo)?.Name ?? "";
     }
 

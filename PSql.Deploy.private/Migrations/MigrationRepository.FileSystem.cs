@@ -10,7 +10,28 @@ namespace PSql.Deploy.Migrations;
 
 internal static partial class MigrationRepository
 {
-    internal static ImmutableArray<Migration> GetAll(string path)
+    /// <summary>
+    ///   Gets migrations defined in the filesystem at the specified path.
+    /// </summary>
+    /// <param name="path">
+    ///   The path of a directory containing migrations.
+    /// </param>
+    /// <param name="maxName">
+    ///   The maximum (latest) name of migrations to return, or
+    ///   <see langword="null"/> to return all migrations in the directory at
+    ///   <paramref name="path"/>.
+    /// </param>
+    /// <returns>
+    ///   The migrations defined at <paramref name="path"/>, or an empty array
+    ///   if no directory exists at that path.  If <paramref name="maxName"/>
+    ///   is not <see langword="null"/>, the return value includes only those
+    ///   migrations whose names are less than (earlier than)
+    ///   <paramref name="maxName"/>.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    ///   <paramref name="path"/> is <see langword="null"/>.
+    /// </exception>
+    internal static ImmutableArray<Migration> GetAll(string path, string? maxName = null)
     {
         if (path is null)
             throw new ArgumentNullException(nameof(path));
@@ -26,11 +47,28 @@ internal static partial class MigrationRepository
         var bag = new ConcurrentBag<Migration>();
 
         Parallel.ForEach(
-            Directory.EnumerateDirectories(path),
+            EnumerateDirectories(path, maxName),
             path => DetectMigration(path, bag)
         );
 
         return Sort(bag);
+    }
+
+    private static IEnumerable<string> EnumerateDirectories(string path, string? maxName)
+    {
+        var paths = Directory.EnumerateDirectories(path);
+
+        if (maxName is not null)
+            paths = paths.Where(p => HasNameLessThanOrEqualTo(p, maxName));
+
+        return paths;
+    }
+
+    private static bool HasNameLessThanOrEqualTo(string path, string maxName)
+    {
+        return StringComparer.OrdinalIgnoreCase.Compare(
+            Path.GetFileName(path), maxName
+        ) <= 0;
     }
 
     private static void DetectMigration(string path, ConcurrentBag<Migration> bag)

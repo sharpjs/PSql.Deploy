@@ -38,6 +38,11 @@ public class InvokeSqlMigrationsCommand : Cmdlet, IAsyncCmdlet
     [ValidateNotNullOrEmpty]
     public MigrationPhase[]? Phase { get; set; }
 
+    // -MaximumMigrationName
+    [Parameter()]
+    [ValidateNotNullOrEmpty]
+    public string? MaximumMigrationName { get; set; }
+
     private static MigrationPhase[] AllPhases
         => new[] { Pre, Core, Post };
 
@@ -91,7 +96,7 @@ public class InvokeSqlMigrationsCommand : Cmdlet, IAsyncCmdlet
         var path   = SessionState.Path.CurrentFileSystemLocation.ProviderPath;
         var engine = new MigrationEngine(console: this, path, context.CancellationToken);
 
-        engine.DiscoverMigrations(Path!);
+        engine.DiscoverMigrations(Path!, MaximumMigrationName);
         engine.SpecifyTargets(_targets);
 
         foreach (var phase in Phase ?? AllPhases)
