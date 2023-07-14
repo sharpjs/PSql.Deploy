@@ -17,8 +17,7 @@ internal static partial class MigrationRepository
     /// </param>
     /// <param name="maxName">
     ///   The maximum (latest) name of migrations to return, or
-    ///   <see langword="null"/> to return all migrations in the directory at
-    ///   <paramref name="path"/>.
+    ///   <see langword="null"/> to return all migrations.
     /// </param>
     /// <returns>
     ///   The migrations defined at <paramref name="path"/>, or an empty array
