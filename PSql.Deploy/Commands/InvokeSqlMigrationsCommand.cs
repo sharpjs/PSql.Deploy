@@ -2,13 +2,14 @@
 // SPDX-License-Identifier: ISC
 
 using PSql.Deploy.Migrations;
+using PSql.Deploy.Utilities;
 
 namespace PSql.Deploy.Commands;
 
 using static MigrationPhase;
 
 [Cmdlet(VerbsLifecycle.Invoke, "SqlMigrations", DefaultParameterSetName = "Target")]
-public class InvokeSqlMigrationsCommand : AsyncCmdlet
+public class InvokeSqlMigrationsCommand : Cmdlet, IAsyncCmdlet
 {
     // -Path
     [Parameter(Mandatory = true, Position = 0)]
@@ -80,17 +81,16 @@ public class InvokeSqlMigrationsCommand : AsyncCmdlet
 
     protected override void EndProcessing()
     {
-        // ProcessRecord is used to accumulate targets to use with a single
-        // migration engine instance.  Therefore, move the async phase into
-        // EndProcessing.
-        base.ProcessRecord();
+        using var scope = new AsyncCmdletScope(this);
+
+        scope.Run(ProcessAsync);
     }
 
     /// <inheritdoc/>
-    protected override async Task ProcessAsync(CancellationToken cancellation)
+    private async Task ProcessAsync(IAsyncCmdletContext context)
     {
         var path   = SessionState.Path.CurrentFileSystemLocation.ProviderPath;
-        var engine = new MigrationEngine(Console, path, cancellation);
+        var engine = new MigrationEngine(console: this, path, context.CancellationToken);
 
         engine.DiscoverMigrations(Path!);
         engine.SpecifyTargets(_targets);
