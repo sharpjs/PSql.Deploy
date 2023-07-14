@@ -86,7 +86,6 @@ public class InvokeSqlMigrationsCommand : Cmdlet, IAsyncCmdlet
         scope.Run(ProcessAsync);
     }
 
-    /// <inheritdoc/>
     private async Task ProcessAsync(IAsyncCmdletContext context)
     {
         var path   = SessionState.Path.CurrentFileSystemLocation.ProviderPath;
