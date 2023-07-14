@@ -3,7 +3,6 @@
 
 namespace PSql.Deploy.Migrations;
 
-using System.Collections.Immutable;
 using static MigrationPhase;
 using static MigrationState;
 

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: ISC
 
 using System.Collections.Concurrent;
-using System.Collections.Immutable;
 using System.IO.MemoryMappedFiles;
 using System.Security.Cryptography;
 

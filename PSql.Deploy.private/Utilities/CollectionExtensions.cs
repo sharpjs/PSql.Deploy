@@ -1,8 +1,6 @@
 // Copyright 2023 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
-using System.Collections.Immutable;
-
 namespace PSql.Deploy;
 
 internal static class CollectionExtensions
