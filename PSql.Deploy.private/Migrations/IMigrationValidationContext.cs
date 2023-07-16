@@ -29,4 +29,9 @@ internal interface IMigrationValidationContext
 
     /// <inheritdoc cref="MigrationEngine.MinimumMigrationName"/>
     string EarliestDefinedMigrationName { get; }
+
+    /// <summary>
+    ///   Gets whether migrations are allowed to require the <c>Core</c> phase.
+    /// </summary>
+    public bool AllowCorePhase { get; set; }
 }

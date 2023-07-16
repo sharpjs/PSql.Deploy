@@ -88,6 +88,19 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
     /// </summary>
     public IConsole LogConsole { get; }
 
+    /// <summary>
+    ///   Gets or sets whether the object allows a non-skippable <c>Core</c>
+    ///   phase to exist.  The default is <see langword="false"/>.
+    /// </summary>
+    public bool AllowCorePhase { get; set; }
+
+    /// <summary>
+    ///   Gets or sets whether the object operates in what-if mode.  In this
+    ///   mode, the object reports what actions it would perform against the
+    ///   target database but does not perform the actions.
+    /// </summary>
+    public bool IsWhatIfMode { get; set; }
+
     // Time elapsed since construction
     private readonly Stopwatch _stopwatch;
 

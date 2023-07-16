@@ -100,6 +100,19 @@ public class MigrationEngine
     /// </summary>
     public bool HasErrors => Volatile.Read(ref _errorCount) > 0;
 
+    /// <summary>
+    ///   Gets or sets whether the engine allows a non-skippable <c>Core</c>
+    ///   phase to exist.  The default is <see langword="false"/>.
+    /// </summary>
+    public bool AllowCorePhase { get; set; }
+
+    /// <summary>
+    ///   Gets or sets whether the engine operates in what-if mode.  In this
+    ///   mode, the engine reports what actions it would perform against target
+    ///   databases but does not perform the actions.
+    /// </summary>
+    public bool IsWhatIfMode { get; set; }
+
     // Time elapsed since construction
     private readonly Stopwatch _totalTime;
 
@@ -200,7 +213,11 @@ public class MigrationEngine
 
     private async Task ApplyAsync(SqlContext context)
     {
-        using var target = new MigrationTarget(this, context);
+        using var target = new MigrationTarget(this, context)
+        {
+            AllowCorePhase = AllowCorePhase,
+            IsWhatIfMode   = IsWhatIfMode,
+        };
 
         try
         {

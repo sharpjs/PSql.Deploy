@@ -43,6 +43,14 @@ public class InvokeSqlMigrationsCommand : Cmdlet, IAsyncCmdlet
     [ValidateNotNullOrEmpty]
     public string? MaximumMigrationName { get; set; }
 
+    // -AllowCorePhase
+    [Parameter()]
+    public SwitchParameter AllowCorePhase { get; set; }
+
+    // -WhatIf
+    [Parameter()]
+    public SwitchParameter WhatIf { get; set; }
+
     private static MigrationPhase[] AllPhases
         => new[] { Pre, Core, Post };
 
@@ -98,6 +106,9 @@ public class InvokeSqlMigrationsCommand : Cmdlet, IAsyncCmdlet
 
         engine.DiscoverMigrations(Path!, MaximumMigrationName);
         engine.SpecifyTargets(_targets);
+
+        engine.AllowCorePhase = AllowCorePhase.IsPresent;
+        engine.IsWhatIfMode   = WhatIf        .IsPresent;
 
         foreach (var phase in Phase ?? AllPhases)
             await engine.ApplyAsync(phase);
