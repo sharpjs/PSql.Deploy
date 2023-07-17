@@ -215,6 +215,9 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
     {
         ReportApplying();
 
+        if (IsWhatIfMode)
+            return;
+
         using var connection = Context.Connect(databaseName: null, LogConsole);
         using var command    = connection.CreateCommand();
 
