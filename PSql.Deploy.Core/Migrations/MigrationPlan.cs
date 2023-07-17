@@ -26,9 +26,44 @@ internal class MigrationPlan
     public List<Migration> Post { get; } = new();
 
     /// <summary>
-    ///   Gets whether the migration plan requires downtime.
+    ///   Gets whether the <c>Core</c> phase is required.
     /// </summary>
-    public bool RequiresDowntime => Core.Count > 0;
+    /// <remarks>
+    ///   This property exists to support zero-downtime deployment scenarios.
+    ///   In such scenarios, the <c>Core</c> phase is for any migration scripts
+    ///   that require downtime and thus break zero-downtime guarantees.  This
+    ///   property detects when a migration has content that must run in the
+    ///   <c>Core</c> phase, whether directly via inclusion of the content or
+    ///   indirectly as required to satisfy an inter-migration dependency.
+    /// </remarks>
+    public bool IsCoreRequired => Core.FindIndex(IsRequired) >= 0;
+
+    /// <summary>
+    ///   Checks whether the plan is empty for the specified phase.
+    /// </summary>
+    /// <param name="phase">
+    ///   The phase to check.
+    /// </param>
+    /// <returns>
+    ///   <see langword="true"/>
+    ///     if the plan is empty for <paramref name="phase"/>, or
+    ///     if every item in the plan is a pseudo-migration;
+    ///   <see langword="false"/> otherwise.
+    /// </returns>
+    /// <remarks>
+    ///   This method ignores pseudo-migrations.  A plan must have at least one
+    ///   non-pseudo migration to be non-empty.
+    /// </remarks>
+    public bool IsEmpty(MigrationPhase phase)
+    {
+        return phase switch
+        {
+            MigrationPhase.Pre  => Pre .FindIndex(IsNonPseudo) < 0,
+            MigrationPhase.Core => Core.FindIndex(IsNonPseudo) < 0,
+            MigrationPhase.Post => Post.FindIndex(IsNonPseudo) < 0,
+            _ => throw new ArgumentOutOfRangeException(nameof(phase)),
+        };
+    }
 
     /// <summary>
     ///   Gets the sequence of items to run in the specified phase.
@@ -49,4 +84,13 @@ internal class MigrationPlan
             _ => throw new ArgumentOutOfRangeException(nameof(phase)),
         };
     }
+
+    private static bool IsRequired((Migration Migration, MigrationPhase Phase) item)
+        => item.Migration[item.Phase].IsRequired;
+
+    private static bool IsNonPseudo(Migration m)
+        => !m.IsPseudo;
+
+    private static bool IsNonPseudo((Migration Migration, MigrationPhase Phase) x)
+        => !x.Migration.IsPseudo;
 }

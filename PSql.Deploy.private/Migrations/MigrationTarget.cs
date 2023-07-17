@@ -199,16 +199,24 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
 
     private bool ShouldExecute(MigrationPlan plan)
     {
-        var hasNonPseudo = plan
-            .GetItems(Phase)
-            .Any(x => !x.Migration.IsPseudo);
-
-        if (hasNonPseudo)
-            ReportPlan(plan);
-        else
+        if (plan.IsEmpty(Phase))
+        {
             ReportEmptyPlan();
+            return false;
+        }
 
-        return hasNonPseudo;
+        ReportPlan(plan);
+
+        if (AllowCorePhase)
+            return true;
+
+        if (plan.IsCoreRequired)
+        {
+            ReportCoreRequired();
+            return false;
+        }
+
+        return true;
     }
 
     private async Task ExecuteAsync(MigrationPlan plan)
@@ -422,6 +430,26 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
                 /*{2}*/ phase
             ));
         }
+    }
+
+    private void ReportCoreRequired()
+    {
+        var message = string.Format(
+            "One or more migration(s) to be applied to database [{0}].[{1}] "  +
+            "requires the Core (downtime) phase, but the -AllowCorePhase "     +
+            "switch was not present for the Invoke-SqlMigrations command.  "   +
+            "To allow the Core phase, pass the switch to the command.  "       +
+            "Otherwise, ensure that all migrations begin with a '--# PRE' or " +
+            "'--# POST' directive and that any '--# REQUIRES:' directives "    +
+            "reference only migrations that have been completely applied.",
+            ServerName,
+            DatabaseName
+        );
+
+        Engine.ReportProblem(message);
+
+        Log("");
+        Log("Error: " + message);
     }
 
     private void ReportApplying()
