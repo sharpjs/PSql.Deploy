@@ -29,6 +29,17 @@ internal static class FormattingExtensions
         };
     }
 
+    internal static string ToMigrationPlanPhaseIndicator(this MigrationPhase phase)
+    {
+        return phase switch
+        {
+            //       PRE   ----CORE-----   POST
+            Pre  => "vvv                       ",
+            Core => "      vvvvvvvvvvvvv       ",
+            _    => "                      vvvv",
+        };
+    }
+
     internal static string ToFixedWidthString(this MigrationState state)
     {
         return state switch

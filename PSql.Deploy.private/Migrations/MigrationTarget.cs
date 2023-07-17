@@ -405,8 +405,7 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
 
     private void ReportPlan(MigrationPlan plan)
     {
-        const int
-            NameHeaderWidth =  4; // NAME
+        const int NameHeaderWidth =  4; // NAME
 
         // Dynamic column widths
         var nameColumnWidth = Math.Max(NameHeaderWidth, _migrationNameMaxLength);
@@ -416,18 +415,37 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
         Log("Migration Sequence:");
         Log("");
         Log(string.Format(
-            "NAME{0}   PHASE",
+            "    {0}   {1}",
+            Space.Pad("NAME", nameColumnWidth),
+            Phase.ToMigrationPlanPhaseIndicator()
+        ));
+        Log(string.Format(
+            "NAME{0}   PRE   ----CORE-----   POST",
             Space.Pad("NAME", nameColumnWidth)
         ));
 
         // Body
-        foreach (var (migration, phase) in plan.GetItems(Phase))
+        foreach (var migration in plan.PendingMigrations)
         {
+            var preInPre   = migration.Pre .PlannedPhase is MigrationPhase.Pre;
+            var preInCore  = migration.Pre .PlannedPhase is MigrationPhase.Core;
+            var coreInCore = migration.Core.PlannedPhase is MigrationPhase.Core;
+            var postInCore = migration.Post.PlannedPhase is MigrationPhase.Core;
+            var postInPost = migration.Post.PlannedPhase is MigrationPhase.Post;
+            var isPlanned  = preInPre | preInCore | coreInCore | postInCore | postInPost;
+
+            if (!isPlanned)
+                continue;
+
             Log(string.Format(
-                "{0}{1}   {2}",
+                "{0}{1}   {2}   {3} {4} {5}   {6}",
                 /*{0}*/ migration.Name,
                 /*{1}*/ Space.Pad(migration.Name, nameColumnWidth),
-                /*{2}*/ phase
+                /*{2}*/ preInPre   ? "Pre"  : "...",
+                /*{3}*/ preInCore  ? "Pre"  : "...",
+                /*{4}*/ coreInCore ? "Core" : "....",
+                /*{5}*/ postInCore ? "Post" : "....",
+                /*{6}*/ postInPost ? "Post" : "...."
             ));
         }
     }
