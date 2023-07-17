@@ -135,11 +135,19 @@ internal static class MigrationLoader
                 // Interpret magic comment, if any
                 switch (name)
                 {
-                    case "PRE":      current = pre;                break;
-                    case "CORE":     current = core;               break;
-                    case "POST":     current = post;               break;
-                    case "REQUIRES": depends.UnionWith(args);      break;
-                    default:         current.Append(batch, magic); break; // Not our magic
+                    case "PRE":  current = pre;  break;
+                    case "CORE": current = core; break;
+                    case "POST": current = post; break;
+
+                    case "REQUIRES" when !migration.IsPseudo:
+                        // Pseudo-migrations cannot declare dependencies
+                        depends.UnionWith(args);
+                        break;
+
+                    default:
+                        // Not our magic
+                        current.Append(batch, magic);
+                        break;
                 }
             }
         }
