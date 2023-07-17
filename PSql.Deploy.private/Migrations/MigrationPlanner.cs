@@ -82,11 +82,11 @@ internal readonly ref struct MigrationPlanner
     /// <param name="migrations">
     ///   The migrations to assemble into a <see cref="MigrationPlan"/>.
     /// </param>
-    public MigrationPlanner(ReadOnlySpan<Migration> migrations)
+    public MigrationPlanner(ImmutableArray<Migration> migrations)
     {
-        _migrations       = migrations;
+        _migrations       = migrations.AsSpan();
         _scheduled        = new();
-        _plan             = new();
+        _plan             = new(migrations);
     }
 
     /// <summary>

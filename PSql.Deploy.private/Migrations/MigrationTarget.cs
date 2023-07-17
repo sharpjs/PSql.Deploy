@@ -194,7 +194,7 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
 
     private MigrationPlan ComputePlan(ImmutableArray<Migration> pendingMigrations)
     {
-        return new MigrationPlanner(pendingMigrations.AsSpan()).CreatePlan();
+        return new MigrationPlanner(pendingMigrations).CreatePlan();
     }
 
     private bool ShouldExecute(MigrationPlan plan)

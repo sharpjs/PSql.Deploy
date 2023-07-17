@@ -9,6 +9,23 @@ namespace PSql.Deploy.Migrations;
 internal class MigrationPlan
 {
     /// <summary>
+    ///   Initializes a new <see cref="MigrationPlan"/> instance for the
+    ///   specified migrations.
+    /// </summary>
+    /// <param name="pendingMigrations">
+    ///   The pending migrations for which the plan was computed.
+    /// </param>
+    public MigrationPlan(ImmutableArray<Migration> pendingMigrations)
+    {
+        PendingMigrations = pendingMigrations;
+    }
+
+    /// <summary>
+    ///   Gets the pending migrations for which the plan was computed.
+    /// </summary>
+    public ImmutableArray<Migration> PendingMigrations { get; }
+
+    /// <summary>
     ///   Gets the migrations whose <c>Pre</c> components actually will run
     ///   during the <c>Pre</c> phase.
     /// </summary>

@@ -14,7 +14,7 @@ public class MigrationPlannerTests
     {
         var a = MakeMigration("a");
 
-        var plan = new MigrationPlanner(new[] { a }).CreatePlan();
+        var plan = MakePlanner(a).CreatePlan();
 
         plan     .Should().NotBeNull();
         plan.Pre .Should().Equal(a);
@@ -29,7 +29,7 @@ public class MigrationPlannerTests
         var b = MakeMigration("b");
         var c = MakeEndPseudoMigration();
 
-        var plan = new MigrationPlanner(new[] { a, b, c }).CreatePlan();
+        var plan = MakePlanner(a, b, c).CreatePlan();
 
         plan     .Should().NotBeNull();
         plan.Pre .Should().Equal(a, b, c);
@@ -46,7 +46,7 @@ public class MigrationPlannerTests
         var d = MakeMigration("d", NotApplied, b);
         var e = MakeMigration("e");
 
-        var plan = new MigrationPlanner(new[] { a, b, c, d, e }).CreatePlan();
+        var plan = MakePlanner(a, b, c, d, e).CreatePlan();
 
         plan     .Should().NotBeNull();
         plan.Pre .Should().Equal(a, b, c);
@@ -67,7 +67,7 @@ public class MigrationPlannerTests
         var d = MakeMigration("d", NotApplied, a, b);
         var e = MakeMigration("e");
 
-        var plan = new MigrationPlanner(new[] { a, b, c, d, e }).CreatePlan();
+        var plan = MakePlanner(a, b, c, d, e).CreatePlan();
 
         plan     .Should().NotBeNull();
         plan.Pre .Should().Equal(a, b);
@@ -89,7 +89,7 @@ public class MigrationPlannerTests
         var d = MakeMigration("d", AppliedCore, a, b);
         var e = MakeMigration("e", AppliedPost);
 
-        var plan = new MigrationPlanner(new[] { a, b, c, d, e }).CreatePlan();
+        var plan = MakePlanner(a, b, c, d, e).CreatePlan();
 
         plan     .Should().NotBeNull();
         plan.Pre .Should().BeEmpty();
@@ -128,5 +128,10 @@ public class MigrationPlannerTests
             ResolvedDepends = dependObjects,
             State           = state
         };
+    }
+
+    private static MigrationPlanner MakePlanner(params Migration[] migrations)
+    {
+        return new MigrationPlanner(ImmutableArray.Create(migrations));
     }
 }
