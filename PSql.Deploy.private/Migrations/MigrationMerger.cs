@@ -140,10 +140,12 @@ internal readonly ref struct MigrationMerger
             =  !string.IsNullOrWhiteSpace(appliedMigration.Hash)
             && !appliedMigration.Hash.Equals(definedMigration.Hash, StringComparison.OrdinalIgnoreCase);
 
+#if WISHFUL_THINKING
         // Skip a completed migration whose definition is unchanged; these
         // would be more bloat than useful information in the logs
         if (!hasChanged && appliedMigration.IsAppliedThrough(MigrationPhase.Post))
             return null;
+#endif
 
         // If migration will be applied, ensure its content is loaded
         if (!appliedMigration.IsAppliedThrough(Phase))

@@ -187,6 +187,7 @@ internal ref struct MigrationValidator
 
     private void ValidateCanApplyThroughPhase(Migration migration)
     {
+#if GOTTA_MOVE_ELSEWHERE
         if (migration.CanApplyThrough(Context.Phase))
             return;
 
@@ -199,6 +200,7 @@ internal ref struct MigrationValidator
             /*{2}*/ Context.DatabaseName,
             /*{3}*/ Context.Phase
         ));
+#endif
     }
 
     private void ValidateHasSource(Migration migration)
