@@ -176,26 +176,35 @@ internal readonly ref struct MigrationPlanner
 
     private void ScheduleInPre(Migration migration)
     {
-        if (!migration.IsAppliedThrough(Pre))
-            _plan.Pre.Add(migration);
-
         _scheduled.Add((migration, Pre));
+
+        if (migration.IsAppliedThrough(Pre))
+            return;
+
+        _plan.Pre.Add(migration);
+        migration.Pre.PlannedPhase = Pre;
     }
 
     private void ScheduleInCore(Migration migration, MigrationPhase phase)
     {
-        if (!migration.IsAppliedThrough(phase))
-            _plan.Core.Add((migration, phase));
-
         _scheduled.Add((migration, phase));
+
+        if (migration.IsAppliedThrough(phase))
+            return;
+
+        _plan.Core.Add((migration, phase));
+        migration[phase].PlannedPhase = Core;
     }
 
     private void ScheduleInPost(Migration migration)
     {
-        if (!migration.IsAppliedThrough(Post))
-            _plan.Post.Add(migration);
-
         _scheduled.Add((migration, Post));
+
+        if (migration.IsAppliedThrough(Post))
+            return;
+
+        _plan.Post.Add(migration);
+        migration.Post.PlannedPhase = Post;
     }
 
     private bool HasUnsatisfiedDependency(

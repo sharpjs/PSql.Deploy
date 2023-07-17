@@ -24,4 +24,15 @@ public class MigrationContent
     ///   or contains only the generated SQL that marks the migration as applied.
     /// </remarks>
     public bool IsRequired { get; internal set; } 
+
+    /// <summary>
+    ///   Gets the actual phase in which <see cref="Sql"/> is to be executed,
+    ///   or <see langword="null"/> if no phase has been planned.
+    /// </summary>
+    /// <remarks>
+    ///   Migration content authored for the <c>Pre</c> or <c>Post</c> phases
+    ///   will be moved to the <c>Core</c> phase as required to satisfy any
+    ///   dependencies declared between migrations.
+    /// </remarks>
+    public MigrationPhase? PlannedPhase { get; internal set; }
 }
