@@ -137,7 +137,6 @@ internal static class MigrationLoader
                 {
                     case "PRE":      current = pre;                break;
                     case "CORE":     current = core;               break;
-                    case "OFFLINE":  current = core;               break;
                     case "POST":     current = post;               break;
                     case "REQUIRES": depends.UnionWith(args);      break;
                     default:         current.Append(batch, magic); break; // Not our magic
