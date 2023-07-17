@@ -1,11 +1,14 @@
 // Copyright 2023 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
-namespace PSql.Deploy.Migrations; 
+using System.Diagnostics;
+
+namespace PSql.Deploy.Migrations;
 
 /// <summary>
 ///   A database schema migration.
 /// </summary>
+[DebuggerDisplay(@"\{{Name}, {State}\}")]
 public class Migration
 {
     /// <summary>
@@ -82,110 +85,62 @@ public class Migration
     internal bool IsContentLoaded { get; set; }
 
     /// <summary>
-    ///   Gets or sets the SQL script for the <b>Pre</b> phase, or
-    ///   <see langword="null"/> if no script is known.  The default value is
-    ///   <see langword="null"/>.
+    ///   Gets the migration content for the <b>Pre</b> phase.
     /// </summary>
-    public string? PreSql { get; set; }
+    public MigrationContent Pre { get; } = new();
 
     /// <summary>
-    ///   Gets or sets the SQL script for the <b>Core</b> phase, or
-    ///   <see langword="null"/> if no script is known.  The default value is
-    ///   <see langword="null"/>.
+    ///   Gets the migration content for the <b>Core</b> phase.
     /// </summary>
-    public string? CoreSql { get; set; }
+    public MigrationContent Core { get; } = new();
 
     /// <summary>
-    ///   Gets or sets the SQL script for the <b>Post</b> phase, or
-    ///   <see langword="null"/> if no script is known.  The default value is
-    ///   <see langword="null"/>.
+    ///   Gets the migration content for the <b>Post</b> phase.
     /// </summary>
-    public string? PostSql { get; set; }
-
-    /// <summary>
-    ///   Gets or sets whether the migration cannot skip the <b>Pre</b> phase.
-    ///   The default value is <see langword="false"/>.
-    /// </summary>
-    public bool IsPreRequired { get; set; }
-
-    /// <summary>
-    ///   Gets or sets whether the migration cannot skip the <b>Core</b> phase.
-    ///   The default value is <see langword="false"/>.
-    /// </summary>
-    public bool IsCoreRequired { get; set; }
-
-    /// <summary>
-    ///   Gets or sets whether the migration cannot skip the <b>Post</b> phase.
-    ///   The default value is <see langword="false"/>.
-    /// </summary>
-    public bool IsPostRequired { get; set; }
+    public MigrationContent Post { get; } = new();
 
     /// <summary>
     ///   Gets or sets the names of migrations that must be applied completely
     ///   before any phase of the current migration.  The default value is an
     ///   empty list.
     /// </summary>
-    public IReadOnlyList<string> Depends { get; set; } = Array.Empty<string>();
+    public IReadOnlyList<string> Depends { get; set; }
+        = Array.Empty<string>();
 
     /// <summary>
     ///   Gets or sets the resolved migrations that must be applied completely
     ///   before any phase of the current migration.  The default value is an
     ///   empty list.
     /// </summary>
-    internal IReadOnlyList<Migration> ResolvedDepends { get; set; } = Array.Empty<Migration>();
+    internal IReadOnlyList<Migration> ResolvedDepends { get; set; }
+        = Array.Empty<Migration>();
 
     /// <summary>
     ///   Gets or sets the diagnostic messages associated with the migration.
     ///   The default value is an empty list.
     /// </summary>
-    internal IReadOnlyList<MigrationDiagnostic> Diagnostics { get; set; } = Array.Empty<MigrationDiagnostic>();
-
-    /// <inheritdoc/>
-    public override string ToString() => Name;
+    internal IReadOnlyList<MigrationDiagnostic> Diagnostics { get; set; }
+        = Array.Empty<MigrationDiagnostic>();
 
     /// <summary>
-    ///   Gets the SQL script for the specified phase.
+    ///   Gets the content for the specified phase.
     /// </summary>
     /// <param name="phase">
-    ///   The phase for which to get the SQL script.
+    ///   The phase for which to get the content.
     /// </param>
     /// <returns>
-    ///   The SQL script for <paramref name="phase"/>.
+    ///   The content for <paramref name="phase"/>.
     /// </returns>
     /// <exception cref="ArgumentOutOfRangeException">
     ///   <paramref name="phase"/> is not a valid <see cref="MigrationPhase"/>.
     /// </exception>
-    public string? GetSql(MigrationPhase phase)
+    public MigrationContent this[MigrationPhase phase]
     {
-        return phase switch
+        get => phase switch
         {
-            MigrationPhase.Pre  => PreSql,
-            MigrationPhase.Core => CoreSql,
-            MigrationPhase.Post => PostSql,
-            _ => throw new ArgumentOutOfRangeException(nameof(phase)),
-        };
-    }
-
-    /// <summary>
-    ///   Checks whether the migration cannot skip the specified phase.
-    /// </summary>
-    /// <param name="phase">
-    ///   The phase to check.
-    /// </param>
-    /// <returns>
-    ///   <see langword="true"/> if <paramref name="phase"/> cannot be skipped;
-    ///   <see langword="false"/> otherwise.
-    /// </returns>
-    /// <exception cref="ArgumentOutOfRangeException">
-    ///   <paramref name="phase"/> is not a valid <see cref="MigrationPhase"/>.
-    /// </exception>
-    public bool IsRequired(MigrationPhase phase)
-    {
-        return phase switch
-        {
-            MigrationPhase.Pre  => IsPreRequired,
-            MigrationPhase.Core => IsCoreRequired,
-            MigrationPhase.Post => IsPostRequired,
+            MigrationPhase.Pre  => Pre,
+            MigrationPhase.Core => Core,
+            MigrationPhase.Post => Post,
             _ => throw new ArgumentOutOfRangeException(nameof(phase)),
         };
     }
@@ -244,10 +199,13 @@ public class Migration
         // the migration can be applied only if the intermediate phases are
         // skippable
         for (; next < phase; next++)
-            if (IsRequired(next))
+            if (this[next].IsRequired)
                 return false;
 
         // Intermediate phases are indeed skippable
         return true;
     }
+
+    /// <inheritdoc/>
+    public override string ToString() => Name;
 }

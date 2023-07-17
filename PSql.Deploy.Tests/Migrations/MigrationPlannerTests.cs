@@ -121,9 +121,9 @@ public class MigrationPlannerTests
 
         return new Migration(name)
         {
-            PreSql          = name + ":Pre",
-            CoreSql         = name + ":Core",
-            PostSql         = name + ":Post",
+            Pre             = { Sql = name + ":Pre"  },
+            Core            = { Sql = name + ":Core" },
+            Post            = { Sql = name + ":Post" },
             Depends         = dependNames,
             ResolvedDepends = dependObjects,
             State           = state

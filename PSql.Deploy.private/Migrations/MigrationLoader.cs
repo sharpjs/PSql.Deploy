@@ -39,18 +39,18 @@ internal static class MigrationLoader
         AppendAuthoredSql(migration, pre, core, post, depends);
 
         // A phase is required if it contains authored SQL
-        migration.IsPreRequired  = !pre .IsEmpty;
-        migration.IsCoreRequired = !core.IsEmpty;
-        migration.IsPostRequired = !post.IsEmpty;
+        migration.Pre .IsRequired = !pre .IsEmpty;
+        migration.Core.IsRequired = !core.IsEmpty;
+        migration.Post.IsRequired = !post.IsEmpty;
 
         AppendFinalBatches(migration, pre,  MigrationPhase.Pre );
         AppendFinalBatches(migration, core, MigrationPhase.Core);
         AppendFinalBatches(migration, post, MigrationPhase.Post);
 
-        migration.PreSql  = pre .Complete();
-        migration.CoreSql = core.Complete();
-        migration.PostSql = post.Complete();
-        migration.Depends = depends.ToImmutableArray();
+        migration.Pre .Sql = pre .Complete();
+        migration.Core.Sql = core.Complete();
+        migration.Post.Sql = post.Complete();
+        migration.Depends  = depends.ToImmutableArray();
 
         migration.IsContentLoaded = true;
     }

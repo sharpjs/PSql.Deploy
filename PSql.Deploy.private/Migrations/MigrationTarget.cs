@@ -244,7 +244,7 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
 
     private Task ExecuteAsync(Migration migration, MigrationPhase phase, ISqlCommand command)
     {
-        var sql = migration.GetSql(phase);
+        var sql = migration[phase].Sql;
         if (sql.IsNullOrEmpty())
             return Task.CompletedTask;
 

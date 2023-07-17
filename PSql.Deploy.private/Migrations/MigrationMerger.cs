@@ -150,13 +150,16 @@ internal readonly ref struct MigrationMerger
             MigrationLoader.LoadContent(definedMigration);
 
         // Copy definition-only properties to applied
-        appliedMigration.Path       = definedMigration.Path;
-        appliedMigration.Hash       = definedMigration.Hash;
-        appliedMigration.Depends    = definedMigration.Depends;
-        appliedMigration.PreSql     = definedMigration.PreSql;
-        appliedMigration.CoreSql    = definedMigration.CoreSql;
-        appliedMigration.PostSql    = definedMigration.PostSql;
-        appliedMigration.HasChanged = hasChanged;
+        appliedMigration.Path            = definedMigration.Path;
+        appliedMigration.Hash            = definedMigration.Hash;
+        appliedMigration.Depends         = definedMigration.Depends;
+        appliedMigration.Pre .Sql        = definedMigration.Pre .Sql;
+        appliedMigration.Core.Sql        = definedMigration.Core.Sql;
+        appliedMigration.Post.Sql        = definedMigration.Post.Sql;
+        appliedMigration.Pre .IsRequired = definedMigration.Pre .IsRequired;
+        appliedMigration.Core.IsRequired = definedMigration.Core.IsRequired;
+        appliedMigration.Post.IsRequired = definedMigration.Post.IsRequired;
+        appliedMigration.HasChanged      = hasChanged;
 
         return appliedMigration;
     }
