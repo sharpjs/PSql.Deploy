@@ -63,9 +63,7 @@ internal ref struct MigrationValidator
         foreach (var migration in plan.PendingMigrations)
         {
             ValidateCore(migration);
-
-            migration.Diagnostics = _diagnostics.ToArray();
-            _diagnostics.Clear();
+            migration.Diagnostics = TakeDiagnostics();
         }
 
         return _isValid;
@@ -83,7 +81,7 @@ internal ref struct MigrationValidator
             return; // Migration will not be applied
 
         ValidateCanApplyInPhase(migration);
-        ValidateHasSource           (migration);
+        ValidateHasSource      (migration);
     }
 
     private void ValidateDepends(Migration migration)
@@ -211,5 +209,12 @@ internal ref struct MigrationValidator
     private void AddWarning(string message)
     {
         _diagnostics.Add(new(isError: false, message));
+    }
+
+    private IReadOnlyList<MigrationDiagnostic> TakeDiagnostics()
+    {
+        var diagnotics = _diagnostics.ToArray();
+        _diagnostics.Clear();
+        return diagnotics;
     }
 }
