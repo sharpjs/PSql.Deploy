@@ -3,6 +3,7 @@
 
 [assembly: Parallelizable(ParallelScope.All)]
 [assembly: FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
+[assembly: SetCulture("en-US")]
 
 namespace PSql.Deploy;
 
