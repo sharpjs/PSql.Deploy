@@ -55,6 +55,16 @@ internal class MigrationPlan
     /// </remarks>
     public bool IsCoreRequired => Core.FindIndex(IsRequired) >= 0;
 
+    internal bool HasPreContentInCore => Core.FindIndex(IsPre) >= 0;
+
+    internal bool HasPostContentInCore => Core.FindIndex(IsPost) >= 0;
+
+    private bool IsPre((Migration Migration, MigrationPhase Phase) item)
+        => item.Phase == MigrationPhase.Pre;
+
+    private bool IsPost((Migration Migration, MigrationPhase Phase) item)
+        => item.Phase == MigrationPhase.Post;
+
     /// <summary>
     ///   Checks whether the plan is empty for the specified phase.
     /// </summary>

@@ -71,9 +71,8 @@ internal readonly ref struct MigrationPlanner
         If Migration A depends on Migration B, then B's Post will run before A's Pre.
     */
 
-    private readonly ReadOnlySpan<Migration>              _migrations;
-    private readonly HashSet<(Migration, MigrationPhase)> _scheduled;
     private readonly MigrationPlan                        _plan;
+    private readonly HashSet<(Migration, MigrationPhase)> _scheduled;
 
     /// <summary>
     ///   Initializes a new <see cref="MigrationPlanner"/> instance with the
@@ -84,9 +83,8 @@ internal readonly ref struct MigrationPlanner
     /// </param>
     public MigrationPlanner(ImmutableArray<Migration> migrations)
     {
-        _migrations       = migrations.AsSpan();
-        _scheduled        = new();
-        _plan             = new(migrations);
+        _plan      = new(migrations);
+        _scheduled = new();
     }
 
     /// <summary>
@@ -104,7 +102,7 @@ internal readonly ref struct MigrationPlanner
     // depends on an uncompleted migration.
     private void SchedulePre()
     {
-        foreach (var migration in _migrations)
+        foreach (var migration in _plan.PendingMigrations)
         {
             if (HasUnsatisfiedDependency(migration, out _))
                 break;
@@ -118,7 +116,7 @@ internal readonly ref struct MigrationPlanner
     // dependency guarantees.
     private void ScheduleCore()
     {
-        foreach (var migration in _migrations)
+        foreach (var migration in _plan.PendingMigrations)
         {
             if (HasUnsatisfiedDependency(migration, out var name))
                 SatisfyDependencyInCore(name);
@@ -131,7 +129,7 @@ internal readonly ref struct MigrationPlanner
     // for the Core phase.
     private void SchedulePost()
     {
-        foreach (var migration in _migrations)
+        foreach (var migration in _plan.PendingMigrations)
             if (!IsScheduled(migration, Post))
                 ScheduleInPost(migration);
     }
@@ -142,7 +140,7 @@ internal readonly ref struct MigrationPlanner
     {
         var satisfied = false;
 
-        foreach (var migration in _migrations)
+        foreach (var migration in _plan.PendingMigrations)
         {
             if (!satisfied)
             {
@@ -211,21 +209,24 @@ internal readonly ref struct MigrationPlanner
         Migration migration,
         [MaybeNullWhen(false)] out string name)
     {
-        if (migration.ResolvedDepends is { } depends)
+        var references = migration.DependsOn;
+
+        // Process dependencies in reverse order to find latest needed
+        for (var i = references.Length - 1; i >= 0; i--)
         {
-            for (var i = depends.Count - 1; i >= 0; i--)
-            {
-                var depend = depends[i];
+            var reference = references[i];
 
-                if (depend.IsAppliedThrough(Post))
-                    continue; // already applied
+            if (reference.Migration is null)
+                continue; // unresolved reference
 
-                if (IsScheduled(depend, Post))
-                    continue; // will be applied prior to time being considered
+            if (reference.Migration.IsAppliedThrough(Post))
+                continue; // already applied
 
-                name = depend.Name;
-                return true;
-            }
+            if (IsScheduled(reference.Migration, Post))
+                continue; // will be applied prior to time being considered
+
+            name = reference.Name;
+            return true;
         }
 
         name = null;

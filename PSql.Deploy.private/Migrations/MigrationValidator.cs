@@ -39,26 +39,30 @@ internal ref struct MigrationValidator
     private readonly List<MigrationDiagnostic> _diagnostics;
 
     /// <summary>
-    ///   Validates the specified set of migrations.
+    ///   Validates the specified migration plan.
     /// </summary>
-    /// <param name="migrations">
-    ///   The migrations to validate.
+    /// <param name="plan">
+    ///   The migration plan to validate.
     /// </param>
     /// <returns>
-    ///   <see langword="true"/> if all <paramref name="migrations"/> are valid;
+    ///   <see langword="true"/> if <paramref name="plan"/> is valid;
     ///   <see langword="false"/> otherwise.
     /// </returns>
+    /// <exception cref="ArgumentNullException">
+    ///   <paramref name="plan"/> is <see langword="null"/>.
+    /// </exception>
     /// <remarks>
     ///   This method populates the <see cref="Migration.Diagnostics"/>
-    ///   property of each migration in <paramref name="migrations"/>.
+    ///   property of each migration in <paramref name="plan"/>.
     /// </remarks>
-    internal bool Validate(ReadOnlySpan<Migration> migrations)
+    internal bool Validate(MigrationPlan plan)
     {
-        var lookup = CreateLookup(migrations);
+        if (plan is null)
+            throw new ArgumentNullException(nameof(plan));
 
-        foreach (var migration in migrations)
+        foreach (var migration in plan.PendingMigrations)
         {
-            ValidateCore(migration, lookup);
+            ValidateCore(migration);
 
             migration.Diagnostics = _diagnostics.ToArray();
             _diagnostics.Clear();
@@ -67,86 +71,68 @@ internal ref struct MigrationValidator
         return _isValid;
     }
 
-    private void ValidateCore(Migration migration, Dictionary<string, Migration> lookup)
+    private void ValidateCore(Migration migration)
     {
         if (migration.IsPseudo)
             return;
 
         ValidateNotChanged(migration);
-        ValidateDepends   (migration, lookup);
+        ValidateDepends   (migration);
 
         if (migration.IsAppliedThrough(Context.Phase))
             return; // Migration will not be applied
 
-        ValidateCanApplyThroughPhase(migration);
+        ValidateCanApplyInPhase(migration);
         ValidateHasSource           (migration);
     }
 
-    private static Dictionary<string, Migration> CreateLookup(ReadOnlySpan<Migration> migrations)
+    private void ValidateDepends(Migration migration)
     {
-        var lookup = new Dictionary<string, Migration>(
-            capacity: migrations.Length, StringComparer.OrdinalIgnoreCase
-        );
-
-        foreach (var migration in migrations)
-            if (!migration.IsPseudo)
-                lookup.Add(migration.Name, migration);
-
-        return lookup;
-    }
-
-    private void ValidateDepends(Migration migration, Dictionary<string, Migration> dictionary)
-    {
-        if (migration.Depends.Count == 0)
-            migration.ResolvedDepends = Array.Empty<Migration>();
-        else
-            ValidateDependsCore(migration, dictionary);
-    }
-
-    private void ValidateDependsCore(Migration migration, Dictionary<string, Migration> dictionary)
-    {
-        var resolvedDepends = new List<Migration>(migration.Depends.Count);
-
         static int Compare(string lhs, string rhs)
             => StringComparer.OrdinalIgnoreCase.Compare(lhs, rhs);
 
-        foreach (var dependName in migration.Depends)
+        foreach (var reference in migration.DependsOn)
         {
-            switch (Compare(dependName, migration.Name))
-            {
-                case < 0 when dictionary.TryGetValue(dependName, out var depend):
-                    resolvedDepends.Add(depend);
-                    break;
+            // If the reference was resolved, it is valid
+            if (reference.Migration is not null)
+                continue;
 
-                case < 0 when Compare(dependName, Context.EarliestDefinedMigrationName) < 0:
+            // Otherwise, decide how invalid it is and why
+            switch (Compare(reference.Name, migration.Name))
+            {
+                // Too old to be found
+                case < 0 when Compare(reference.Name, Context.EarliestDefinedMigrationName) < 0:
                     AddWarning(string.Format(
                         "Ignoring migration '{0}' dependency on migration '{1}', " +
                         "which is older than the earliest migration on disk.",
                         /*{0}*/ migration.Name,
-                        /*{1}*/ dependName
+                        /*{1}*/ reference.Name
                     ));
                     break;
 
+                // Not found
                 case < 0:
                     AddError(string.Format(
                         "Migration '{0}' declares a dependency on migration '{1}', " +
                         "which was not found. "                                      +
                         "The dependency cannot be satisfied.",
                         /*{0}*/ migration.Name,
-                        /*{1}*/ dependName
+                        /*{1}*/ reference.Name
                     ));
                     break;
 
+                // Too new
                 case > 0:
                     AddError(string.Format(
                         "Migration '{0}' declares a dependency on migration '{1}', " +
                         "which must run later in the sequence. "                     +
                         "The dependency cannot be satisfied.",
                         /*{0}*/ migration.Name,
-                        /*{1}*/ dependName
+                        /*{1}*/ reference.Name
                     ));
                     break;
 
+                // Self-reference
                 default:
                     AddError(string.Format(
                         "Migration '{0}' declares a dependency on itself. " +
@@ -156,8 +142,6 @@ internal ref struct MigrationValidator
                     break;
             }
         }
-
-        migration.ResolvedDepends = resolvedDepends;
     }
 
     private void ValidateNotChanged(Migration migration)
@@ -185,22 +169,20 @@ internal ref struct MigrationValidator
         ));
     }
 
-    private void ValidateCanApplyThroughPhase(Migration migration)
+    private void ValidateCanApplyInPhase(Migration migration)
     {
-#if GOTTA_MOVE_ELSEWHERE
-        if (migration.CanApplyThrough(Context.Phase))
+        if (migration.CanApplyIn(Context.Phase))
             return;
 
         AddError(string.Format(
-            "Cannot apply {3} phase of migration '{0}' to database [{1}].[{2}] " +
-            "because the migration has code in an earlier phase that must be "   +
-            "applied first.",
+            "Cannot apply migration '{0}' to database [{1}].[{2}] in the {3} " +
+            "phase because the migration has code that must be applied in an " +
+            "earlier phase first.",
             /*{0}*/ migration.Name,
             /*{1}*/ Context.ServerName,
             /*{2}*/ Context.DatabaseName,
             /*{3}*/ Context.Phase
         ));
-#endif
     }
 
     private void ValidateHasSource(Migration migration)

@@ -129,13 +129,10 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
             ReportStarting();
 
             var appliedMigrations = await GetAppliedMigrations();
-
             var pendingMigrations = GetPendingMigrations(appliedMigrations);
-            if (!ShouldApply(pendingMigrations)) // throws if invalid
-                return;
+            var plan              = ComputeMigrationPlan(pendingMigrations);
 
-            var plan = ComputePlan(pendingMigrations);
-            if (!ShouldExecute(plan))
+            if (!Validate(plan))
                 return;
 
             await ExecuteAsync(plan);
@@ -167,50 +164,47 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
 
     private ImmutableArray<Migration> GetPendingMigrations(IReadOnlyList<Migration> appliedMigrations)
     {
-        return new MigrationMerger(Phase).Merge(
+        var pendingMigrations = new MigrationMerger(Phase).Merge(
             definedMigrations: Engine.Migrations.AsSpan(),
             appliedMigrations
         );
+
+        MigrationReferenceResolver.Resolve(pendingMigrations.AsSpan());
+
+        return pendingMigrations;
     }
 
-    private bool ShouldApply(ImmutableArray<Migration> pendingMigrations)
+    private MigrationPlan ComputeMigrationPlan(ImmutableArray<Migration> pendingMigrations)
     {
-        if (pendingMigrations.IsEmpty)
+        return new MigrationPlanner(pendingMigrations).CreatePlan();
+    }
+
+    private bool Validate(MigrationPlan plan)
+    {
+        if (plan.PendingMigrations.IsEmpty)
         {
             ReportNoPendingMigrations();
             return false;
         }
 
-        var valid = new MigrationValidator(this).Validate(pendingMigrations.AsSpan());
+        var valid = new MigrationValidator(this).Validate(plan);
 
-        ReportPendingMigrations(pendingMigrations);
-        ReportDiagnostics      (pendingMigrations);
+        ReportPendingMigrations(plan);
+        ReportDiagnostics      (plan.PendingMigrations);
 
         if (!valid)
-            throw new MigrationValidationException();
+        {
+            // Nothing extra to report
+            return false;
+        }
 
-        return true;
-    }
-
-    private MigrationPlan ComputePlan(ImmutableArray<Migration> pendingMigrations)
-    {
-        return new MigrationPlanner(pendingMigrations).CreatePlan();
-    }
-
-    private bool ShouldExecute(MigrationPlan plan)
-    {
         if (plan.IsEmpty(Phase))
         {
             ReportEmptyPlan();
             return false;
         }
 
-        ReportPlan(plan);
-
-        if (AllowCorePhase)
-            return true;
-
-        if (plan.IsCoreRequired)
+        if (!AllowCorePhase && plan.IsCoreRequired)
         {
             ReportCoreRequired();
             return false;
@@ -292,34 +286,74 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
         Log("Nothing to do.");
     }
 
-    private void ReportPendingMigrations(ImmutableArray<Migration> migrations)
+    private void ReportPendingMigrations(MigrationPlan plan)
     {
-        // A contrived example showing all forms of output:
+        // A contrived example showing nearly all combinations of output:
         //
         // Pending Migrations: 4
         //
-        // NAME             FILES     PROGRESS          DEPENDS-ON
-        // 2023-01-01-123   Ok        (new)             (none)
-        // 2023-01-02-234   Missing   Pre->Core->Post   (none)
-        // 2023-01-03-345   Ok        Pre->Core         2023-01-01-123
-        // 2023-01-04-456   Changed   Pre               (none)           **ERROR**
+        //                   PENDING MIGRATIONS                         PHASE PLAN
+        //                                                         ┌─────┬──────┬──────┐
+        // NAME            CHECK    PROGRESS       DEPENDS-ON      │ PRE │ CORE │ POST │
+        // ════════════════════════════════════════════════════════╪═════╪══════╪══════╡
+        // 2023-01-01-123  Ok       (new)          (none)          │ Pre │ Core │ Post │
+        // 2023-01-02-234  Missing  Pre>Core>Post  (none)          │     │      │      │
+        // 2023-01-03-345  Invalid  Pre>Core       2023-01-01-123  │     │      │ Post │
+        // 2023-01-04-456  Changed  Pre            (none)          │     │ Core │ Post │
+        //                                                         └─────┴──────┴──────┘
 
         const int
             NameHeaderWidth      =  4, // NAME
             DependsOnHeaderWidth = 10; // DEPENDS-ON
 
+        var migrations = plan.PendingMigrations;
+
         // Dynamic column widths
-        _migrationNameMaxLength = migrations.Max(m => m.Name.Length);
+        _migrationNameMaxLength  = migrations.Max(m => m.Name.Length);
+
         var nameColumnWidth      = Math.Max(NameHeaderWidth,      _migrationNameMaxLength);
         var dependsOnColumnWidth = Math.Max(DependsOnHeaderWidth, _migrationNameMaxLength);
+
+        var namePad       = Space.Pad("NAME",       nameColumnWidth);
+        var dependsOnPad  = Space.Pad("DEPENDS-ON", dependsOnColumnWidth);
+        var pendingPad    = Space.Get(namePad.Length + dependsOnPad.Length);
+
+        var preInCorePad  = Space.Get(plan.HasPreContentInCore  ? 4 : 0); // align  Pre>
+        var postInCorePad = Space.Get(plan.HasPostContentInCore ? 5 : 0); // align >Post
+        var coreBorder    = new string('─', preInCorePad.Length + postInCorePad.Length);
 
         // Header
         Log("");
         Log($"Pending Migrations: {migrations.Length}");
         Log("");
+
+        // Table header row 1
+        {
+            var (pendingPadL, pendingPadR) = Space.GetCentering(pendingPad.Length);
+            var (phasesPadL,  phasesPadR)  = Space.GetCentering(coreBorder.Length);
+
+            Log(string.Format(
+                "           {0}PENDING MIGRATIONS{1}                  {2}PHASE PLAN{3}",
+                pendingPadL, pendingPadR, phasesPadL, phasesPadR
+            ));
+        }
+
+        // Table header row 2
         Log(string.Format(
-            "NAME{0}   FILES     PROGRESS          DEPENDS-ON",
-            Space.Pad("NAME", nameColumnWidth)
+            "    {0}                                      ┌─────┬───{1}───┬──────┐",
+            pendingPad, coreBorder
+        ));
+
+        // Table header row 3
+        Log(string.Format(
+            "NAME{0}  CHECK    PROGRESS       DEPENDS-ON{1}  │ PRE │ {2}CORE{3} │ POST │",
+            namePad, dependsOnPad, preInCorePad, postInCorePad
+        ));
+
+        // Table header row 4
+        Log(string.Format("════{0}══════════════════════════════════════╪═════╪═══{1}═══╪══════╡",
+            new string('═', pendingPad.Length),
+            new string('═', coreBorder.Length)
         ));
 
         // Body
@@ -328,36 +362,40 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
             if (migration.IsPseudo)
                 continue;
 
-            var marker    = GetDiagnosticMarker(migration.Diagnostics);
-            var dependsOn = migration.Depends?.LastOrDefault() ?? "(none)";
+            var preInPre   = migration.Pre .PlannedPhase is MigrationPhase.Pre;
+            var preInCore  = migration.Pre .PlannedPhase is MigrationPhase.Core;
+            var coreInCore = migration.Core.PlannedPhase is MigrationPhase.Core;
+            var postInCore = migration.Post.PlannedPhase is MigrationPhase.Core;
+            var postInPost = migration.Post.PlannedPhase is MigrationPhase.Post;
+            var isPlanned  = preInPre | preInCore | coreInCore | postInCore | postInPost;
 
-            var dependsOnPad = marker is not null
-                ? Space.Pad(dependsOn, dependsOnColumnWidth)
-                : null;
+            if (!isPlanned)
+                continue;
+
+            // TODO: Skip applied
+            var dependsOn = migration.DependsOn.LastOrDefault()?.Name ?? "(none)";
 
             Log(string.Format(
-                "{0}{1}   {2}   {3}   {4}{5}{6}",
-                /*{0}*/ migration.Name,
-                /*{1}*/ Space.Pad(migration.Name, nameColumnWidth),
-                /*{2}*/ migration.GetFixedWithFileStatusString(),
-                /*{3}*/ migration.State.ToFixedWidthString(),
-                /*{4}*/ dependsOn,
-                /*{5}*/ dependsOnPad,
-                /*{6}*/ marker
+                "{0}{1}  {2}  {3}  {4}{5}  │ {6} │ {7}{8}{9} │ {10} │",
+                /*{ 0}*/ migration.Name,
+                /*{ 1}*/ Space.Pad(migration.Name, nameColumnWidth),
+                /*{ 2}*/ migration.GetFixedWidthStatusString(),
+                /*{ 3}*/ migration.State.ToFixedWidthString(),
+                /*{ 4}*/ dependsOn,
+                /*{ 5}*/ Space.Pad(dependsOn, dependsOnColumnWidth),
+                /*{ 6}*/ preInPre   ?  "Pre"  : Space.Get(3),
+                /*{ 7}*/ preInCore  ?  "Pre>" : preInCorePad,
+                /*{ 8}*/ coreInCore ?  "Core" : Space.Get(4),
+                /*{ 9}*/ postInCore ? ">Post" : postInCorePad,
+                /*{10}*/ postInPost ?  "Post" : Space.Get(4)
             ));
         }
-    }
 
-    private static string? GetDiagnosticMarker(IReadOnlyList<MigrationDiagnostic> diagnostics)
-    {
-        if (diagnostics.Count == 0)
-            return null;
-
-        foreach (var diagnostic in diagnostics)
-            if (diagnostic.IsError)
-                return "**ERROR**";
-
-        return "**WARNING**";
+        // Footer
+        Log(string.Format(
+            "    {0}                                      └─────┴───{1}───┴──────┘",
+            pendingPad, coreBorder
+        ));
     }
 
     private void ReportDiagnostics(ImmutableArray<Migration> pendingMigrations)
@@ -401,53 +439,6 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
         Log("Migration Sequence:");
         Log("");
         Log("Nothing to do for the current phase.");
-    }
-
-    private void ReportPlan(MigrationPlan plan)
-    {
-        const int NameHeaderWidth =  4; // NAME
-
-        // Dynamic column widths
-        var nameColumnWidth = Math.Max(NameHeaderWidth, _migrationNameMaxLength);
-
-        // Header
-        Log("");
-        Log("Migration Sequence:");
-        Log("");
-        Log(string.Format(
-            "    {0}   {1}",
-            Space.Pad("NAME", nameColumnWidth),
-            Phase.ToMigrationPlanPhaseIndicator()
-        ));
-        Log(string.Format(
-            "NAME{0}   PRE   ----CORE-----   POST",
-            Space.Pad("NAME", nameColumnWidth)
-        ));
-
-        // Body
-        foreach (var migration in plan.PendingMigrations)
-        {
-            var preInPre   = migration.Pre .PlannedPhase is MigrationPhase.Pre;
-            var preInCore  = migration.Pre .PlannedPhase is MigrationPhase.Core;
-            var coreInCore = migration.Core.PlannedPhase is MigrationPhase.Core;
-            var postInCore = migration.Post.PlannedPhase is MigrationPhase.Core;
-            var postInPost = migration.Post.PlannedPhase is MigrationPhase.Post;
-            var isPlanned  = preInPre | preInCore | coreInCore | postInCore | postInPost;
-
-            if (!isPlanned)
-                continue;
-
-            Log(string.Format(
-                "{0}{1}   {2}   {3} {4} {5}   {6}",
-                /*{0}*/ migration.Name,
-                /*{1}*/ Space.Pad(migration.Name, nameColumnWidth),
-                /*{2}*/ preInPre   ? "Pre"  : "...",
-                /*{3}*/ preInCore  ? "Pre"  : "...",
-                /*{4}*/ coreInCore ? "Core" : "....",
-                /*{5}*/ postInCore ? "Post" : "....",
-                /*{6}*/ postInPost ? "Post" : "...."
-            ));
-        }
     }
 
     private void ReportCoreRequired()

@@ -9,14 +9,18 @@ using static MigrationTargetDisposition;
 
 internal static class FormattingExtensions
 {
-    internal static string GetFixedWithFileStatusString(this Migration migration)
+    internal static string GetFixedWidthStatusString(this Migration migration)
     {
-        return migration.HasChanged switch
-        {
-            true                              => "Changed",
-            false when migration.Path is null => "Missing",
-            _                                 => "Ok     ",
-        };
+        if (migration.Path is null)
+            return "Missing";
+
+        if (migration.HasChanged)
+            return "Changed";
+
+        if (migration.Diagnostics.Any(d => d.IsError))
+            return "Invalid";
+
+        return "Ok     ";
     }
 
     internal static string ToFixedWidthString(this MigrationPhase phase)
@@ -29,25 +33,14 @@ internal static class FormattingExtensions
         };
     }
 
-    internal static string ToMigrationPlanPhaseIndicator(this MigrationPhase phase)
-    {
-        return phase switch
-        {
-            //       PRE   ----CORE-----   POST
-            Pre  => "vvv                       ",
-            Core => "      vvvvvvvvvvvvv       ",
-            _    => "                      vvvv",
-        };
-    }
-
     internal static string ToFixedWidthString(this MigrationState state)
     {
         return state switch
         {
-            NotApplied  => "(new)          ",
-            AppliedPre  => "Pre            ",
-            AppliedCore => "Pre->Core      ",
-            _           => "Pre->Core->Post",
+            NotApplied  => "(new)        ",
+            AppliedPre  => "Pre          ",
+            AppliedCore => "Pre>Core     ",
+            _           => "Pre>Core>Post",
         };
     }
 

@@ -154,7 +154,7 @@ internal readonly ref struct MigrationMerger
         // Copy definition-only properties to applied
         appliedMigration.Path            = definedMigration.Path;
         appliedMigration.Hash            = definedMigration.Hash;
-        appliedMigration.Depends         = definedMigration.Depends;
+        appliedMigration.DependsOn       = definedMigration.DependsOn;
         appliedMigration.Pre .Sql        = definedMigration.Pre .Sql;
         appliedMigration.Core.Sql        = definedMigration.Core.Sql;
         appliedMigration.Post.Sql        = definedMigration.Post.Sql;

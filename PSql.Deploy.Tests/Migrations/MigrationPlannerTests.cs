@@ -114,20 +114,21 @@ public class MigrationPlannerTests
     private static Migration MakeMigration(
         string             name,
         MigrationState     state = NotApplied,
-        params Migration[] depends)
+        params Migration[] dependsOn)
     {
-        var dependObjects = depends.ToImmutableArray();
-        var dependNames   = ImmutableArray.CreateRange(dependObjects, m => m.Name);
-
         return new Migration(name)
         {
-            Pre             = { Sql = name + ":Pre"  },
-            Core            = { Sql = name + ":Core" },
-            Post            = { Sql = name + ":Post" },
-            Depends         = dependNames,
-            ResolvedDepends = dependObjects,
-            State           = state
+            State     = state,
+            Pre       = { Sql = name + ":Pre"  },
+            Core      = { Sql = name + ":Core" },
+            Post      = { Sql = name + ":Post" },
+            DependsOn = ImmutableArray.CreateRange(dependsOn.ToImmutableArray(), ToReference)
         };
+    }
+
+    private static MigrationReference ToReference(Migration migration)
+    {
+        return new(migration.Name) { Migration = migration };
     }
 
     private static MigrationPlanner MakePlanner(params Migration[] migrations)

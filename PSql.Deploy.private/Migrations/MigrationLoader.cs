@@ -47,10 +47,10 @@ internal static class MigrationLoader
         AppendFinalBatches(migration, core, MigrationPhase.Core);
         AppendFinalBatches(migration, post, MigrationPhase.Post);
 
-        migration.Pre .Sql = pre .Complete();
-        migration.Core.Sql = core.Complete();
-        migration.Post.Sql = post.Complete();
-        migration.Depends  = depends.ToImmutableArray();
+        migration.Pre .Sql  = pre .Complete();
+        migration.Core.Sql  = core.Complete();
+        migration.Post.Sql  = post.Complete();
+        migration.DependsOn = MakeDependsOn(depends);
 
         migration.IsContentLoaded = true;
     }
@@ -166,6 +166,19 @@ internal static class MigrationLoader
         var raw = File.ReadAllText(migration.Path);
 
         return preprocessor.Process(raw, fileName);
+    }
+
+    private static ImmutableArray<MigrationReference> MakeDependsOn(SortedSet<string> depends)
+    {
+        if (depends.Count == 0)
+            return ImmutableArray<MigrationReference>.Empty;
+
+        var array = ImmutableArray.CreateBuilder<MigrationReference>(depends.Count);
+
+        foreach (var name in depends)
+            array.Add(new(name));
+
+        return array.MoveToImmutable();
     }
 
     private static readonly Regex ChunksRe = new(

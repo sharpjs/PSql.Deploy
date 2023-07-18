@@ -100,20 +100,12 @@ public class Migration
     public MigrationContent Post { get; } = new();
 
     /// <summary>
-    ///   Gets or sets the names of migrations that must be applied completely
+    ///   Gets or sets references to migrations that must be applied completely
     ///   before any phase of the current migration.  The default value is an
-    ///   empty list.
+    ///   empty array.
     /// </summary>
-    public IReadOnlyList<string> Depends { get; set; }
-        = Array.Empty<string>();
-
-    /// <summary>
-    ///   Gets or sets the resolved migrations that must be applied completely
-    ///   before any phase of the current migration.  The default value is an
-    ///   empty list.
-    /// </summary>
-    internal IReadOnlyList<Migration> ResolvedDepends { get; set; }
-        = Array.Empty<Migration>();
+    public ImmutableArray<MigrationReference> DependsOn { get; set; }
+        = ImmutableArray<MigrationReference>.Empty;
 
     /// <summary>
     ///   Gets or sets the diagnostic messages associated with the migration.
@@ -170,40 +162,20 @@ public class Migration
     }
 
     /// <summary>
-    ///   Checks whether the migration can be applied through the specified
-    ///   phase.
+    ///   Checks whether the migration can be applied in the specified phase.
     /// </summary>
     /// <param name="phase">
     ///   The phase to check.
     /// </param>
-    public bool CanApplyThrough(MigrationPhase phase)
+    public bool CanApplyIn(MigrationPhase phase)
     {
         // Pseudo-migrations always can be applied
         if (IsPseudo)
             return true;
 
-        // State also functions as 'next phase to be applied'
-        var next = (MigrationPhase) State;
-
-        // If the next phase to be applied is later than the requested state,
-        // the migration has already been applied and cannot be applied again
-        if (next > phase)
-            return false;
-
-        // If the next phase to be applied is the same as the requested state,
-        // the migration can be applied
-        if (next == phase)
-            return true;
-
-        // If the next phase to be applied is earlier than the requested state,
-        // the migration can be applied only if the intermediate phases are
-        // skippable
-        for (; next < phase; next++)
-            if (this[next].IsRequired)
-                return false;
-
-        // Intermediate phases are indeed skippable
-        return true;
+        return !Pre .BlocksApplicationIn(phase)
+            && !Core.BlocksApplicationIn(phase)
+            && !Post.BlocksApplicationIn(phase);
     }
 
     /// <inheritdoc/>
