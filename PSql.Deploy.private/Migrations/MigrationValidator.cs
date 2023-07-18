@@ -200,19 +200,30 @@ internal ref struct MigrationValidator
         if (content.PlannedPhase is not { } plannedPhase)
             return;
 
-        // Content planned for a future phase has no bearing on the migration's
-        // applicability in the current phase
-        if (plannedPhase > Context.Phase)
-            return;
+        static int Compare(MigrationPhase lhs, MigrationPhase rhs)
+            => ((int) lhs).CompareTo(((int) rhs));
 
-        // Required content planned for an earlier phase blocks application of
-        // the migration in the current phase
-        if (plannedPhase < Context.Phase && content.IsRequired)
-            applicability = Applicability.Blocked;
+        switch (Compare(plannedPhase, Context.Phase))
+        {
+            case > 0:
+                // Content planned for a future phase has no bearing on a
+                // migration's applicability in the current phase
+                break;
 
-        // Otherwise, the migration is applicable in the current phase
-        else if (applicability == Applicability.None)
-            applicability = Applicability.Allowed;
+            case < 0:
+                // Content planned for an earlier phase, if required, blocks a
+                // migration's applicability in the current phase; otherwise, no bearing
+                if (content.IsRequired)
+                    applicability = Applicability.Blocked;
+                break;
+
+            default:
+                // Content planned for the current phase makes a migration
+                // applicable unless otherwise blocked
+                if (applicability == Applicability.None)
+                    applicability = Applicability.Allowed;
+                break;
+        }
     }
 
     private void ValidateHasSource(Migration migration)
