@@ -161,23 +161,6 @@ public class Migration
         return (MigrationPhase) State > phase;
     }
 
-    /// <summary>
-    ///   Checks whether the migration can be applied in the specified phase.
-    /// </summary>
-    /// <param name="phase">
-    ///   The phase to check.
-    /// </param>
-    public bool CanApplyIn(MigrationPhase phase)
-    {
-        // Pseudo-migrations always can be applied
-        if (IsPseudo)
-            return true;
-
-        return !Pre .BlocksApplicationIn(phase)
-            && !Core.BlocksApplicationIn(phase)
-            && !Post.BlocksApplicationIn(phase);
-    }
-
     /// <inheritdoc/>
     public override string ToString() => Name;
 }

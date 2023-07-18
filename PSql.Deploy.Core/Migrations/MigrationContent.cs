@@ -35,7 +35,4 @@ public class MigrationContent
     ///   dependencies declared between migrations.
     /// </remarks>
     public MigrationPhase? PlannedPhase { get; internal set; }
-
-    internal bool BlocksApplicationIn(MigrationPhase phase)
-        => PlannedPhase < phase && IsRequired;
 }

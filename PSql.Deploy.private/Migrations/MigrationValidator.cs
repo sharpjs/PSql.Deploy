@@ -74,14 +74,12 @@ internal ref struct MigrationValidator
         if (migration.IsPseudo)
             return;
 
-        ValidateNotChanged(migration);
-        ValidateDepends   (migration);
+        ValidateNotChanged   (migration);
+        ValidateDepends      (migration);
+        ValidateApplicability(migration, out var applicability);
 
-        if (migration.IsAppliedThrough(Context.Phase))
-            return; // Migration will not be applied
-
-        ValidateCanApplyInPhase(migration);
-        ValidateHasSource      (migration);
+        if (applicability > Applicability.None)
+            ValidateHasSource(migration);
     }
 
     private void ValidateDepends(Migration migration)
@@ -167,9 +165,15 @@ internal ref struct MigrationValidator
         ));
     }
 
-    private void ValidateCanApplyInPhase(Migration migration)
+    private void ValidateApplicability(Migration migration, out Applicability applicability)
     {
-        if (migration.CanApplyIn(Context.Phase))
+        applicability = Applicability.None;
+
+        CheckApplicability(migration.Pre,  ref applicability);
+        CheckApplicability(migration.Core, ref applicability);
+        CheckApplicability(migration.Post, ref applicability);
+
+        if (applicability != Applicability.Blocked)
             return;
 
         AddError(string.Format(
@@ -181,6 +185,34 @@ internal ref struct MigrationValidator
             /*{2}*/ Context.DatabaseName,
             /*{3}*/ Context.Phase
         ));
+    }
+
+    private enum Applicability
+    {
+        None,       // nothing to apply
+        Allowed,    // application allowed
+        Blocked,    // application blocked (by required content in earlier phase)
+    }
+
+    private void CheckApplicability(MigrationContent content, ref Applicability applicability)
+    {
+        // Unplanned content has no bearing on a migration's applicability
+        if (content.PlannedPhase is not { } plannedPhase)
+            return;
+
+        // Content planned for a future phase has no bearing on the migration's
+        // applicability in the current phase
+        if (plannedPhase > Context.Phase)
+            return;
+
+        // Required content planned for an earlier phase blocks application of
+        // the migration in the current phase
+        if (plannedPhase < Context.Phase && content.IsRequired)
+            applicability = Applicability.Blocked;
+
+        // Otherwise, the migration is applicable in the current phase
+        else if (applicability == Applicability.None)
+            applicability = Applicability.Allowed;
     }
 
     private void ValidateHasSource(Migration migration)
