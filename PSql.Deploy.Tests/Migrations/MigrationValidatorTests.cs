@@ -14,11 +14,9 @@ public class MigrationValidatorTests : TestHarnessBase
     {
         _context = Mocks.Create<IMigrationValidationContext>();
 
-        _context.Setup(c => c.Phase)                       .Returns(MigrationPhase.Post);
-        _context.Setup(c => c.ServerName)                  .Returns("s");
-        _context.Setup(c => c.DatabaseName)                .Returns("d");
-        _context.Setup(c => c.EarliestDefinedMigrationName).Returns("M-06");
-
+        _context.Setup(c => c.Phase)       .Returns(MigrationPhase.Post);
+        _context.Setup(c => c.ServerName)  .Returns("s");
+        _context.Setup(c => c.DatabaseName).Returns("d");
     }
 
     [Test]
@@ -52,9 +50,9 @@ public class MigrationValidatorTests : TestHarnessBase
     [Test]
     public void Validate_Changed_NotApplied()
     {
-        var migration = new Migration("a")
+        var migration = new Migration("m")
         {
-            Path       = @"/test/_Main.sql",
+            Path       = @"/test/m/_Main.sql",
             State      = MigrationState.NotApplied,
             HasChanged = true,
         };
@@ -67,9 +65,9 @@ public class MigrationValidatorTests : TestHarnessBase
     [Test]
     public void Validate_Changed_Applied()
     {
-        var migration = new Migration("a")
+        var migration = new Migration("m")
         {
-            Path       = @"/test/_Main.sql",
+            Path       = @"/test/m/_Main.sql",
             State      = MigrationState.AppliedPre,
             HasChanged = true,
             Hash       = "h",
@@ -80,7 +78,7 @@ public class MigrationValidatorTests : TestHarnessBase
         migration.Diagnostics.Should().BeEquivalentTo(new[]
         {
             MakeError(
-                "Migration 'a' has been applied to database [s].[d] through the " +
+                "Migration 'm' has been applied to database [s].[d] through the " +
                 "Pre phase, but the migration's code in the source directory "    +
                 "does not match the code previously used. To resolve, revert "    +
                 "any accidental changes to this migration. To ignore, update "    +
@@ -93,10 +91,10 @@ public class MigrationValidatorTests : TestHarnessBase
     [Test]
     public void Validate_DependsOn_Resolved()
     {
-        var migration = new Migration("a")
+        var migration = new Migration("m1")
         {
-            Path      = @"/test/_Main.sql",
-            DependsOn = ImmutableArray.Create(MakeReference(new Migration("b")))
+            Path      = @"/test/m1/_Main.sql",
+            DependsOn = ImmutableArray.Create(MakeReference(new Migration("m0")))
         };
 
         Validate(migration).Should().BeTrue();
@@ -107,19 +105,20 @@ public class MigrationValidatorTests : TestHarnessBase
     [Test]
     public void Validate_DependsOn_EarlierThanMinimumDefinedMigration()
     {
-        var migration = new Migration("M-10")
+        var migration = new Migration("m5")
         {
-            Path      = @"/test/_Main.sql",
-            DependsOn = ImmutableArray.Create(MakeReference("M-05"))
-            // but earliest defined migration is M-06
+            Path      = @"/test/m5/_Main.sql",
+            DependsOn = ImmutableArray.Create(MakeReference("m2"))
         };
+
+        _context.Setup(c => c.EarliestDefinedMigrationName).Returns("m3");
 
         Validate(migration).Should().BeTrue();
 
         migration.Diagnostics.Should().BeEquivalentTo(new[]
         {
             MakeWarning(
-                "Ignoring migration 'M-10' dependency on migration 'M-05', " +
+                "Ignoring migration 'm5' dependency on migration 'm2', " +
                 "which is older than the earliest migration on disk."
             )
         });
@@ -128,18 +127,20 @@ public class MigrationValidatorTests : TestHarnessBase
     [Test]
     public void Validate_DependsOn_Missing()
     {
-        var migration = new Migration("M-10")
+        var migration = new Migration("m5")
         {
-            Path      = @"/test/_Main.sql",
-            DependsOn = ImmutableArray.Create(MakeReference("M-09"))
+            Path      = @"/test/m5/_Main.sql",
+            DependsOn = ImmutableArray.Create(MakeReference("m3"))
         };
+
+        _context.Setup(c => c.EarliestDefinedMigrationName).Returns("m3");
 
         Validate(migration).Should().BeFalse();
 
         migration.Diagnostics.Should().BeEquivalentTo(new[]
         {
             MakeError(
-                "Migration 'M-10' declares a dependency on migration 'M-09', " +
+                "Migration 'm5' declares a dependency on migration 'm3', " +
                 "which was not found. " +
                 "The dependency cannot be satisfied."
             )
@@ -149,10 +150,10 @@ public class MigrationValidatorTests : TestHarnessBase
     [Test]
     public void Validate_DependsOn_Self()
     {
-        var migration = new Migration("M-10")
+        var migration = new Migration("m5")
         {
-            Path      = @"/test/_Main.sql",
-            DependsOn = ImmutableArray.Create(MakeReference("m-10"))
+            Path      = @"/test/m5/_Main.sql",
+            DependsOn = ImmutableArray.Create(MakeReference("M5"))
             //        to verify case-insensitive comparison: ^
         };
 
@@ -161,7 +162,7 @@ public class MigrationValidatorTests : TestHarnessBase
         migration.Diagnostics.Should().BeEquivalentTo(new[]
         {
             MakeError(
-                "Migration 'M-10' declares a dependency on itself. " +
+                "Migration 'm5' declares a dependency on itself. " +
                 "The dependency cannot be satisfied."
             )
         });
@@ -170,10 +171,10 @@ public class MigrationValidatorTests : TestHarnessBase
     [Test]
     public void Validate_DependsOn_LaterThanSelf()
     {
-        var migration = new Migration("M-10")
+        var migration = new Migration("m5")
         {
-            Path      = @"/test/_Main.sql",
-            DependsOn = ImmutableArray.Create(MakeReference("M-11"))
+            Path      = @"/test/m5/_Main.sql",
+            DependsOn = ImmutableArray.Create(MakeReference("m6"))
         };
 
         Validate(migration).Should().BeFalse();
@@ -181,7 +182,7 @@ public class MigrationValidatorTests : TestHarnessBase
         migration.Diagnostics.Should().BeEquivalentTo(new[]
         {
             MakeError(
-                "Migration 'M-10' declares a dependency on migration 'M-11', " +
+                "Migration 'm5' declares a dependency on migration 'm6', " +
                 "which must run later in the sequence. " +
                 "The dependency cannot be satisfied."
             )
@@ -209,7 +210,7 @@ public class MigrationValidatorTests : TestHarnessBase
     {
         _context.Setup(c => c.Phase).Returns(validatingPhase);
 
-        var migration = new Migration("M-10") { Path = @"/test/_Main.sql", };
+        var migration = new Migration("m") { Path = @"/test/m/_Main.sql", };
 
         migration[authoredPhase].IsRequired   = true;
         migration[authoredPhase].Sql          = "EXAMPLE";
@@ -235,7 +236,7 @@ public class MigrationValidatorTests : TestHarnessBase
     {
         _context.Setup(c => c.Phase).Returns(validatingPhase);
 
-        var migration = new Migration("M-10") { Path = @"/test/_Main.sql", };
+        var migration = new Migration("m") { Path = @"/test/m/_Main.sql", };
 
         migration[authoredPhase].IsRequired   = true;
         migration[authoredPhase].Sql          = "EXAMPLE";
@@ -246,9 +247,9 @@ public class MigrationValidatorTests : TestHarnessBase
         migration.Diagnostics.Should().BeEquivalentTo(new[]
         {
             MakeError(string.Format(
-                "Cannot apply migration 'M-10' to database [s].[d] in the {0} " +
-                "phase because the migration has code that must be applied in " +
-                "an earlier phase first.",
+                "Cannot apply migration 'm' to database [s].[d] in the {0} " +
+                "phase because the migration has code that must be applied " +
+                "in an earlier phase first.",
                 validatingPhase
             ))
         });
@@ -257,7 +258,7 @@ public class MigrationValidatorTests : TestHarnessBase
     [Test]
     public void Validate_Missing_Partial()
     {
-        var migration = new Migration("M-10")
+        var migration = new Migration("m")
         {
             State = MigrationState.AppliedCore,
             Post  = { PlannedPhase = Post }
@@ -268,7 +269,7 @@ public class MigrationValidatorTests : TestHarnessBase
         migration.Diagnostics.Should().BeEquivalentTo(new[]
         {
             MakeError(
-                "Migration M-10 is only partially applied to database [s].[d] " +
+                "Migration m is only partially applied to database [s].[d] "  +
                 "(through the Core phase), but the code for the migration was " +
                 "not found in the source directory. It is not possible to "     +
                 "complete this migration."
@@ -279,7 +280,7 @@ public class MigrationValidatorTests : TestHarnessBase
     [Test]
     public void Validate_Missing_NotApplied()
     {
-        var migration = new Migration("M-10")
+        var migration = new Migration("m")
         {
             State = MigrationState.NotApplied,
             Post  = { PlannedPhase = Post }
@@ -290,7 +291,7 @@ public class MigrationValidatorTests : TestHarnessBase
         migration.Diagnostics.Should().BeEquivalentTo(new[]
         {
             MakeError(
-                "Migration M-10 is registered in database [s].[d] but is not "   +
+                "Migration m is registered in database [s].[d] but is not "    +
                 "applied in any phase, and the code for the migration was not "  +
                 "found in the source directory. It is not possible to complete " +
                 "this migration."
