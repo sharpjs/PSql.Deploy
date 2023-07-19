@@ -29,7 +29,7 @@
 
     <Reference Include="PSql.Core" HintPath="$(PSqlDirectory)PSql.Core.dll"
                Private="false" />
-  </ItemGroup >
+  </ItemGroup>
 
   <ItemGroup>
     <Using Include="Subatomix.Testing" />
