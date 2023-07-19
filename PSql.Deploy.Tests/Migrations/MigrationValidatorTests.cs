@@ -189,38 +189,6 @@ public class MigrationValidatorTests : TestHarnessBase
     }
 
     [Test]
-    [TestCase(Pre,  Pre,  Core)]
-    [TestCase(Pre,  Pre,  Post)]
-    [TestCase(Pre,  Core, Post)]
-    [TestCase(Core, Core, Post)]
-    [TestCase(Post, Core, Post)]
-    public void Validate_Applicability_BlockedByEarlierPhase(
-        MigrationPhase authoredPhase,   // the phase the developer wrote it for
-        MigrationPhase plannedPhase,    // the phase the engine actually scheduled it for
-        MigrationPhase validatingPhase) // the phase someone wants to run
-    {
-        _context.Setup(c => c.Phase).Returns(validatingPhase);
-
-        var migration = new Migration("M-10") { Path = @"/test/_Main.sql", };
-
-        migration[authoredPhase].IsRequired   = true;
-        migration[authoredPhase].Sql          = "EXAMPLE";
-        migration[authoredPhase].PlannedPhase = plannedPhase;
-
-        Validate(migration).Should().BeFalse();
-
-        migration.Diagnostics.Should().BeEquivalentTo(new[]
-        {
-            MakeError(string.Format(
-                "Cannot apply migration 'M-10' to database [s].[d] in the {0} " +
-                "phase because the migration has code that must be applied in " +
-                "an earlier phase first.",
-                validatingPhase
-            ))
-        });
-    }
-
-    [Test]
     // Validating for Pre
     [TestCase(Pre,  Pre,  Pre )]
     [TestCase(Pre,  Core, Pre )]
@@ -253,7 +221,41 @@ public class MigrationValidatorTests : TestHarnessBase
     }
 
     [Test]
-    public void Validate_Source_NotFound()
+    // Validating for Core
+    [TestCase(Pre,  Pre,  Core)]
+    // Validating for Post
+    [TestCase(Pre,  Pre,  Post)]
+    [TestCase(Pre,  Core, Post)]
+    [TestCase(Core, Core, Post)]
+    [TestCase(Post, Core, Post)]
+    public void Validate_Applicability_BlockedByEarlierPhase(
+        MigrationPhase authoredPhase,   // the phase the developer wrote it for
+        MigrationPhase plannedPhase,    // the phase the engine actually scheduled it for
+        MigrationPhase validatingPhase) // the phase someone wants to run
+    {
+        _context.Setup(c => c.Phase).Returns(validatingPhase);
+
+        var migration = new Migration("M-10") { Path = @"/test/_Main.sql", };
+
+        migration[authoredPhase].IsRequired   = true;
+        migration[authoredPhase].Sql          = "EXAMPLE";
+        migration[authoredPhase].PlannedPhase = plannedPhase;
+
+        Validate(migration).Should().BeFalse();
+
+        migration.Diagnostics.Should().BeEquivalentTo(new[]
+        {
+            MakeError(string.Format(
+                "Cannot apply migration 'M-10' to database [s].[d] in the {0} " +
+                "phase because the migration has code that must be applied in " +
+                "an earlier phase first.",
+                validatingPhase
+            ))
+        });
+    }
+
+    [Test]
+    public void Validate_Missing_Partial()
     {
         var migration = new Migration("M-10")
         {
@@ -270,6 +272,28 @@ public class MigrationValidatorTests : TestHarnessBase
                 "(through the Core phase), but the code for the migration was " +
                 "not found in the source directory. It is not possible to "     +
                 "complete this migration."
+            )
+        });
+    }
+
+    [Test]
+    public void Validate_Missing_NotApplied()
+    {
+        var migration = new Migration("M-10")
+        {
+            State = MigrationState.NotApplied,
+            Post  = { PlannedPhase = Post }
+        };
+
+        Validate(migration).Should().BeFalse();
+
+        migration.Diagnostics.Should().BeEquivalentTo(new[]
+        {
+            MakeError(
+                "Migration M-10 is registered in database [s].[d] but is not "   +
+                "applied in any phase, and the code for the migration was not "  +
+                "found in the source directory. It is not possible to complete " +
+                "this migration."
             )
         });
     }

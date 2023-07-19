@@ -231,16 +231,27 @@ internal ref struct MigrationValidator
         if (migration.Path is not null)
             return;
 
-        AddError(string.Format(
-            "Migration {0} is only partially applied to database [{1}].[{2}] " +
-            "(through the {3} phase), but the code for the migration was not " +
-            "found in the source directory. It is not possible to complete "   +
-            "this migration.",
-            /*{0}*/ migration.Name,
-            /*{1}*/ Context.ServerName,
-            /*{2}*/ Context.DatabaseName,
-            /*{3}*/ migration.LatestAppliedPhase
-        ));
+        if (migration.LatestAppliedPhase is { } phase)
+            AddError(string.Format(
+                "Migration {0} is only partially applied to database [{1}].[{2}] " +
+                "(through the {3} phase), but the code for the migration was not " +
+                "found in the source directory. It is not possible to complete "   +
+                "this migration.",
+                /*{0}*/ migration.Name,
+                /*{1}*/ Context.ServerName,
+                /*{2}*/ Context.DatabaseName,
+                /*{3}*/ phase
+            ));
+        else
+            AddError(string.Format(
+                "Migration {0} is registered in database [{1}].[{2}] but is not " +
+                "applied in any phase, and the code for the migration was not "   +
+                "found in the source directory. It is not possible to complete "  +
+                "this migration.",
+                /*{0}*/ migration.Name,
+                /*{1}*/ Context.ServerName,
+                /*{2}*/ Context.DatabaseName
+            ));
     }
 
     private void AddError(string message)
