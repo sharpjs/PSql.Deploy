@@ -55,50 +55,6 @@ internal static class MigrationLoader
         migration.IsContentLoaded = true;
     }
 
-    private static void AppendFinalBatches(
-        Migration               migration,
-        SqlErrorHandlingBuilder builder,
-        MigrationPhase          phase)
-    {
-        if (migration.IsPseudo)
-            return;
-
-        var name = migration.Name.Replace("'", "''");
-        var hash = migration.Hash.Replace("'", "''");
-
-        builder.StartNewBatch();
-        builder.Append(
-            $"PRINT '+ data _deploy.Migration ({name} {phase} done)';"
-        );
-        builder.StartNewBatch();
-        builder.Append(
-            $"""
-            MERGE _deploy.Migration dst
-            USING
-                (
-                    SELECT
-                        Name = '{name}',
-                        Hash = '{hash}',
-                        Date = SYSUTCDATETIME()
-                ) src
-            ON src.Name = dst.Name
-            WHEN MATCHED
-                THEN UPDATE SET
-                    dst.Hash = src.Hash,
-                    dst.{phase}RunDate = src.Date
-            WHEN NOT MATCHED BY TARGET
-                THEN INSERT
-                    (Name, Hash, {phase}RunDate)
-                VALUES
-                    (Name, Hash, Date)
-            ;
-
-            IF @@ROWCOUNT != 1
-                THROW 50000, 'Migration registration for {name} failed.', 0;
-            """
-        );
-    }
-
     private static void AppendAuthoredSql(
         Migration               migration,
         SqlErrorHandlingBuilder pre,
@@ -166,6 +122,50 @@ internal static class MigrationLoader
         var raw = File.ReadAllText(migration.Path);
 
         return preprocessor.Process(raw, fileName);
+    }
+
+    private static void AppendFinalBatches(
+        Migration               migration,
+        SqlErrorHandlingBuilder builder,
+        MigrationPhase          phase)
+    {
+        if (migration.IsPseudo)
+            return;
+
+        var name = migration.Name.Replace("'", "''");
+        var hash = migration.Hash.Replace("'", "''");
+
+        builder.StartNewBatch();
+        builder.Append(
+            $"PRINT '+ data _deploy.Migration ({name} {phase} done)';"
+        );
+        builder.StartNewBatch();
+        builder.Append(
+            $"""
+            MERGE _deploy.Migration dst
+            USING
+                (
+                    SELECT
+                        Name = '{name}',
+                        Hash = '{hash}',
+                        Date = SYSUTCDATETIME()
+                ) src
+            ON src.Name = dst.Name
+            WHEN MATCHED
+                THEN UPDATE SET
+                    dst.Hash = src.Hash,
+                    dst.{phase}RunDate = src.Date
+            WHEN NOT MATCHED BY TARGET
+                THEN INSERT
+                    (Name, Hash, {phase}RunDate)
+                VALUES
+                    (Name, Hash, Date)
+            ;
+
+            IF @@ROWCOUNT != 1
+                THROW 50000, 'Migration registration for {name} failed.', 0;
+            """
+        );
     }
 
     private static ImmutableArray<MigrationReference> MakeDependsOn(SortedSet<string> depends)
