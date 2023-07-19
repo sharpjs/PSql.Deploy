@@ -269,7 +269,7 @@ public class MigrationValidatorTests : TestHarnessBase
         migration.Diagnostics.Should().BeEquivalentTo(new[]
         {
             MakeError(
-                "Migration m is only partially applied to database [s].[d] "  +
+                "Migration 'm' is only partially applied to database [s].[d] "  +
                 "(through the Core phase), but the code for the migration was " +
                 "not found in the source directory. It is not possible to "     +
                 "complete this migration."
@@ -291,7 +291,7 @@ public class MigrationValidatorTests : TestHarnessBase
         migration.Diagnostics.Should().BeEquivalentTo(new[]
         {
             MakeError(
-                "Migration m is registered in database [s].[d] but is not "    +
+                "Migration 'm' is registered in database [s].[d] but is not "    +
                 "applied in any phase, and the code for the migration was not "  +
                 "found in the source directory. It is not possible to complete " +
                 "this migration."
