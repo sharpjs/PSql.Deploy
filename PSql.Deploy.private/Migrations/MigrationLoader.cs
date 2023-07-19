@@ -20,6 +20,11 @@ internal static class MigrationLoader
         if (migration.IsContentLoaded)
             return;
 
+        LoadContentInternal(migration);
+    }
+
+    internal static void LoadContentInternal(Migration migration)
+    {
         lock (migration)
         {
             if (migration.IsContentLoaded)
