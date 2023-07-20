@@ -14,21 +14,18 @@ namespace PSql.Deploy.Migrations;
 internal readonly ref struct MigrationMerger
 {
     /// <summary>
-    ///   Initializes a new <see cref="MigrationMerger"/> instance for the
-    ///   specified phase.
+    ///   Initializes a new <see cref="MigrationMerger"/> instance.
     /// </summary>
-    /// <param name="phase">
-    ///   The phase in which migrations are being applied.
-    /// </param>
-    public MigrationMerger(MigrationPhase phase)
+    public MigrationMerger()
+        : this(MigrationInternals.Instance) { }
+
+    // For testing
+    internal MigrationMerger(IMigrationInternals internals)
     {
-        Phase = phase;
+        Internals = internals;
     }
 
-    /// <summary>
-    ///   Gets the phase in which migrations are being applied.
-    /// </summary>
-    public MigrationPhase Phase { get; }
+    internal IMigrationInternals Internals { get; }
 
     /// <summary>
     ///   Merges the specified ordered collection of
@@ -112,7 +109,7 @@ internal readonly ref struct MigrationMerger
     private Migration? OnDefinedWithoutApplied(Migration definedMigration)
     {
         // Migration will be applied; ensure its content is loaded
-        MigrationLoader.LoadContent(definedMigration);
+        Internals.LoadContent(definedMigration);
 
         return definedMigration;
     }
@@ -140,28 +137,32 @@ internal readonly ref struct MigrationMerger
             =  !string.IsNullOrWhiteSpace(appliedMigration.Hash)
             && !appliedMigration.Hash.Equals(definedMigration.Hash, StringComparison.OrdinalIgnoreCase);
 
-#if WISHFUL_THINKING
-        // Skip a completed migration whose definition is unchanged; these
-        // would be more bloat than useful information in the logs
-        if (!hasChanged && appliedMigration.IsAppliedThrough(MigrationPhase.Post))
-            return null;
-#endif
+        // It might be tempting to exclude completed migrations from the
+        // merged migration list.  Do not.  They need to be present in case
+        // they are dependency targets.
 
-        // If migration will be applied, ensure its content is loaded
-        if (!appliedMigration.IsAppliedThrough(Phase))
-            MigrationLoader.LoadContent(definedMigration);
+        // TODO: To reduce bloat in logs, do not mention a completed migration
+        // in logs unless the migration is a dependency target.
 
         // Copy definition-only properties to applied
-        appliedMigration.Path            = definedMigration.Path;
-        appliedMigration.Hash            = definedMigration.Hash;
-        appliedMigration.DependsOn       = definedMigration.DependsOn;
-        appliedMigration.Pre .Sql        = definedMigration.Pre .Sql;
-        appliedMigration.Core.Sql        = definedMigration.Core.Sql;
-        appliedMigration.Post.Sql        = definedMigration.Post.Sql;
-        appliedMigration.Pre .IsRequired = definedMigration.Pre .IsRequired;
-        appliedMigration.Core.IsRequired = definedMigration.Core.IsRequired;
-        appliedMigration.Post.IsRequired = definedMigration.Post.IsRequired;
-        appliedMigration.HasChanged      = hasChanged;
+        appliedMigration.Path       = definedMigration.Path;
+        appliedMigration.Hash       = definedMigration.Hash;
+        appliedMigration.HasChanged = hasChanged;
+
+        // If migration might be applied, ensure its content is loaded
+        if (!appliedMigration.IsAppliedThrough(MigrationPhase.Post))
+        {
+            Internals.LoadContent(definedMigration);
+
+            appliedMigration.Pre .Sql        = definedMigration.Pre .Sql;
+            appliedMigration.Core.Sql        = definedMigration.Core.Sql;
+            appliedMigration.Post.Sql        = definedMigration.Post.Sql;
+            appliedMigration.Pre .IsRequired = definedMigration.Pre .IsRequired;
+            appliedMigration.Core.IsRequired = definedMigration.Core.IsRequired;
+            appliedMigration.Post.IsRequired = definedMigration.Post.IsRequired;
+            appliedMigration.DependsOn       = definedMigration.DependsOn;
+            appliedMigration.IsContentLoaded = definedMigration.IsContentLoaded;
+        }
 
         return appliedMigration;
     }

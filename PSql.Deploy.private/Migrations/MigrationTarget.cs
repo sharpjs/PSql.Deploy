@@ -164,7 +164,7 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
 
     private ImmutableArray<Migration> GetPendingMigrations(IReadOnlyList<Migration> appliedMigrations)
     {
-        var pendingMigrations = new MigrationMerger(Phase).Merge(
+        var pendingMigrations = new MigrationMerger().Merge(
             definedMigrations: Engine.Migrations.AsSpan(),
             appliedMigrations
         );
