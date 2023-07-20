@@ -19,4 +19,11 @@ public class TestSuite
         // Ensure that PSql.Deploy.private.dll and its dependencies load correctly
         new PSql.Deploy.Internal.ModuleLifecycleEvents().OnImport();
     }
+
+    [OneTimeTearDown]
+    public static void TearDown()
+    {
+        // Cover removal method
+        new PSql.Deploy.Internal.ModuleLifecycleEvents().OnRemove(null!); // arg unused
+    }
 }

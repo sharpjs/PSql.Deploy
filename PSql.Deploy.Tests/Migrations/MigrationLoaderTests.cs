@@ -56,17 +56,17 @@ public class MigrationLoaderTests : TestHarnessBase
             Path = MakeFile("_Main.sql", ""),
         };
 
-        MigrationLoader.LoadContent(migration);
+        LoadContent(migration);
 
-        migration.Pre .Sql.Should().StartWith("DECLARE @__sql__");
+        migration.Pre.Sql.Should().StartWith("DECLARE @__sql__");
         migration.Core.Sql.Should().StartWith("DECLARE @__sql__");
         migration.Post.Sql.Should().StartWith("DECLARE @__sql__");
 
-        migration.Pre .IsRequired.Should().BeFalse();
+        migration.Pre.IsRequired.Should().BeFalse();
         migration.Core.IsRequired.Should().BeFalse();
         migration.Post.IsRequired.Should().BeFalse();
 
-        migration.DependsOn      .Should().BeEmpty();
+        migration.DependsOn.Should().BeEmpty();
         migration.IsContentLoaded.Should().BeTrue();
     }
 
@@ -95,7 +95,7 @@ public class MigrationLoaderTests : TestHarnessBase
             ),
         };
 
-        MigrationLoader.LoadContent(migration);
+        LoadContent(migration);
 
         migration.Pre .Sql.Should().ContainAll("DECLARE @__sql__",         "pre0",  "pre1" );
         migration.Core.Sql.Should().ContainAll("DECLARE @__sql__", "init", "core0", "core1");
@@ -122,7 +122,7 @@ public class MigrationLoaderTests : TestHarnessBase
             ),
         };
 
-        MigrationLoader.LoadContent(migration);
+        LoadContent(migration);
 
         migration.Pre .Sql.Should().StartWith("DECLARE @__sql__").And.Contain("text");
         migration.Core.Sql.Should().BeEmpty();
@@ -149,7 +149,7 @@ public class MigrationLoaderTests : TestHarnessBase
             ),
         };
 
-        MigrationLoader.LoadContent(migration);
+        LoadContent(migration);
 
         migration.Pre .Sql.Should().BeEmpty();
         migration.Core.Sql.Should().BeEmpty();
@@ -182,7 +182,7 @@ public class MigrationLoaderTests : TestHarnessBase
             ),
         };
 
-        MigrationLoader.LoadContent(migration);
+        LoadContent(migration);
 
         migration.Pre .Sql.Should().StartWith ("DECLARE @__sql__");
         migration.Core.Sql.Should().ContainAll("DECLARE @__sql__", "foo", "bar", "baz", "quux");
@@ -217,7 +217,7 @@ public class MigrationLoaderTests : TestHarnessBase
             ),
         };
 
-        MigrationLoader.LoadContent(migration);
+        LoadContent(migration);
 
         migration.Pre .Sql.Should().StartWith ("DECLARE @__sql__");
         migration.Core.Sql.Should().ContainAll("DECLARE @__sql__", "foo", "--# WAT", "bar");
@@ -253,6 +253,12 @@ public class MigrationLoaderTests : TestHarnessBase
         var path = Path.Combine(BasePath, name);
         File.WriteAllText(path, content);
         return path;
+    }
+
+    private static void LoadContent(Migration migration)
+    {
+        // Cover access via MigrationInternals
+        MigrationInternals.Instance.LoadContent(migration);
     }
 
     protected override void CleanUp(bool managed)
