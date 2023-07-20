@@ -29,10 +29,10 @@ public sealed class MigrationComparer : IComparer<Migration>
             return 0;
 
         if (x is null)
-            return +1;
+            return -1;
 
         if (y is null)
-            return -1;
+            return +1;
 
         var result = GetRank(x.Name) - GetRank(y.Name);
 
