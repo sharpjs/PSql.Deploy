@@ -133,9 +133,7 @@ internal readonly ref struct MigrationMerger
     {
         // Detect a hash mismatch unless the database opts out of hash checks
         // for a migration by setting the migration's hash to space characters
-        var hasChanged
-            =  !string.IsNullOrWhiteSpace(appliedMigration.Hash)
-            && !appliedMigration.Hash.Equals(definedMigration.Hash, StringComparison.OrdinalIgnoreCase);
+        var hasChanged = !HashEquals(definedMigration.Hash, appliedMigration.Hash);
 
         // It might be tempting to exclude completed migrations from the
         // merged migration list.  Do not.  They need to be present in case
@@ -165,5 +163,11 @@ internal readonly ref struct MigrationMerger
         }
 
         return appliedMigration;
+    }
+
+    private static bool HashEquals(string definedHash, string appliedHash)
+    {
+        return string.IsNullOrWhiteSpace(appliedHash)
+            || appliedHash.Equals(definedHash, StringComparison.OrdinalIgnoreCase);
     }
 }
