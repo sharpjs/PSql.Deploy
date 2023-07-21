@@ -13,7 +13,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.0.13" />
-    <PackageReference Include="Subatomix.Testing"        Version="2.5.1-rc.1" />
+    <PackageReference Include="Subatomix.Testing"        Version="2.5.1" />
   </ItemGroup>
 
   <ItemGroup>
