@@ -53,17 +53,19 @@ internal class MigrationPlan
     ///   <c>Core</c> phase, whether directly via inclusion of the content or
     ///   indirectly as required to satisfy an inter-migration dependency.
     /// </remarks>
-    public bool IsCoreRequired => Core.FindIndex(IsRequired) >= 0;
+    public bool IsCoreRequired { get; internal set; } // Set by MigrationPlanner
 
-    internal bool HasPreContentInCore => Core.FindIndex(IsPre) >= 0;
+    /// <summary>
+    ///   Gets whether the <c>Core</c> phase includes SQL content deferred from
+    ///   the <c>Pre</c> phase due to a dependency.
+    /// </summary>
+    internal bool HasPreContentInCore { get; set; } // Set by MigrationPlanner
 
-    internal bool HasPostContentInCore => Core.FindIndex(IsPost) >= 0;
-
-    private bool IsPre((Migration Migration, MigrationPhase Phase) item)
-        => item.Phase == MigrationPhase.Pre;
-
-    private bool IsPost((Migration Migration, MigrationPhase Phase) item)
-        => item.Phase == MigrationPhase.Post;
+    /// <summary>
+    ///   Gets whether the <c>Core</c> phase includes SQL content advanced from
+    ///   the <c>Post</c> phase due to a dependency.
+    /// </summary>
+    internal bool HasPostContentInCore { get; set; } // Set by MigrationPlanner
 
     /// <summary>
     ///   Checks whether the plan is empty for the specified phase.
@@ -111,9 +113,6 @@ internal class MigrationPlan
             _ => throw new ArgumentOutOfRangeException(nameof(phase)),
         };
     }
-
-    private static bool IsRequired((Migration Migration, MigrationPhase Phase) item)
-        => item.Migration[item.Phase].IsRequired;
 
     private static bool IsNonPseudo(Migration m)
         => !m.IsPseudo;

@@ -191,7 +191,14 @@ internal readonly ref struct MigrationPlanner
             return;
 
         _plan.Core.Add((migration, phase));
+        _plan.IsCoreRequired |= migration[phase].IsRequired;
         migration[phase].PlannedPhase = Core;
+
+        switch (phase)
+        {
+            case Pre:  _plan.HasPreContentInCore  = true; break;
+            case Post: _plan.HasPostContentInCore = true; break;
+        }
     }
 
     private void ScheduleInPost(Migration migration)
