@@ -34,12 +34,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- TODO: Move these to PSql.Deploy.private -->
-    <PackageReference Include="DependencyQueue" Version="1.0.0-rc.1" />
-    <PackageReference Include="Subatomix.PowerShell.TaskHost" Version="1.1.0-rc.1" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Content Include="$(PowerShellItemIncludes)"
              Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder)" />
 
