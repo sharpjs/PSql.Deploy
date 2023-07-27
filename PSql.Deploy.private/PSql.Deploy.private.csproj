@@ -44,7 +44,7 @@
                       Version="1.0.0-rc.1" IncludeAssets="compile" PrivateAssets="all" />
 
     <PackageReference Include="Subatomix.PowerShell.TaskHost"
-                      Version="1.1.0-rc.1" IncludeAssets="compile" PrivateAssets="all" />
+                      Version="1.1.0-rc.2" IncludeAssets="compile" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
