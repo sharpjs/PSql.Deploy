@@ -87,9 +87,9 @@ internal class MigrationPlan
     {
         return phase switch
         {
-            MigrationPhase.Pre  => Pre .FindIndex(IsNonPseudo) < 0,
-            MigrationPhase.Core => Core.FindIndex(IsNonPseudo) < 0,
-            MigrationPhase.Post => Post.FindIndex(IsNonPseudo) < 0,
+            MigrationPhase.Pre  => IsEmpty(Pre),
+            MigrationPhase.Core => IsEmpty(Core),
+            MigrationPhase.Post => IsEmpty(Post),
             _ => throw new ArgumentOutOfRangeException(nameof(phase)),
         };
     }
@@ -114,9 +114,15 @@ internal class MigrationPlan
         };
     }
 
-    private static bool IsNonPseudo(Migration m)
-        => !m.IsPseudo;
+    private static bool IsEmpty(List<Migration> migrations)
+        => migrations.FindIndex(IsNonPseudo) < 0;
 
-    private static bool IsNonPseudo((Migration Migration, MigrationPhase Phase) x)
-        => !x.Migration.IsPseudo;
+    private static bool IsEmpty(List<(Migration Migration, MigrationPhase Phase)> items)
+        => items.FindIndex(IsNonPseudo) < 0;
+
+    private static bool IsNonPseudo(Migration migration)
+        => !migration.IsPseudo;
+
+    private static bool IsNonPseudo((Migration Migration, MigrationPhase Phase) item)
+        => !item.Migration.IsPseudo;
 }
