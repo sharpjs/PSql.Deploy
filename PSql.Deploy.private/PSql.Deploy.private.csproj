@@ -41,10 +41,10 @@
                       Version="5.0.1" IncludeAssets="compile" PrivateAssets="all" />
 
     <PackageReference Include="DependencyQueue"
-                      Version="1.0.0-rc.1" IncludeAssets="compile" PrivateAssets="all" />
+                      Version="1.0.0-rc.1" PrivateAssets="all" />
 
     <PackageReference Include="Subatomix.PowerShell.TaskHost"
-                      Version="1.1.0-rc.2" IncludeAssets="compile" PrivateAssets="all" />
+                      Version="1.1.0-rc.2" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>

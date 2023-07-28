@@ -22,10 +22,7 @@
             GUID          = '218cb4b2-911a-46b1-b47c-d3504acd4627'
         }
     )
-    RequiredAssemblies   = @(
-        'PSql.Deploy.Core'
-        'Subatomix.PowerShell.TaskHost.dll'
-    )
+    RequiredAssemblies   = @('PSql.Deploy.Core')
 
     # Initialization
     #ScriptsToProcess = @(...)
