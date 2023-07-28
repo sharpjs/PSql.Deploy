@@ -32,4 +32,20 @@ public class SpaceTests
 
         a.Should().Be(expected).And.BeSameAs(b); 
     }
+
+    [Test]
+    [TestCase(int.MinValue, "",     "")]
+    [TestCase(-1,           "",     "")]
+    [TestCase( 0,           "",     "")]
+    [TestCase( 1,           " ",    "")]
+    [TestCase( 2,           " ",   " ")]
+    [TestCase( 3,           "  ",  " ")]
+    [TestCase( 4,           "  ", "  ")]
+    public void GetCentering(int n, string expectedLeft, string expectedRight)
+    {
+        var a = Space.GetCentering(n);
+        var b = Space.GetCentering(n);
+
+        a.Should().Be((expectedLeft, expectedRight)).And.Be(b);
+    }
 }

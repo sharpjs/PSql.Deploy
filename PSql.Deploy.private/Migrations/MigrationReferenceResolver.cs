@@ -7,15 +7,20 @@ internal static class MigrationReferenceResolver
 {
     internal static void Resolve(ReadOnlySpan<Migration> migrations)
     {
-        var referencedNames = CollectReferencedNames(migrations);
+        if (migrations.IsEmpty)
+            return;
 
-        if (referencedNames.Count == 0)
+        var referencedNames = CollectReferencedNames(migrations);
+        if (referencedNames is null)
             return;
 
         var migrationsByName = new Dictionary<string, Migration>(
             capacity: referencedNames.Count,
             StringComparer.OrdinalIgnoreCase
         );
+
+        // Assume migrations are ordered such that a reference target precedes
+        // all valid references to that target
 
         foreach (var migration in migrations)
         {
@@ -34,13 +39,23 @@ internal static class MigrationReferenceResolver
         }
     }
 
-    private static HashSet<string> CollectReferencedNames(ReadOnlySpan<Migration> migrations)
+    private static HashSet<string>? CollectReferencedNames(ReadOnlySpan<Migration> migrations)
     {
-        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var names = null as HashSet<string>;
 
         foreach (var migration in migrations)
+        {
+            // Pseudo-migrations cannot reference or be referenced by others
+            if (migration.IsPseudo)
+                continue;
+
+            // Collect references
             foreach (var reference in migration.DependsOn)
+            {
+                names ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 names.Add(reference.Name);
+            }
+        }
 
         return names;
     }
