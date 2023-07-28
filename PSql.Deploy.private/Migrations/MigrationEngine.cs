@@ -8,7 +8,7 @@ namespace PSql.Deploy.Migrations;
 /// <summary>
 ///   An engine that applies a set of migrations to a set of target databases.
 /// </summary>
-public class MigrationEngine
+public class MigrationEngine : IMigrationSession
 {
     /// <summary>
     ///   Initializes a new <see cref="MigrationEngine"/> instance.
@@ -84,20 +84,13 @@ public class MigrationEngine
     /// </summary>
     public IConsole Console { get; }
 
-    /// <summary>
-    ///   Gets the path of a directory in which to save per-database log files.
-    /// </summary>
+    /// <inheritdoc/>
     public string LogPath { get; }
 
-    /// <summary>
-    ///   Gets the token to monitor for cancellation requests.
-    /// </summary>
+    /// <inheritdoc/>
     public CancellationToken CancellationToken { get; }
 
-    /// <summary>
-    ///   Gets whether migration application to one or more target databases
-    ///   failed with an error.
-    /// </summary>
+    /// <inheritdoc/>
     public bool HasErrors => Volatile.Read(ref _errorCount) > 0;
 
     /// <summary>
@@ -246,7 +239,8 @@ public class MigrationEngine
         );
     }
 
-    internal void ReportStarting(string databaseName)
+    /// <inheritdoc/>
+    void IMigrationSession.ReportStarting(string databaseName)
     {
         Console.WriteHost(string.Format(
             @"[+{0:hh\:mm\:ss}] {1} {2}:{3} Starting",
@@ -257,7 +251,8 @@ public class MigrationEngine
         ));
     }
 
-    internal void ReportApplying(
+    /// <inheritdoc/>
+    void IMigrationSession.ReportApplying(
         string         databaseName,
         string         migrationName,
         MigrationPhase phase)
@@ -273,7 +268,8 @@ public class MigrationEngine
         ));
     }
 
-    internal void ReportApplied(
+    /// <inheritdoc/>
+    void IMigrationSession.ReportApplied(
         string                     databaseName,
         int                        count,
         TimeSpan                   elapsed,
@@ -291,7 +287,8 @@ public class MigrationEngine
         ));
     }
 
-    internal void ReportProblem(string message)
+    /// <inheritdoc/>
+    void IMigrationSession.ReportProblem(string message)
     {
         Console.WriteWarning(message);
     }

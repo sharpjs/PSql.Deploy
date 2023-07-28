@@ -10,56 +10,56 @@ using static Environment;
 using static RuntimeInformation;
 
 /// <summary>
-///   Represents a target database.
+///   A workspace for applying schema migrations a target database.
 /// </summary>
 internal class MigrationTarget : IMigrationValidationContext, IDisposable
 {
     /// <summary>
     ///   Initializes a new <see cref="MigrationTarget"/> instance.
     /// </summary>
-    /// <param name="engine">
-    ///   The migration engine instance.
+    /// <param name="session">
+    ///   The migration session.
     /// </param>
     /// <param name="context">
     ///   An object specifying how to connect to the target database.
     /// </param>
     /// <exception cref="ArgumentNullException">
-    ///   <paramref name="engine"/> and/or
+    ///   <paramref name="session"/> and/or
     ///   <paramref name="context"/> is <see langword="null"/>.
     /// </exception>
-    public MigrationTarget(MigrationEngine engine, SqlContext context)
+    public MigrationTarget(IMigrationSession session, SqlContext context)
     {
-        if (engine is null)
-            throw new ArgumentNullException(nameof(engine));
+        if (session is null)
+            throw new ArgumentNullException(nameof(session));
         if (context is null)
             throw new ArgumentNullException(nameof(context));
 
         _stopwatch   = Stopwatch.StartNew();
 
-        Engine       = engine;
+        Session      = session;
 
         Context      = context;
         ServerName   = context.AsAzure?.ServerResourceName ?? context.ServerName ?? "local";
         DatabaseName = context.DatabaseName ?? "default";
 
-        LogFileName  = $"{ServerName}.{DatabaseName}.{engine.Phase}.log".SanitizeFileName();
-        LogWriter    = new StreamWriter(Path.Combine(engine.LogPath, LogFileName));
+        LogFileName  = $"{ServerName}.{DatabaseName}.{session.Phase}.log".SanitizeFileName();
+        LogWriter    = new StreamWriter(Path.Combine(session.LogPath, LogFileName));
         LogConsole   = new TextWriterConsole(LogWriter);
     }
 
     /// <summary>
-    ///   Gets the engine for which this instance works.
+    ///   Gets the migration session.
     /// </summary>
-    public MigrationEngine Engine { get; }
+    public IMigrationSession Session { get; }
 
-    /// <inheritdoc cref="MigrationEngine.MinimumMigrationName"/>
-    public string EarliestDefinedMigrationName => Engine.MinimumMigrationName;
+    /// <inheritdoc cref="IMigrationSession.MinimumMigrationName"/>
+    public string EarliestDefinedMigrationName => Session.MinimumMigrationName;
 
     /// <inheritdoc/>
-    public MigrationPhase Phase => Engine.Phase;
+    public MigrationPhase Phase => Session.Phase;
 
-    /// <inheritdoc cref="MigrationEngine.CancellationToken"/>
-    public CancellationToken CancellationToken => Engine.CancellationToken;
+    /// <inheritdoc cref="IMigrationSession.CancellationToken"/>
+    public CancellationToken CancellationToken => Session.CancellationToken;
 
     /// <summary>
     ///   Gets an object that specifies how to connect to the target database.
@@ -165,7 +165,7 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
     private ImmutableArray<Migration> GetPendingMigrations(IReadOnlyList<Migration> appliedMigrations)
     {
         var pendingMigrations = new MigrationMerger().Merge(
-            definedMigrations: Engine.Migrations.AsSpan(),
+            definedMigrations: Session.Migrations.AsSpan(),
             appliedMigrations
         );
 
@@ -228,7 +228,7 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
         foreach (var (migration, phase) in plan.GetItems(Phase))
         {
             // Stop if a parallel invocation encountered an error
-            if (Engine.HasErrors)
+            if (Session.HasErrors)
             {
                 _disposition = MigrationTargetDisposition.Incomplete;
                 return;
@@ -260,7 +260,7 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
 
     private void ReportStarting()
     {
-        Engine.ReportStarting(DatabaseName);
+        Session.ReportStarting(DatabaseName);
 
         var process = Process.GetCurrentProcess();
 
@@ -425,7 +425,7 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
 
     private void ReportDiagnostic(MigrationDiagnostic diagnostic)
     {
-        Engine.ReportProblem(diagnostic.Message);
+        Session.ReportProblem(diagnostic.Message);
 
         Log(string.Concat(
             diagnostic.IsError ? "Error: " : "Warning: ",
@@ -455,7 +455,7 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
             DatabaseName
         );
 
-        Engine.ReportProblem(message);
+        Session.ReportProblem(message);
 
         Log("");
         Log("Error: " + message);
@@ -470,7 +470,7 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
 
     private void ReportApplying(Migration migration, MigrationPhase phase)
     {
-        Engine.ReportApplying(DatabaseName, migration.Name, phase);
+        Session.ReportApplying(DatabaseName, migration.Name, phase);
 
         Log(string.Concat("[", migration.Name, " ", phase.ToString(), "]"));
 
@@ -479,7 +479,7 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
 
     private void ReportException(Exception exception)
     {
-        Engine.ReportProblem(exception.Message);
+        Session.ReportProblem(exception.Message);
 
         Log(exception.ToString());
     }
@@ -488,7 +488,7 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
     {
         var elapsed = _stopwatch.Elapsed;
 
-        Engine.ReportApplied(DatabaseName, _appliedCount, elapsed, _disposition);
+        Session.ReportApplied(DatabaseName, _appliedCount, elapsed, _disposition);
 
         // Footer
         Log("");
