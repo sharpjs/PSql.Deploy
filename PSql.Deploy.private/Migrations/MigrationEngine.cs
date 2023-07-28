@@ -6,7 +6,7 @@ using System.Diagnostics;
 namespace PSql.Deploy.Migrations;
 
 /// <inheritdoc cref="IMigrationEngine"/>
-public class MigrationEngine : IMigrationSession, IMigrationEngine
+internal class MigrationEngine : IMigrationSession, IMigrationEngine
 {
     /// <summary>
     ///   Initializes a new <see cref="MigrationEngine"/> instance.

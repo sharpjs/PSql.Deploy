@@ -102,7 +102,7 @@ public class InvokeSqlMigrationsCommand : Cmdlet, IAsyncCmdlet
     private async Task ProcessAsync(IAsyncCmdletContext context)
     {
         var path   = SessionState.Path.CurrentFileSystemLocation.ProviderPath;
-        var engine = new MigrationEngine(console: this, path, context.CancellationToken);
+        var engine = MigrationEngineFactory.Create(console: this, path, context.CancellationToken);
 
         engine.DiscoverMigrations(Path!, MaximumMigrationName);
         engine.SpecifyTargets(_targets);
