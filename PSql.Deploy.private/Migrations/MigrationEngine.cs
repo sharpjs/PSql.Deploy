@@ -5,10 +5,8 @@ using System.Diagnostics;
 
 namespace PSql.Deploy.Migrations;
 
-/// <summary>
-///   An engine that applies a set of migrations to a set of target databases.
-/// </summary>
-public class MigrationEngine : IMigrationSession
+/// <inheritdoc cref="IMigrationEngine"/>
+public class MigrationEngine : IMigrationSession, IMigrationEngine
 {
     /// <summary>
     ///   Initializes a new <see cref="MigrationEngine"/> instance.
@@ -93,17 +91,10 @@ public class MigrationEngine : IMigrationSession
     /// <inheritdoc/>
     public bool HasErrors => Volatile.Read(ref _errorCount) > 0;
 
-    /// <summary>
-    ///   Gets or sets whether the engine allows a non-skippable <c>Core</c>
-    ///   phase to exist.  The default is <see langword="false"/>.
-    /// </summary>
+    /// <inheritdoc/>
     public bool AllowCorePhase { get; set; }
 
-    /// <summary>
-    ///   Gets or sets whether the engine operates in what-if mode.  In this
-    ///   mode, the engine reports what actions it would perform against target
-    ///   databases but does not perform the actions.
-    /// </summary>
+    /// <inheritdoc/>
     public bool IsWhatIfMode { get; set; }
 
     // Time elapsed since construction
@@ -115,31 +106,14 @@ public class MigrationEngine : IMigrationSession
     // For report tabulation
     private int _databaseNameColumnWidth;
 
-    /// <summary>
-    ///   Discovers defined migrations in the specified directory path.
-    /// </summary>
-    /// <param name="path">
-    ///   The path of a directory in which to discover migrations.
-    /// </param>
-    /// <param name="maxName">
-    ///   The maximum (latest) name of migrations to discover, or
-    ///   <see langword="null"/> to discover all migrations.
-    /// </param>
+    /// <inheritdoc/>
     public void DiscoverMigrations(string path, string? maxName = null)
     {
         Migrations           = MigrationRepository.GetAll(path, maxName);
         MinimumMigrationName = Migrations.FirstOrDefault(m => !m.IsPseudo)?.Name ?? "";
     }
 
-    /// <summary>
-    ///   Specifies the target databases.
-    /// </summary>
-    /// <param name="contextSets">
-    ///   The context sets specifying the target databases.
-    /// </param>
-    /// <exception cref="ArgumentNullException">
-    ///   <paramref name="contextSets"/> is <see langword="null"/>.
-    /// </exception>
+    /// <inheritdoc/>
     public void SpecifyTargets(IEnumerable<SqlContextParallelSet> contextSets)
     {
         if (contextSets is null)
@@ -149,16 +123,7 @@ public class MigrationEngine : IMigrationSession
         _databaseNameColumnWidth = ComputeDatabaseNameColumnWidth(Targets);
     }
 
-    /// <summary>
-    ///   Applies any outstanding migrations for the specified phase to target
-    ///   databases asynchronously.
-    /// </summary>
-    /// <param name="phase">
-    ///   The phase in which migrations are being applied.
-    /// </param>
-    /// <returns>
-    ///   A <see cref="Task"/> representing the asynchronous operation.
-    /// </returns>
+    /// <inheritdoc/>
     public async Task ApplyAsync(MigrationPhase phase)
     {
         Phase = phase;
