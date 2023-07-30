@@ -28,11 +28,6 @@ internal interface IMigrationSession
     MigrationPhase Phase { get; }
 
     /// <summary>
-    ///   Gets the path of a directory in which to save per-database log files.
-    /// </summary>
-    string LogPath { get; }
-
-    /// <summary>
     ///   Gets whether migration application to one or more target databases
     ///   failed with an error.
     /// </summary>
@@ -42,6 +37,17 @@ internal interface IMigrationSession
     ///   Gets the token to monitor for cancellation requests.
     /// </summary>
     CancellationToken CancellationToken { get; }
+
+    /// <summary>
+    ///   Creates a log file.
+    /// </summary>
+    /// <param name="fileName">
+    ///   The name of the log file.
+    /// </param>
+    /// <returns>
+    ///   A writer that writes to the log file.
+    /// </returns>
+    TextWriter CreateLog(string fileName);
 
     /// <summary>
     ///   Reports the start of migration application to the specified target

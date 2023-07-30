@@ -82,7 +82,9 @@ internal class MigrationEngine : IMigrationSession, IMigrationEngine
     /// </summary>
     public IConsole Console { get; }
 
-    /// <inheritdoc/>
+    /// <summary>
+    ///   Gets the path of a directory in which to save per-database log files.
+    /// </summary>
     public string LogPath { get; }
 
     /// <inheritdoc/>
@@ -203,6 +205,10 @@ internal class MigrationEngine : IMigrationSession, IMigrationEngine
             contextSets.Max(s => s.Contexts.Max(c => c.DatabaseName?.Length ?? DefaultLength))
         );
     }
+
+    /// <inheritdoc/>
+    TextWriter IMigrationSession.CreateLog(string fileName)
+        => new StreamWriter(Path.Combine(LogPath, fileName));
 
     /// <inheritdoc/>
     void IMigrationSession.ReportStarting(string databaseName)

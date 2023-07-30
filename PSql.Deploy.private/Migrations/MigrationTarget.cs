@@ -42,8 +42,8 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
         ServerName   = context.AsAzure?.ServerResourceName ?? context.ServerName ?? "local";
         DatabaseName = context.DatabaseName ?? "default";
 
-        LogFileName  = $"{ServerName}.{DatabaseName}.{session.Phase}.log".SanitizeFileName();
-        LogWriter    = new StreamWriter(Path.Combine(session.LogPath, LogFileName));
+        var fileName = $"{ServerName}.{DatabaseName}.{session.Phase}.log".SanitizeFileName();
+        LogWriter    = session.CreateLog(fileName);
         LogConsole   = new TextWriterConsole(LogWriter);
     }
 
@@ -73,18 +73,13 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
     public string DatabaseName { get; }
 
     /// <summary>
-    ///   Gets the name of the per-database log file.
-    /// </summary>
-    public string LogFileName { get; }
-
-    /// <summary>
-    ///   Gets a writer that writes to the per-database log file.
+    ///   Gets a writer that writes to the per-database log.
     /// </summary>
     public TextWriter LogWriter { get; }
 
     /// <summary>
     ///   Gets an <see cref="IConsole"/> implementation that writes to the
-    ///   per-database log file.
+    ///   per-database log.
     /// </summary>
     public IConsole LogConsole { get; }
 
