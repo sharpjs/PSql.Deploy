@@ -39,7 +39,10 @@ internal class SeedModuleParser
     /// <exception cref="ArgumentNullException">
     ///   <paramref name="queue"/> is <see langword="null"/>.
     /// </exception>
-    public SeedModuleParser(Queue queue)
+    public SeedModuleParser(object queue)
+        : this((Queue) queue) { }
+
+    private SeedModuleParser(Queue queue)
     {
         if (queue is null)
             throw new ArgumentNullException(nameof(queue));

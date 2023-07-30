@@ -1,30 +1,15 @@
-/*
-    Copyright 2023 Subatomix Research Inc.
-
-    Permission to use, copy, modify, and distribute this software for any
-    purpose with or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-    MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-
-using DependencyQueue;
+// Copyright 2023 Subatomix Research Inc.
+// SPDX-License-Identifier: ISC
 
 namespace PSql.Deploy.Seeding;
-
-using Queue  = DependencyQueue      <IEnumerable<string>>;
-using Module = DependencyQueueEntry <IEnumerable<string>>;
 
 [TestFixture]
 [TestFixtureSource(typeof(NewLineMode), nameof(NewLineMode.All))]
 public class SeedModuleParserTests
 {
+    // DIFFICULTY: Cannot know about any private dependency types here, such as
+    // DependencyQueue.  Handle such objects abstractly through helpers.
+
     private readonly string _newLine;
 
     public SeedModuleParserTests(NewLineMode mode)
@@ -43,7 +28,7 @@ public class SeedModuleParserTests
     [Test]
     public void Complete_WithoutProcess()
     {
-        var queue  = new Queue();
+        var queue  = SeedQueue.Create();
         var parser = new SeedModuleParser(queue);
 
         parser.Complete();
@@ -54,7 +39,7 @@ public class SeedModuleParserTests
     [Test]
     public void Complete_Completed()
     {
-        var queue  = new Queue();
+        var queue  = SeedQueue.Create();
         var parser = new SeedModuleParser(queue);
 
         parser.Complete();
@@ -67,7 +52,7 @@ public class SeedModuleParserTests
     [Test]
     public void Process_Completed()
     {
-        var queue  = new Queue();
+        var queue  = SeedQueue.Create();
         var parser = new SeedModuleParser(queue);
 
         parser.Complete();
@@ -80,7 +65,7 @@ public class SeedModuleParserTests
     [Test]
     public void Process_NullText()
     {
-        var queue  = new Queue();
+        var queue  = SeedQueue.Create();
         var parser = new SeedModuleParser(queue);
 
         parser
@@ -92,7 +77,7 @@ public class SeedModuleParserTests
     [Test]
     public void Process_EmptyText()
     {
-        var queue  = new Queue();
+        var queue  = SeedQueue.Create();
         var parser = new SeedModuleParser(queue);
 
         parser.Process("");
@@ -105,7 +90,7 @@ public class SeedModuleParserTests
     [Test]
     public void Process_Init()
     {
-        var queue  = new Queue();
+        var queue  = SeedQueue.Create();
         var parser = new SeedModuleParser(queue);
 
         parser.Process("a");
@@ -118,7 +103,7 @@ public class SeedModuleParserTests
     [Test]
     public void Process_String()
     {
-        var queue  = new Queue();
+        var queue  = SeedQueue.Create();
         var parser = new SeedModuleParser(queue);
 
         var script = Lines(
@@ -137,7 +122,7 @@ public class SeedModuleParserTests
     [Test]
     public void Process_QuotedIdentifier()
     {
-        var queue  = new Queue();
+        var queue  = SeedQueue.Create();
         var parser = new SeedModuleParser(queue);
 
         var script = Lines(
@@ -156,7 +141,7 @@ public class SeedModuleParserTests
     [Test]
     public void Process_BlockComment()
     {
-        var queue  = new Queue();
+        var queue  = SeedQueue.Create();
         var parser = new SeedModuleParser(queue);
 
         var script = Lines(
@@ -175,7 +160,7 @@ public class SeedModuleParserTests
     [Test]
     public void Process_LineComment()
     {
-        var queue  = new Queue();
+        var queue  = SeedQueue.Create();
         var parser = new SeedModuleParser(queue);
 
         var script = " --# MODULE: Not a module! This is a deceptive line comment.";
@@ -189,7 +174,7 @@ public class SeedModuleParserTests
     [Test]
     public void Process_Module()
     {
-        var queue  = new Queue();
+        var queue  = SeedQueue.Create();
         var parser = new SeedModuleParser(queue);
 
         parser.Process(Lines(
@@ -215,7 +200,7 @@ public class SeedModuleParserTests
     [Test]
     public void Process_Module_NoName()
     {
-        var queue  = new Queue();
+        var queue  = SeedQueue.Create();
         var parser = new SeedModuleParser(queue);
 
         parser
@@ -226,7 +211,7 @@ public class SeedModuleParserTests
     [Test]
     public void Process_Module_MultipleNames()
     {
-        var queue  = new Queue();
+        var queue  = SeedQueue.Create();
         var parser = new SeedModuleParser(queue);
 
         parser
@@ -237,7 +222,7 @@ public class SeedModuleParserTests
     [Test]
     public void Process_ProvidesAndRequires()
     {
-        var queue  = new Queue();
+        var queue  = SeedQueue.Create();
         var parser = new SeedModuleParser(queue);
 
         parser.Process(Lines(
@@ -268,9 +253,11 @@ public class SeedModuleParserTests
     private static (string, string[]) Module(string name, params string[] batches)
         => (name, batches);
 
-    private static void Assert(Queue queue, params (string, string[])[] expected)
+    private static void Assert(object queue, params (string, string[])[] expected)
     {
-        var actual = Enumerate(queue).ToList();
+        SeedQueue.Validate(queue).Should().BeEmpty();
+
+        var actual = SeedQueue.Enumerate(queue).ToList();
 
         actual.Should().HaveCount(expected.Length);
 
@@ -279,21 +266,6 @@ public class SeedModuleParserTests
             var (name, batches) = expected[i];
             actual[i].Name .Should().Be   (name);
             actual[i].Value.Should().Equal(batches);
-        }
-    }
-
-    private static IEnumerable<Module> Enumerate(Queue queue)
-    {
-        queue.Validate().Should().BeEmpty();
-
-        for (;;)
-        {
-            var module = queue.TryDequeue();
-            if (module is null)
-                yield break;
-
-            yield return module;
-            queue.Complete(module);
         }
     }
 }
