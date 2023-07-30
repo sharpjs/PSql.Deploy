@@ -123,7 +123,7 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
         {
             ReportStarting();
 
-            var appliedMigrations = await GetAppliedMigrations();
+            var appliedMigrations = await GetAppliedMigrationsAsync();
             var pendingMigrations = GetPendingMigrations(appliedMigrations);
             var plan              = ComputeMigrationPlan(pendingMigrations);
 
@@ -149,7 +149,7 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
         }
     }
 
-    private Task<IReadOnlyList<Migration>> GetAppliedMigrations()
+    private Task<IReadOnlyList<Migration>> GetAppliedMigrationsAsync()
     {
         return MigrationRepository.GetAllAsync(
             Context,    EarliestDefinedMigrationName,
