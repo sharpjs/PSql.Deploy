@@ -151,10 +151,7 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
 
     private Task<IReadOnlyList<Migration>> GetAppliedMigrationsAsync()
     {
-        return MigrationRepository.GetAllAsync(
-            Context,    EarliestDefinedMigrationName,
-            LogConsole, CancellationToken
-        );
+        return Session.GetAppliedMigrationsAsync(Context, LogConsole);
     }
 
     private ImmutableArray<Migration> GetPendingMigrations(IReadOnlyList<Migration> appliedMigrations)

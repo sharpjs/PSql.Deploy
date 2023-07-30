@@ -107,4 +107,25 @@ internal interface IMigrationSession
     ///   A message that describes the problem.
     /// </param>
     void ReportProblem(string message);
+
+    /// <summary>
+    ///   Gets migrations applied to the specified target database
+    ///   asynchronously.
+    /// </summary>
+    /// <param name="context">
+    ///   An object specifying how to connect to the target database.
+    /// </param>
+    /// <param name="console">
+    ///   The console on which to output messages from the target database
+    ///   server.
+    /// </param>
+    /// <returns>
+    ///   A <see cref="Task"/> representing the asynchronous operation.  When
+    ///   the task completes, its <see cref="Task{TResult}.Result">Result</see>
+    ///   property contains the migrations registered in the database specified
+    ///   by <paramref name="context"/>.
+    /// </returns>
+    Task<IReadOnlyList<Migration>> GetAppliedMigrationsAsync(
+        SqlContext context,
+        IConsole   console);
 }

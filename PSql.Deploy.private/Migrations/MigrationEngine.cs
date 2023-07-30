@@ -206,6 +206,15 @@ internal class MigrationEngine : IMigrationSession, IMigrationEngine
         );
     }
 
+    Task<IReadOnlyList<Migration>> IMigrationSession
+        .GetAppliedMigrationsAsync(SqlContext context, IConsole console)
+    {
+        return MigrationRepository.GetAllAsync(
+            context, MinimumMigrationName,
+            console, CancellationToken
+        );
+    }
+
     /// <inheritdoc/>
     TextWriter IMigrationSession.CreateLog(string fileName)
         => new StreamWriter(Path.Combine(LogPath, fileName));

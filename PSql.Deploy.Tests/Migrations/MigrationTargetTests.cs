@@ -7,7 +7,6 @@ namespace PSql.Deploy.Migrations;
 public class MigrationTargetTests : TestHarnessBase
 {
     private readonly MigrationTarget         _target;
-
     private readonly Mock<IMigrationSession> _session;
     private readonly SqlContext              _context;
     private readonly StringWriter            _log;
@@ -123,5 +122,32 @@ public class MigrationTargetTests : TestHarnessBase
     public void IsWhatIfMode_Get()
     {
         _target.IsWhatIfMode.Should().BeFalse();
+    }
+
+    [Test]
+    public async Task ApplyAsync_NoPendingMigrations()
+    {
+        _session
+            .Setup(s => s.ReportStarting("test"))
+            .Verifiable();
+
+        _session
+            .Setup(s => s.Migrations)
+            .Returns(ImmutableArray<Migration>.Empty)
+            .Verifiable();
+
+        _session
+            .Setup(s => s.GetAppliedMigrationsAsync(_target.Context, _target.LogConsole))
+            .ReturnsAsync(new Migration[0])
+            .Verifiable();
+
+        _session
+            .Setup(s => s.ReportApplied(
+                "test", 0, It.Is<TimeSpan>(t => t >= TimeSpan.Zero),
+                MigrationTargetDisposition.Successful
+            ))
+            .Verifiable();
+
+        await _target.ApplyAsync();
     }
 }
