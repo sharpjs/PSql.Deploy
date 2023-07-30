@@ -76,6 +76,7 @@ jobs:
         run: >
           dotnet build --no-restore -c Release
           -p:TreatWarningsAsErrors=true
+          -p:GeneratePackageOnBuild=true
           -p:PackageOutputPath=${{ runner.temp }}/dist
 
       - name: Test
@@ -111,7 +112,7 @@ jobs:
         uses: actions/upload-artifact@v3
         #url: https://github.com/actions/upload-artifact
         with:
-          name: Packages
+          name: Module
           path: ${{ runner.temp }}/dist
           if-no-files-found: error
 
