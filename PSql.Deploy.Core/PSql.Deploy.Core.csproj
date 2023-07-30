@@ -10,6 +10,7 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <RootNamespace>PSql.Deploy</RootNamespace>
     <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
