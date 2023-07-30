@@ -58,6 +58,20 @@ jobs:
           -p:Counter=${{ github.run_number }}
           -p:RepositoryCommit=${{ github.sha }}
 
+      - name: Publish Version
+        run: |
+          Add-Content $env:GITHUB_STEP_SUMMARY @"
+          |            |                                   |
+          |:-----------|:----------------------------------|
+          | Version    | ``$env:VERSION``                  |
+          | Branch/Tag | ``$env:GITHUB_REF`` $env:HEAD_REF |
+          | Commit     | ``$env:GITHUB_SHA`` $env:HEAD_SHA |
+          "@
+        env:
+          VERSION:  ${{ steps.stamp.outputs.version }}
+          HEAD_REF: ${{ github.event.pull_request && format('(head = `{0}`)', github.event.pull_request.head.ref) }}
+          HEAD_SHA: ${{ github.event.pull_request && format('(head = `{0}`)', github.event.pull_request.head.sha) }}
+
       - name: Restore PowerShell Modules
         shell: pwsh
         run: |
@@ -94,11 +108,11 @@ jobs:
           reporttypes: Html;MarkdownSummaryGithub;Badges
           verbosity: Warning
 
-      #- name: Publish Coverage Summary
-      #  run: >
-      #    cat "$env:REPORT_PATH" >> "$env:GITHUB_STEP_SUMMARY"
-      #  env:
-      #    REPORT_PATH: ${{ runner.temp }}/coverage/SummaryGithub.md
+      - name: Publish Coverage Summary
+        run: >
+          { echo '## Coverage'; sed '/^#/d' "$env:REPORT_PATH"; } >> "$env:GITHUB_STEP_SUMMARY"
+        env:
+          REPORT_PATH: ${{ runner.temp }}/coverage/SummaryGithub.md
 
       - name: Save Coverage Report
         uses: actions/upload-artifact@v3
