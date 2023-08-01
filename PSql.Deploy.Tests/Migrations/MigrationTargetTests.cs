@@ -211,4 +211,56 @@ public class MigrationTargetTests : TestHarnessBase
             "Applied 0 migration(s)"
         );
     }
+
+    [Test]
+    public async Task ApplyAsync_EmptyPlan()
+    {
+        var aDefined = new Migration("a")
+        {
+            Path = "/test/a",
+            Hash = "abc123",
+        };
+
+        var aApplied = new Migration("a")
+        {
+            State = MigrationState.AppliedCore,
+            Hash  = "abc123",
+        };
+
+        _session
+            .Setup(s => s.ReportStarting("test"))
+            .Verifiable();
+
+        _session
+            .Setup(s => s.Migrations)
+            .Returns(ImmutableArray.Create(aDefined))
+            .Verifiable();
+
+        _session
+            .Setup(s => s.GetAppliedMigrationsAsync(_target.Context, _target.LogConsole))
+            .ReturnsAsync(new[] { aApplied })
+            .Verifiable();
+
+        _internals
+            .Setup(i => i.LoadContent(aDefined))
+            .Callback(() => { aDefined.IsContentLoaded = true; })
+            .Verifiable();
+
+        _session
+            .Setup(s => s.ReportApplied(
+                "test", 0, It.Is<TimeSpan>(t => t >= TimeSpan.Zero),
+                MigrationTargetDisposition.Successful
+            ))
+            .Verifiable();
+
+        await _target.ApplyAsync();
+
+        _log.ToString().Should().ContainAll(
+            "PSql.Deploy Migration Log",
+            "Migration Phase:    Pre",
+            "Pending Migrations: 1",
+            "Nothing to do for the current phase.",
+            "Applied 0 migration(s)"
+        );
+    }
 }
