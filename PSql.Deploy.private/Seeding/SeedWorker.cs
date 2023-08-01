@@ -22,8 +22,8 @@ internal class SeedWorker
 
     internal void WorkerMain(QueueContext context)
     {
-        var name = GetHeader(context);
-        using var host = _hostFactory.Create(name);
+        using var host = _hostFactory.Create(GetHeader(context));
+
         try
         {
             host.UI.WriteLine("Starting");
