@@ -329,4 +329,113 @@ public class MigrationTargetTests : TestHarnessBase
             "Applied 0 migration(s)"
         );
     }
+
+    [Test]
+    public async Task ApplyAsync_CoreAllowed()
+    {
+        using var cancellation = new CancellationTokenSource();
+
+        var a = new Migration("a")
+        {
+            Path = "/test/a",
+            Pre  = { IsRequired = true, Sql = "pre-sql"  },
+            Core = { IsRequired = true, Sql = "core-sql" },
+            IsContentLoaded = true,
+        };
+
+        _target.AllowCorePhase = true;
+
+        _session
+            .Setup(s => s.CancellationToken)
+            .Returns(cancellation.Token);
+
+        _session
+            .Setup(s => s.HasErrors)
+            .Returns(false);
+
+        _session
+            .Setup(s => s.ReportStarting("test"))
+            .Verifiable();
+
+        _session
+            .Setup(s => s.Migrations)
+            .Returns(ImmutableArray.Create(a))
+            .Verifiable();
+
+        _session
+            .Setup(s => s.GetAppliedMigrationsAsync(_target.Context, _target.LogConsole))
+            .ReturnsAsync(new Migration[0])
+            .Verifiable();
+
+        _internals
+            .Setup(i => i.LoadContent(a))
+            .Verifiable();
+
+        _session
+            .Setup(s => s.ReportApplying("test", "a", MigrationPhase.Pre))
+            .Verifiable();
+
+        var connection = Mocks.Create<ISqlConnection>();
+        var command    = Mocks.Create<ISqlCommand>();
+        var command2   = Mocks.Create<DbCommand>();
+
+        _internals
+            .Setup(i => i.Connect(_context, _target.LogConsole))
+            .Returns(connection.Object)
+            .Verifiable();
+
+        connection
+            .Setup(c => c.CreateCommand())
+            .Returns(command.Object)
+            .Verifiable();
+
+        command
+            .SetupSet(c => c.CommandTimeout = 0)
+            .Verifiable();
+
+        connection
+            .Setup(c => c.ClearErrors());
+
+        command
+            .SetupSet(c => c.CommandText = It.IsRegex("pre-sql"))
+            .Verifiable();
+
+        command
+            .Setup(c => c.UnderlyingCommand)
+            .Returns(command2.Object);
+
+        command2
+            .Setup(c => c.ExecuteNonQueryAsync(_target.CancellationToken))
+            .ReturnsAsync(0)
+            .Verifiable();
+
+        connection
+            .Setup(c => c.ThrowIfHasErrors())
+            .Verifiable();
+
+        command
+            .Setup(c => c.Dispose())
+            .Verifiable();
+
+        connection
+            .Setup(c => c.Dispose())
+            .Verifiable();
+
+        _session
+            .Setup(s => s.ReportApplied(
+                "test", 1, It.Is<TimeSpan>(t => t >= TimeSpan.Zero),
+                MigrationTargetDisposition.Successful
+            ))
+            .Verifiable();
+
+        await _target.ApplyAsync();
+
+        _log.ToString().Should().ContainAll(
+            "PSql.Deploy Migration Log",
+            "Migration Phase:    Pre",
+            "Pending Migrations: 1",
+            "All pending migrations are valid for the current phase.",
+            "Applied 1 migration(s)"
+        );
+    }
 }
