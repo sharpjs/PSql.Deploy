@@ -16,10 +16,6 @@ internal readonly ref struct MigrationMerger
     /// <summary>
     ///   Initializes a new <see cref="MigrationMerger"/> instance.
     /// </summary>
-    public MigrationMerger()
-        : this(MigrationInternals.Instance) { }
-
-    // For testing
     internal MigrationMerger(IMigrationInternals internals)
     {
         Internals = internals;

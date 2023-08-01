@@ -18,4 +18,6 @@ internal interface IMigrationInternals
     ///   The migration for which to load SQL content.
     /// </param>
     void LoadContent(Migration migration);
+
+    ISqlConnection Connect(SqlContext context, IConsole logConsole);
 }

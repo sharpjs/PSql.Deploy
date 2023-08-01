@@ -16,7 +16,7 @@ public class MigrationMergerTests : TestHarnessBase
     [Test]
     public void Invoker()
     {
-        new MigrationMerger().Internals.Should().BeSameAs(MigrationInternals.Instance);
+        new MigrationMerger(_internals.Object).Internals.Should().BeSameAs(_internals.Object);
     }
 
     [Test]

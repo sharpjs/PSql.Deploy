@@ -61,6 +61,8 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
     /// <inheritdoc cref="IMigrationSession.CancellationToken"/>
     public CancellationToken CancellationToken => Session.CancellationToken;
 
+    internal IMigrationInternals Internals { get; set; } = MigrationInternals.Instance;
+
     /// <summary>
     ///   Gets an object that specifies how to connect to the target database.
     /// </summary>
@@ -156,7 +158,7 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
 
     private ImmutableArray<Migration> GetPendingMigrations(IReadOnlyList<Migration> appliedMigrations)
     {
-        var pendingMigrations = new MigrationMerger().Merge(
+        var pendingMigrations = new MigrationMerger(Internals).Merge(
             definedMigrations: Session.Migrations.AsSpan(),
             appliedMigrations
         );
@@ -212,7 +214,7 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
         if (IsWhatIfMode)
             return;
 
-        using var connection = Context.Connect(databaseName: null, LogConsole);
+        using var connection = Internals.Connect(Context, LogConsole);
         using var command    = connection.CreateCommand();
 
         command.CommandTimeout = 0; // No timeout

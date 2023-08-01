@@ -6,30 +6,36 @@ namespace PSql.Deploy.Migrations;
 [TestFixture]
 public class MigrationTargetTests : TestHarnessBase
 {
-    private readonly MigrationTarget         _target;
-    private readonly Mock<IMigrationSession> _session;
-    private readonly SqlContext              _context;
-    private readonly StringWriter            _log;
+    private readonly MigrationTarget           _target;
+    private readonly Mock<IMigrationSession>   _session;
+    private readonly Mock<IMigrationInternals> _internals;
+    private readonly SqlContext                _context;
+    private readonly StringWriter              _log;
 
     public MigrationTargetTests()
     {
-        _session = Mocks.Create<IMigrationSession>();
         _context = new()
         {
             ServerName   = "db.example.com",
             DatabaseName = "test",
         };
 
+        _log = new StringWriter();
+
+        _session = Mocks.Create<IMigrationSession>();
         _session
             .Setup(s => s.Phase)
             .Returns(MigrationPhase.Pre);
-
-        _log = new StringWriter();
         _session
             .Setup(s => s.CreateLog("db.example.com.test.Pre.log"))
             .Returns(_log);
 
-        _target = new MigrationTarget(_session.Object, _context);
+        _internals = Mocks.Create<IMigrationInternals>();
+
+        _target = new MigrationTarget(_session.Object, _context)
+        {
+            Internals = _internals.Object
+        };
     }
 
     [Test]
@@ -149,5 +155,60 @@ public class MigrationTargetTests : TestHarnessBase
             .Verifiable();
 
         await _target.ApplyAsync();
+
+        _log.ToString().Should().Contain("Nothing to do.");
+    }
+
+    [Test]
+    public async Task ApplyAsync_Invalid()
+    {
+        var a = new Migration("a")
+        {
+            Path      = "/test/a",
+            DependsOn = ImmutableArray.Create(new MigrationReference("a"))
+        };
+
+        _session
+            .Setup(s => s.ReportStarting("test"))
+            .Verifiable();
+
+        _session
+            .Setup(s => s.Migrations)
+            .Returns(ImmutableArray.Create(a))
+            .Verifiable();
+
+        _session
+            .Setup(s => s.GetAppliedMigrationsAsync(_target.Context, _target.LogConsole))
+            .ReturnsAsync(new Migration[0])
+            .Verifiable();
+
+        _internals
+            .Setup(i => i.LoadContent(a))
+            .Callback(() => { a.IsContentLoaded = true; })
+            .Verifiable();
+
+        _session
+            .Setup(s => s.ReportProblem(
+                "Migration 'a' declares a dependency on itself. " +
+                "The dependency cannot be satisfied."
+            ))
+            .Verifiable();
+
+        _session
+            .Setup(s => s.ReportApplied(
+                "test", 0, It.Is<TimeSpan>(t => t >= TimeSpan.Zero),
+                MigrationTargetDisposition.Successful // TODO: really?
+            ))
+            .Verifiable();
+
+        await _target.ApplyAsync();
+
+        _log.ToString().Should().ContainAll(
+            "PSql.Deploy Migration Log",
+            "Migration Phase:    Pre",
+            "Pending Migrations: 1",
+            "Error: Migration 'a' declares a dependency on itself. The dependency cannot be satisfied.",
+            "Applied 0 migration(s)"
+        );
     }
 }
