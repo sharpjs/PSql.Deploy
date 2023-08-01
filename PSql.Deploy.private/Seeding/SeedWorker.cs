@@ -23,7 +23,7 @@ internal class SeedWorker
     internal void WorkerMain(QueueContext context)
     {
         var name = GetHeader(context);
-        var host = _hostFactory.Create(name);
+        using var host = _hostFactory.Create(name);
         try
         {
             host.UI.WriteLine("Starting");
