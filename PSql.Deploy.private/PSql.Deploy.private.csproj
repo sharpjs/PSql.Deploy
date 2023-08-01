@@ -44,7 +44,7 @@
     <PackageReference Include="DependencyQueue" Version="1.0.0-rc.1"
                       PrivateAssets="all" />
 
-    <PackageReference Include="Subatomix.PowerShell.TaskHost" Version="1.1.0-rc.2"
+    <PackageReference Include="Subatomix.PowerShell.TaskHost" Version="1.1.0-rc.3"
                       PrivateAssets="all" />
   </ItemGroup>
 
