@@ -77,7 +77,7 @@ internal sealed class AsyncCmdletScope : IAsyncCmdletContext, IDisposable
             }
             finally
             {
-                _dispatcher.End();
+                _dispatcher.Complete();
             }
         }
 

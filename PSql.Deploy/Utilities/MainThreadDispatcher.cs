@@ -6,7 +6,7 @@ using System.Collections.Concurrent;
 namespace PSql.Deploy;
 
 /// <summary>
-///   A dispatcher that executes dispatched actions on a main thread.
+///   A dispatcher that executes dispatched actions on the main thread.
 /// </summary>
 internal sealed class MainThreadDispatcher : IDispatcher, IDisposable
 {
@@ -14,9 +14,12 @@ internal sealed class MainThreadDispatcher : IDispatcher, IDisposable
     private readonly int                        _mainThreadId;
 
     /// <summary>
-    ///   Initializes a new <see cref="MainThreadDispatcher"/> instance,
-    ///   nominating the current thread as the main thread.
+    ///   Initializes a new <see cref="MainThreadDispatcher"/> instance with
+    ///   the current thread as the main thread.
     /// </summary>
+    /// <remarks>
+    ///   This method is thread-safe.
+    /// </remarks>
     public MainThreadDispatcher()
     {
         _queue        = new();
@@ -26,40 +29,31 @@ internal sealed class MainThreadDispatcher : IDispatcher, IDisposable
     private static int CurrentThreadId => Thread.CurrentThread.ManagedThreadId;
 
     /// <summary>
-    ///   Executes dispatched actions until <see cref="End"/> is invoked.
-    /// </summary>
-    /// <remarks>
-    ///   This method must be invoked from the main thread (the thread that
-    ///   constructed the dispatcher instance).
-    /// </remarks>
-    /// <exception cref="IOException">
-    ///   This method was invoked from a thread other than the thread that
-    ///   constructed the dispatcher instance.
-    /// </exception>
-    public void Run()
-    {
-        if (CurrentThreadId != _mainThreadId)
-            throw OnInvokedFromOtherThread();
-
-        while (_queue.TryTake(out var action, -1 /* indefinitely */))
-            action();
-    }
-
-    /// <summary>
-    ///   Dispatches the specified action to execute on the main thread.
+    ///   Dispatches the specified action to the main thread.
     /// </summary>
     /// <param name="action">
     ///   The action to dispatch.
     /// </param>
     /// <remarks>
     ///   If invoked from the main thread (the thread that constructed the
-    ///   dispatcher), this method executes the <paramref name="action"/>
-    ///   immediately and synchronously.  Otherwise, this method queues the
-    ///   action for deferred execution by the <see cref="Run"/> loop on the
-    ///   main thread.
+    ///   <see cref="MainThreadDispatcher"/> instance), this method executes
+    ///   the <paramref name="action"/> immediately and synchronously.
+    ///   Otherwise, this method queues the <paramref name="action"/> for
+    ///   execution on the main thread by <see cref="Run"/> and returns
+    ///   <b>without waiting</b> for the action to complete.
     /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    ///   The <see cref="MainThreadDispatcher"/> is in the completed state.
+    ///   No further actions may be dispatched.
+    /// </exception>
+    /// <exception cref="ObjectDisposedException">
+    ///   The <see cref="MainThreadDispatcher"/> has been disposed.
+    /// </exception>
     public void Post(Action action)
     {
+        if (action is null)
+            throw new ArgumentNullException(nameof(action));
+
         if (CurrentThreadId == _mainThreadId)
             action();
         else
@@ -67,11 +61,42 @@ internal sealed class MainThreadDispatcher : IDispatcher, IDisposable
     }
 
     /// <summary>
-    ///   Indicates that there are no further actions to dispatch.  The
-    ///   <see cref="Run"/> loop will return after executing any remaining
-    ///   deferred actions.
+    ///   Invokes on the main thread any actions dispatched by
+    ///   <see cref="Post"/>, until <see cref="Complete"/> is called.
     /// </summary>
-    public void End()
+    /// <remarks>
+    ///   This method must be invoked on the main thread (the thread that
+    ///   constructed the <see cref="MainThreadDispatcher"/> instance).
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    ///   This method was invoked on a thread other than the thread that
+    ///   constructed the <see cref="MainThreadDispatcher"/> instance.
+    /// </exception>
+    /// <exception cref="ObjectDisposedException">
+    ///   The <see cref="MainThreadDispatcher"/> has been disposed.
+    /// </exception>
+    public void Run()
+    {
+        if (CurrentThreadId != _mainThreadId)
+            throw OnInvokedFromNonMainThread();
+
+        while (_queue.TryTake(out var action, Timeout.Infinite))
+            action();
+    }
+
+    /// <summary>
+    ///   Transitions the <see cref="MainThreadDispatcher"/> to the completed
+    ///   state.
+    /// </summary>
+    /// <remarks>
+    ///   In the completed state, <see cref="Post"/> does not accept any
+    ///   further actions, and <see cref="Run"/> returns after executing any
+    ///   remaining queued actions.
+    /// </remarks>
+    /// <exception cref="ObjectDisposedException">
+    ///   The <see cref="MainThreadDispatcher"/> has been disposed.
+    /// </exception>
+    public void Complete()
     {
         _queue.CompleteAdding();
     }
@@ -82,7 +107,7 @@ internal sealed class MainThreadDispatcher : IDispatcher, IDisposable
         _queue.Dispose();
     }
 
-    private static Exception OnInvokedFromOtherThread()
+    private static Exception OnInvokedFromNonMainThread()
     {
         return new InvalidOperationException(
             "This method must be invoked from the thread that constructed the dispatcher."
