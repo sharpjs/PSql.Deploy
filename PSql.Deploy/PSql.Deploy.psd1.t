@@ -37,6 +37,7 @@
     DscResourcesToExport = @()
     CmdletsToExport      = @(
         'Get-SqlMigrations'
+        'Invoke-ForEachSqlContext'
         'Invoke-SqlMigrations'
         'New-SqlContextParallelSet'
     )
