@@ -5,6 +5,31 @@ namespace PSql.Deploy;
 
 internal static class CollectionExtensions
 {
+    public static T[] Sanitize<T>(this T?[]? array)
+        where T : class
+    {
+        if (array is null)
+            return Array.Empty<T>();
+
+        var count = 0;
+
+        foreach (var item in array)
+            if (item is not null)
+                count++;
+
+        if (count == array.Length)
+            return array!;
+
+        var result = new T[count];
+            count  = 0;
+
+        foreach (var item in array)
+            if (item is not null)
+                result[count++] = item;
+
+        return result;
+    }
+
     public static ReadOnlySpan<T> AsReadOnlySpan<T>(this T[] array)
         => array;
 
