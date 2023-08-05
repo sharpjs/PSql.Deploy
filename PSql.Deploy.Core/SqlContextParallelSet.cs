@@ -8,18 +8,8 @@ namespace PSql;
 /// </summary>
 public class SqlContextParallelSet
 {
-    private IList<SqlContext>? _contexts;
-    private int                _parallelism;
-
-    /// <summary>
-    ///   Initializes a new <see cref="SqlContextParallelSet"/> instance with
-    ///   an empty, mutable list of contexts and maximum parallelism equal to
-    ///   the number of logical processors on the current machine.
-    /// </summary>
-    public SqlContextParallelSet()
-    {
-        _parallelism = Environment.ProcessorCount;
-    }
+    private IReadOnlyList<SqlContext>? _contexts;
+    private int                        _parallelism;
 
     /// <summary>
     ///   Gets or sets a descriptive name for the set.  The default value is
@@ -28,19 +18,25 @@ public class SqlContextParallelSet
     public string? Name { get; set; }
 
     /// <summary>
-    ///   Gets or sets the list of contexts in the set.  The default value is
-    ///   an empty list.
+    ///   Gets or sets the contexts in the set.  The default value is an empty
+    ///   collection.
     /// </summary>
     /// <exception cref="ArgumentNullException">
     ///   Attempted to set the property to <see langword="null"/>.
     /// </exception>
-    public IList<SqlContext> Contexts
+    /// <exception cref="ArgumentNullException">
+    ///   Attempted to set the property to a collection with a
+    ///   <see langword="null"/> element.
+    /// </exception>
+    public IReadOnlyList<SqlContext> Contexts
     {
-        get => _contexts ??= new List<SqlContext>();
+        get => _contexts ??= Array.Empty<SqlContext>();
         set
         {
             if (value is null)
                 throw new ArgumentNullException(nameof(value));
+            if (value.Contains(null!))
+                throw new ArgumentException("Cannot contain a null element.", nameof(value));
 
             _contexts = value;
         }
@@ -56,7 +52,7 @@ public class SqlContextParallelSet
     /// </exception>
     public int Parallelism
     {
-        get => _parallelism;
+        get => _parallelism > 0 ? _parallelism : _parallelism = Environment.ProcessorCount;
         set
         {
             if (value < 1)

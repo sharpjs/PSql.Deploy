@@ -73,8 +73,11 @@ public class InvokeSqlMigrationsCommand : Cmdlet, IAsyncCmdlet
     {
         var target = EnsureTarget();
 
-        foreach (var context in contexts)
-            target.Contexts.Add(context);
+        // TODO: Figure out better way
+        target.Contexts = contexts;
+
+        //foreach (var context in contexts)
+        //    target.Contexts.Add(context);
     }
 
     private SqlContextParallelSet EnsureTarget()

@@ -28,23 +28,43 @@ public class NewSqlContextParallelSetCommand : PSCmdlet
     [ValidateRange(1, int.MaxValue)]
     public int Parallelism { get; set; }
 
-    private readonly SqlContextParallelSet _set = new();
+    // Collected contexts from all ProcessRecord invocations
+    private IReadOnlyList<SqlContext>? _contexts;
 
     protected override void ProcessRecord()
     {
-        if (Context is not null)
-            foreach (var context in Context)
-                _set.Contexts.Add(context);
+        var contexts = Context.Sanitize();
+        if (contexts.Length == 0)
+            return;
+
+        if (_contexts is null)
+            _contexts = contexts;
+        else
+            PromoteToList(ref _contexts).AddRange(contexts);
     }
 
     protected override void EndProcessing()
     {
-        if (Name is not null)
-            _set.Name = Name;
+        var set = new SqlContextParallelSet();
+
+        if (Name is { Length: > 0 })
+            set.Name = Name;
+
+        if (_contexts is not null)
+            set.Contexts = _contexts;
 
         if (Parallelism > 0)
-            _set.Parallelism = Parallelism;
+            set.Parallelism = Parallelism;
 
-        WriteObject(_set);
+        WriteObject(set);
+    }
+
+    private static List<T> PromoteToList<T>(ref IReadOnlyList<T> collection)
+    {
+        if (collection is List<T> list)
+            return list;
+
+        collection = list = collection.ToList();
+        return list;
     }
 }
