@@ -7,18 +7,18 @@ namespace PSql.Deploy.Commands;
 [OutputType(typeof(SqlContextParallelSet))]
 public class NewSqlContextParallelSetCommand : PSCmdlet
 {
-    // -Name
-    // Informational name of the set.
-    [Parameter(Position = 0)]
-    [ValidateNotNullOrEmpty]
-    public string? Name { get; set; }
-
     // -Context
     // Objects specifying how to connect to the databases in the set.  Obtain
     // via the New-SqlContext cmdlet.
-    [Parameter(Position = 1, ValueFromPipeline = true)]
+    [Parameter(Position = 0, Mandatory = true, ValueFromPipeline = true)]
     [ValidateNotNullOrEmpty]
     public SqlContext[]? Context { get; set; }
+
+    // -Name
+    // Informational name of the set.
+    [Parameter(Position = 1)]
+    [ValidateNotNullOrEmpty]
+    public string? Name { get; set; }
 
     // -Parallelism
     // Maximum count of operations to perform in parallel.  The default value
