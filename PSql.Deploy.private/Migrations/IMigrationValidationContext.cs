@@ -8,30 +8,18 @@ namespace PSql.Deploy.Migrations;
 /// </summary>
 internal interface IMigrationValidationContext
 {
-    /// <summary>
-    ///   Gets the phase in which migrations are being applied.
-    /// </summary>
+    /// <inheritdoc cref="IMigrationSession.Phase"/>
     MigrationPhase Phase { get; }
 
-    /// <summary>
-    ///   Gets a display name for the database server.  This name might be a
-    ///   DNS name, an Azure resource name, or a placeholder indicating a local
-    ///   SQL Server instance.
-    /// </summary>
+    /// <inheritdoc cref="SqlContextWork.ServerDisplayName"/>
     string ServerName { get; }
 
-    /// <summary>
-    ///   Gets a short name for the database.  This name might be a real
-    ///   database name or a placeholder indicating the default database for
-    ///   the connection.
-    /// </summary>
+    /// <inheritdoc cref="SqlContextWork.DatabaseDisplayName"/>
     string DatabaseName { get; }
 
-    /// <inheritdoc cref="MigrationEngine.MinimumMigrationName"/>
+    /// <inheritdoc cref="IMigrationSession.EarliestDefinedMigrationName"/>
     string EarliestDefinedMigrationName { get; }
 
-    /// <summary>
-    ///   Gets whether migrations are allowed to require the <c>Core</c> phase.
-    /// </summary>
-    public bool AllowCorePhase { get; set; }
+    /// <inheritdoc cref="IMigrationSession.AllowCorePhase"/>
+    public bool AllowCorePhase { get; }
 }

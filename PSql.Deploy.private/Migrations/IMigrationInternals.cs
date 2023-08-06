@@ -11,6 +11,8 @@ namespace PSql.Deploy.Migrations;
 /// </remarks>
 internal interface IMigrationInternals
 {
+    // TODO: Think of something more elegant than this.
+
     /// <summary>
     ///   Loads the specified migration's SQL content.
     /// </summary>

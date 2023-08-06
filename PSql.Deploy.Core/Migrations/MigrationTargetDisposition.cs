@@ -6,7 +6,7 @@ namespace PSql.Deploy.Migrations;
 /// <summary>
 ///   Outcome of migration application for a target database.
 /// </summary>
-internal enum MigrationTargetDisposition
+public enum MigrationTargetDisposition
 {
     /// <summary>
     ///   All outstanding migrations were applied to the target database.

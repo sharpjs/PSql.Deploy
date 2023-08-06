@@ -97,11 +97,14 @@ public class InvokeSqlMigrationsCommand : Cmdlet, IAsyncCmdlet
 
     protected override void EndProcessing()
     {
+#if PREVIOUS
         using var scope = new AsyncCmdletScope(this);
 
         scope.Run(ProcessAsync);
+#endif
     }
 
+#if PREVIOUS
     private async Task ProcessAsync(IAsyncCmdletContext context)
     {
         var path   = SessionState.Path.CurrentFileSystemLocation.ProviderPath;
@@ -116,4 +119,5 @@ public class InvokeSqlMigrationsCommand : Cmdlet, IAsyncCmdlet
         foreach (var phase in Phase ?? AllPhases)
             await engine.ApplyAsync(phase);
     }
+#endif
 }

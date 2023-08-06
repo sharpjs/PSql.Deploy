@@ -10,39 +10,48 @@ using static Environment;
 using static RuntimeInformation;
 
 /// <summary>
-///   A workspace for applying schema migrations a target database.
+///   An algorithm that applies schema migrations a target database.
 /// </summary>
-internal class MigrationTarget : IMigrationValidationContext, IDisposable
+internal class MigrationApplicator : IMigrationValidationContext, IDisposable
 {
+    // The target of this applicator
+    private readonly SqlContextWork _work;
+
+    // Time elapsed since construction
+    private readonly Stopwatch _stopwatch;
+
     /// <summary>
-    ///   Initializes a new <see cref="MigrationTarget"/> instance.
+    ///   Initializes a new <see cref="MigrationApplicator"/> instance.
     /// </summary>
     /// <param name="session">
     ///   The migration session.
     /// </param>
-    /// <param name="context">
+    /// <param name="work">
     ///   An object specifying how to connect to the target database.
     /// </param>
     /// <exception cref="ArgumentNullException">
     ///   <paramref name="session"/> and/or
-    ///   <paramref name="context"/> is <see langword="null"/>.
+    ///   <paramref name="work"/> is <see langword="null"/>.
     /// </exception>
-    public MigrationTarget(IMigrationSession session, SqlContext context)
+    public MigrationApplicator(
+        IMigrationSession session,
+        SqlContextWork    work,
+        IMigrationConsole console)
     {
         if (session is null)
             throw new ArgumentNullException(nameof(session));
-        if (context is null)
-            throw new ArgumentNullException(nameof(context));
+        if (work is null)
+            throw new ArgumentNullException(nameof(work));
+        if (console is null)
+            throw new ArgumentNullException(nameof(console));
 
+        _work        = work;
         _stopwatch   = Stopwatch.StartNew();
 
         Session      = session;
+        Console      = console;
 
-        Context      = context;
-        ServerName   = context.AsAzure?.ServerResourceName ?? context.ServerName ?? "local";
-        DatabaseName = context.DatabaseName ?? "default";
-
-        var fileName = $"{ServerName}.{DatabaseName}.{session.Phase}.log".SanitizeFileName();
+        var fileName = $"{ServerName}.{DatabaseName}.{(int) session.Phase}_{session.Phase}.log".SanitizeFileName();
         LogWriter    = session.CreateLog(fileName);
         LogConsole   = new TextWriterConsole(LogWriter);
     }
@@ -52,8 +61,8 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
     /// </summary>
     public IMigrationSession Session { get; }
 
-    /// <inheritdoc cref="IMigrationSession.MinimumMigrationName"/>
-    public string EarliestDefinedMigrationName => Session.MinimumMigrationName;
+    /// <inheritdoc cref="IMigrationSession.EarliestDefinedMigrationName"/>
+    public string EarliestDefinedMigrationName => Session.EarliestDefinedMigrationName;
 
     /// <inheritdoc/>
     public MigrationPhase Phase => Session.Phase;
@@ -66,13 +75,18 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
     /// <summary>
     ///   Gets an object that specifies how to connect to the target database.
     /// </summary>
-    public SqlContext Context { get; }
+    public SqlContext Context => _work.Context;
+
+    /// <summary>
+    ///   TODO
+    /// </summary>
+    public IMigrationConsole Console { get; }
 
     /// <inheritdoc/>
-    public string ServerName { get; }
+    public string ServerName => _work.ServerDisplayName;
 
     /// <inheritdoc/>
-    public string DatabaseName { get; }
+    public string DatabaseName => _work.DatabaseDisplayName;
 
     /// <summary>
     ///   Gets a writer that writes to the per-database log.
@@ -89,17 +103,14 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
     ///   Gets or sets whether the object allows a non-skippable <c>Core</c>
     ///   phase to exist.  The default is <see langword="false"/>.
     /// </summary>
-    public bool AllowCorePhase { get; set; }
+    public bool AllowCorePhase => Session.AllowCorePhase;
 
     /// <summary>
     ///   Gets or sets whether the object operates in what-if mode.  In this
     ///   mode, the object reports what actions it would perform against the
     ///   target database but does not perform the actions.
     /// </summary>
-    public bool IsWhatIfMode { get; set; }
-
-    // Time elapsed since construction
-    private readonly Stopwatch _stopwatch;
+    public bool IsWhatIfMode => Session.IsWhatIfMode;
 
     // Dynamic column width
     private int _migrationNameMaxLength;
@@ -254,7 +265,7 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
 
     private void ReportStarting()
     {
-        Session.ReportStarting(DatabaseName);
+        Console.ReportStarting();
 
         var process = Process.GetCurrentProcess();
 
@@ -419,7 +430,7 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
 
     private void ReportDiagnostic(MigrationDiagnostic diagnostic)
     {
-        Session.ReportProblem(diagnostic.Message);
+        Console.ReportProblem(diagnostic.Message);
 
         Log(string.Concat(
             diagnostic.IsError ? "Error: " : "Warning: ",
@@ -449,7 +460,7 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
             DatabaseName
         );
 
-        Session.ReportProblem(message);
+        Console.ReportProblem(message);
 
         Log("");
         Log("Error: " + message);
@@ -464,7 +475,7 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
 
     private void ReportApplying(Migration migration, MigrationPhase phase)
     {
-        Session.ReportApplying(DatabaseName, migration.Name, phase);
+        Console.ReportApplying(migration.Name, phase);
 
         Log(string.Concat("[", migration.Name, " ", phase.ToString(), "]"));
 
@@ -473,7 +484,7 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
 
     private void ReportException(Exception exception)
     {
-        Session.ReportProblem(exception.Message);
+        Console.ReportProblem(exception.Message);
 
         Log(exception.ToString());
     }
@@ -482,7 +493,7 @@ internal class MigrationTarget : IMigrationValidationContext, IDisposable
     {
         var elapsed = _stopwatch.Elapsed;
 
-        Session.ReportApplied(DatabaseName, _appliedCount, elapsed, _disposition);
+        Console.ReportApplied(_appliedCount, elapsed, _disposition);
 
         // Footer
         Log("");

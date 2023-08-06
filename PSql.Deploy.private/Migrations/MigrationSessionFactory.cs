@@ -3,14 +3,11 @@
 
 namespace PSql.Deploy.Migrations;
 
-public static class MigrationEngineFactory
+public static class MigrationSessionFactory
 {
     /// <summary>
-    ///   Creates a new <see cref="IMigrationEngine"/> instance.
+    ///   Creates a new <see cref="IMigrationSessionControl"/> instance.
     /// </summary>
-    /// <param name="console">
-    ///   The console on which to display status and important messages.
-    /// </param>
     /// <param name="logPath">
     ///   The path of a directory in which to save per-database log files.
     /// </param>
@@ -21,9 +18,6 @@ public static class MigrationEngineFactory
     ///   <paramref name="console"/> and/or
     ///   <paramref name="logPath"/> is <see langword="null"/>.
     /// </exception>
-    public static IMigrationEngine Create(
-        IConsole          console,
-        string            logPath,
-        CancellationToken cancellation)
-        => new MigrationEngine(console, logPath, cancellation);
+    public static IMigrationSessionControl Create(string logPath, CancellationToken cancellation)
+        => new MigrationSession(logPath, cancellation);
 }

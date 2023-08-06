@@ -4,9 +4,14 @@
 namespace PSql.Deploy.Migrations;
 
 /// <summary>
-///   A session in which schema migrations are applied to a set of target
-///   databases.
+///   Information about a session in which schema migrations are applied to a
+///   set of target databases.
 /// </summary>
+/// <remarks>
+///   This interface is used by lower-level code that consumes the session
+///   information.  Higher-level code that controls the operation of the
+///   session uses <see cref="IMigrationSessionControl"/> instead.
+/// </remarks>
 internal interface IMigrationSession
 {
     /// <summary>
@@ -15,12 +20,12 @@ internal interface IMigrationSession
     ImmutableArray<Migration> Migrations { get; }
 
     /// <summary>
-    ///   Gets the minimum (earliest) defined migration name, excluding the
-    ///   <c>_Begin</c> and <c>_End</c> pseudo-migrations.  Returns an empty
-    ///   empty string if if there are no defined migrations or if all of them
-    ///   are pseudo-migrations.
+    ///   Gets the earliest (minimum) name of the migrations in
+    ///   <see cref="Migrations"/>, excluding the <c>_Begin</c> and <c>_End</c>
+    ///   pseudo-migrations if present.  Returns an empty empty string if
+    ///   <see cref="Migrations"/> is empty or contains only pseudo-migrations.
     /// </summary>
-    string MinimumMigrationName { get; }
+    string EarliestDefinedMigrationName { get; }
 
     /// <summary>
     ///   Gets the current deployment phase.
@@ -28,8 +33,20 @@ internal interface IMigrationSession
     MigrationPhase Phase { get; }
 
     /// <summary>
+    ///   Gets whether to allow a non-skippable <c>Core</c> phase.
+    /// </summary>
+    bool AllowCorePhase { get; }
+
+    /// <summary>
+    ///   Gets whether to operate in what-if mode.  In this mode, code should
+    ///   report what actions it would perform against a target database but
+    ///   should not perform the actions.
+    /// </summary>
+    bool IsWhatIfMode { get; }
+
+    /// <summary>
     ///   Gets whether migration application to one or more target databases
-    ///   failed with an error.
+    ///   encountered an error.
     /// </summary>
     bool HasErrors { get; }
 
@@ -50,65 +67,6 @@ internal interface IMigrationSession
     TextWriter CreateLog(string fileName);
 
     /// <summary>
-    ///   Reports the start of migration application to the specified target
-    ///   database.
-    /// </summary>
-    /// <param name="databaseName">
-    ///   The name of the target database.
-    /// </param>
-    void ReportStarting(string databaseName);
-
-    /// <summary>
-    ///   Reports the application of specified migration content to the
-    ///   specified target database.
-    /// </summary>
-    /// <param name="databaseName">
-    ///   The name of the target database.
-    /// </param>
-    /// <param name="migrationName">
-    ///   The name of the migration.
-    /// </param>
-    /// <param name="phase">
-    ///   The deployment phase that identifies the content of the migration.
-    ///   This value usually equals <see cref="Phase"/> but can differ if
-    ///   content is moved between phases to satisfy dependencies.
-    /// </param>
-    void ReportApplying(
-        string         databaseName,
-        string         migrationName,
-        MigrationPhase phase);
-
-    /// <summary>
-    ///   Reports the end of migration application to the specified target
-    ///   database.
-    /// </summary>
-    /// <param name="databaseName">
-    ///   The name of the target database.
-    /// </param>
-    /// <param name="count">
-    ///   The count of migrations that were applied.
-    /// </param>
-    /// <param name="duration">
-    ///   The duration of migration application to the target database.
-    /// </param>
-    /// <param name="disposition">
-    ///   The outcome of migration application to the target database.
-    /// </param>
-    void ReportApplied(
-        string                     databaseName,
-        int                        count,
-        TimeSpan                   duration,
-        MigrationTargetDisposition disposition);
-
-    /// <summary>
-    ///   Reports a problem.
-    /// </summary>
-    /// <param name="message">
-    ///   A message that describes the problem.
-    /// </param>
-    void ReportProblem(string message);
-
-    /// <summary>
     ///   Gets migrations applied to the specified target database
     ///   asynchronously.
     /// </summary>
@@ -121,11 +79,9 @@ internal interface IMigrationSession
     /// </param>
     /// <returns>
     ///   A <see cref="Task"/> representing the asynchronous operation.  When
-    ///   the task completes, its <see cref="Task{TResult}.Result">Result</see>
-    ///   property contains the migrations registered in the database specified
-    ///   by <paramref name="context"/>.
+    ///   the task completes, its <see cref="Task{TResult}.Result"/> property
+    ///   contains the migrations registered in the database specified by
+    ///   <paramref name="context"/>.
     /// </returns>
-    Task<IReadOnlyList<Migration>> GetAppliedMigrationsAsync(
-        SqlContext context,
-        IConsole   console);
+    Task<IReadOnlyList<Migration>> GetAppliedMigrationsAsync(SqlContext context, IConsole console);
 }
