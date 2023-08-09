@@ -12,19 +12,19 @@ namespace PSql.Deploy.Migrations;
 ///   of the session.  Lower-level code that consumes the session information
 ///   uses <see cref="IMigrationSession"/> instead.
 /// </remarks>
-public interface IMigrationSessionControl
+public interface IMigrationSessionControl : IMigrationSession
 {
     /// <summary>
     ///   Gets or sets the current deployment phase.  The default value is
     ///   <see cref="MigrationPhase.Pre"/>.
     /// </summary>
-    MigrationPhase Phase { get; set; }
+    new MigrationPhase Phase { get; set; }
 
     /// <summary>
     ///   Gets or sets whether to allow a non-skippable <c>Core</c> phase.
     ///   The default value is <see langword="false"/>.
     /// </summary>
-    bool AllowCorePhase { get; set; }
+    new bool AllowCorePhase { get; set; }
 
     /// <summary>
     ///   Gets or sets whether to operate in what-if mode.  In this mode, code
@@ -32,7 +32,7 @@ public interface IMigrationSessionControl
     ///   but should not perform the actions.  The default value is
     ///   <see langword="false"/>.
     /// </summary>
-    bool IsWhatIfMode { get; set; }
+    new bool IsWhatIfMode { get; set; }
 
     /// <summary>
     ///   Discovers migrations in the specified directory path.
@@ -59,5 +59,5 @@ public interface IMigrationSessionControl
     /// <returns>
     ///   A <see cref="Task"/> representing the asynchronous operation.
     /// </returns>
-    Task ApplyAsync(SqlContextWork target, IConsole console);
+    Task ApplyAsync(SqlContextWork target, PSCmdlet cmdlet);
 }

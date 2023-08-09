@@ -2,13 +2,12 @@
 // SPDX-License-Identifier: ISC
 
 using PSql.Deploy.Migrations;
-using PSql.Deploy.Utilities;
 
 namespace PSql.Deploy.Commands;
 
 [Cmdlet(VerbsCommon.Get, "SqlMigrations", DefaultParameterSetName = "Path")]
 [OutputType(typeof(Migration))]
-public class GetSqlMigrationsCommand : Cmdlet, IAsyncCmdlet
+public sealed class GetSqlMigrationsCommand : AsyncPSCmdlet
 {
     // -Path
     [Parameter(
@@ -35,16 +34,14 @@ public class GetSqlMigrationsCommand : Cmdlet, IAsyncCmdlet
 
     protected override void ProcessRecord()
     {
-        using var scope = new AsyncCmdletScope(this);
-
-        scope.Run(ProcessAsync);
+        Run(ProcessRecordAsync);
     }
 
-    private async Task ProcessAsync(IAsyncCmdletContext context)
+    private async Task ProcessRecordAsync()
     {
         var migrations
             = Path   is { } path   ? GetMigrations(path)
-            : Target is { } target ? await GetMigrationsAsync(target, context)
+            : Target is { } target ? await GetMigrationsAsync(target)
             : throw new InvalidOperationException();
 
         if (IncludeContent.IsPresent)
@@ -59,11 +56,13 @@ public class GetSqlMigrationsCommand : Cmdlet, IAsyncCmdlet
         return MigrationRepository.GetAll(path);
     }
 
-    private Task<IReadOnlyList<Migration>> GetMigrationsAsync(
-        SqlContext target, IAsyncCmdletContext context)
+    private Task<IReadOnlyList<Migration>> GetMigrationsAsync(SqlContext target)
     {
         return MigrationRepository.GetAllAsync(
-            target, minimumName: "", console: this, context.CancellationToken
+            target,
+            minimumName: "",
+            new CmdletSqlMessageLogger(this),
+            CancellationToken
         );
     }
 }

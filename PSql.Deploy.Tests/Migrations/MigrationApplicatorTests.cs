@@ -140,7 +140,7 @@ public class MigrationApplicatorTests : TestHarnessBase
     [Test]
     public void LogConsole_Get()
     {
-        _applicator.LogConsole.Should().BeOfType<TextWriterConsole>();
+        _applicator.SqlMessageLogger.Should().BeOfType<TextWriterSqlMessageLogger>();
     }
 
     [Test]
@@ -168,7 +168,7 @@ public class MigrationApplicatorTests : TestHarnessBase
             .Verifiable();
 
         _session
-            .Setup(s => s.GetAppliedMigrationsAsync(_applicator.Context, _applicator.LogConsole))
+            .Setup(s => s.GetAppliedMigrationsAsync(_applicator.Context, _applicator.SqlMessageLogger))
             .ReturnsAsync(new Migration[0])
             .Verifiable();
 
@@ -203,7 +203,7 @@ public class MigrationApplicatorTests : TestHarnessBase
             .Verifiable();
 
         _session
-            .Setup(s => s.GetAppliedMigrationsAsync(_applicator.Context, _applicator.LogConsole))
+            .Setup(s => s.GetAppliedMigrationsAsync(_applicator.Context, _applicator.SqlMessageLogger))
             .ReturnsAsync(new Migration[0])
             .Verifiable();
 
@@ -262,7 +262,7 @@ public class MigrationApplicatorTests : TestHarnessBase
             .Verifiable();
 
         _session
-            .Setup(s => s.GetAppliedMigrationsAsync(_applicator.Context, _applicator.LogConsole))
+            .Setup(s => s.GetAppliedMigrationsAsync(_applicator.Context, _applicator.SqlMessageLogger))
             .ReturnsAsync(new[] { aApplied })
             .Verifiable();
 
@@ -315,7 +315,7 @@ public class MigrationApplicatorTests : TestHarnessBase
             .Verifiable();
 
         _session
-            .Setup(s => s.GetAppliedMigrationsAsync(_applicator.Context, _applicator.LogConsole))
+            .Setup(s => s.GetAppliedMigrationsAsync(_applicator.Context, _applicator.SqlMessageLogger))
             .ReturnsAsync(new[] { aApplied })
             .Verifiable();
 
@@ -390,7 +390,7 @@ public class MigrationApplicatorTests : TestHarnessBase
             .Verifiable();
 
         _session
-            .Setup(s => s.GetAppliedMigrationsAsync(_applicator.Context, _applicator.LogConsole))
+            .Setup(s => s.GetAppliedMigrationsAsync(_applicator.Context, _applicator.SqlMessageLogger))
             .ReturnsAsync(new Migration[0])
             .Verifiable();
 
@@ -403,7 +403,7 @@ public class MigrationApplicatorTests : TestHarnessBase
         var command2   = Mocks.Create<DbCommand>();
 
         _internals
-            .Setup(i => i.Connect(_work.Context, _applicator.LogConsole))
+            .Setup(i => i.Connect(_work.Context, _applicator.SqlMessageLogger))
             .Returns(connection.Object)
             .Verifiable();
 
@@ -500,7 +500,7 @@ public class MigrationApplicatorTests : TestHarnessBase
             .Verifiable();
 
         _session
-            .Setup(s => s.GetAppliedMigrationsAsync(_applicator.Context, _applicator.LogConsole))
+            .Setup(s => s.GetAppliedMigrationsAsync(_applicator.Context, _applicator.SqlMessageLogger))
             .ReturnsAsync(new Migration[0])
             .Verifiable();
 
@@ -512,7 +512,7 @@ public class MigrationApplicatorTests : TestHarnessBase
         var command    = Mocks.Create<ISqlCommand>();
 
         _internals
-            .Setup(i => i.Connect(_work.Context, _applicator.LogConsole))
+            .Setup(i => i.Connect(_work.Context, _applicator.SqlMessageLogger))
             .Returns(connection.Object)
             .Verifiable();
 
@@ -597,7 +597,7 @@ public class MigrationApplicatorTests : TestHarnessBase
             .Verifiable();
 
         _session
-            .Setup(s => s.GetAppliedMigrationsAsync(_applicator.Context, _applicator.LogConsole))
+            .Setup(s => s.GetAppliedMigrationsAsync(_applicator.Context, _applicator.SqlMessageLogger))
             .ReturnsAsync(new Migration[0])
             .Verifiable();
 
@@ -659,7 +659,7 @@ public class MigrationApplicatorTests : TestHarnessBase
             .Verifiable();
 
         _session
-            .Setup(s => s.GetAppliedMigrationsAsync(_applicator.Context, _applicator.LogConsole))
+            .Setup(s => s.GetAppliedMigrationsAsync(_applicator.Context, _applicator.SqlMessageLogger))
             .ReturnsAsync(new Migration[0])
             .Verifiable();
 
@@ -668,7 +668,7 @@ public class MigrationApplicatorTests : TestHarnessBase
             .Verifiable();
 
         _internals
-            .Setup(i => i.Connect(_work.Context, _applicator.LogConsole))
+            .Setup(i => i.Connect(_work.Context, _applicator.SqlMessageLogger))
             .Throws(new Exception("Oops!"));
 
         _console
@@ -724,7 +724,7 @@ public class MigrationApplicatorTests : TestHarnessBase
             .Verifiable();
 
         _session
-            .Setup(s => s.GetAppliedMigrationsAsync(_applicator.Context, _applicator.LogConsole))
+            .Setup(s => s.GetAppliedMigrationsAsync(_applicator.Context, _applicator.SqlMessageLogger))
             .ReturnsAsync(new Migration[0])
             .Verifiable();
 
@@ -733,7 +733,7 @@ public class MigrationApplicatorTests : TestHarnessBase
             .Verifiable();
 
         _internals
-            .Setup(i => i.Connect(_work.Context, _applicator.LogConsole))
+            .Setup(i => i.Connect(_work.Context, _applicator.SqlMessageLogger))
             .Throws(new OperationCanceledException());
 
         _console
@@ -784,7 +784,7 @@ public class MigrationApplicatorTests : TestHarnessBase
             .Verifiable();
 
         _session
-            .Setup(s => s.GetAppliedMigrationsAsync(_applicator.Context, _applicator.LogConsole))
+            .Setup(s => s.GetAppliedMigrationsAsync(_applicator.Context, _applicator.SqlMessageLogger))
             .ReturnsAsync(new Migration[0])
             .Verifiable();
 
@@ -796,7 +796,7 @@ public class MigrationApplicatorTests : TestHarnessBase
         var command    = Mocks.Create<ISqlCommand>();
 
         _internals
-            .Setup(i => i.Connect(_work.Context, _applicator.LogConsole))
+            .Setup(i => i.Connect(_work.Context, _applicator.SqlMessageLogger))
             .Returns(connection.Object)
             .Verifiable();
 

@@ -1,6 +1,8 @@
 // Copyright 2023 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
+using PSql.Deploy.Utilities;
+
 namespace PSql.Deploy;
 
 [TestFixture]

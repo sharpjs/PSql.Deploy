@@ -7,38 +7,38 @@ namespace PSql.Deploy.Migrations;
 internal class MigrationConsole : IMigrationConsole
 {
     /// <summary>
-    ///   Initializes a new <see cref="MigrationConsole"/> instance using the
-    ///   specified underlying console implementation.
+    ///   Initializes a new <see cref="MigrationConsole"/> instance that writes
+    ///   messages using the specified cmdlet.
     /// </summary>
-    /// <param name="console">
-    ///   The underlying console implementation.
+    /// <param name="cmdlet">
+    ///   The cmdlet to use to write messages.
     /// </param>
     /// <exception cref="ArgumentNullException">
-    ///   <paramref name="console"/> is <see langword="null"/>.
+    ///   <paramref name="cmdlet"/> is <see langword="null"/>.
     /// </exception>
-    public MigrationConsole(IConsole console)
+    public MigrationConsole(PSCmdlet cmdlet)
     {
-        if (console is null)
-            throw new ArgumentNullException(nameof(console));
+        if (cmdlet is null)
+            throw new ArgumentNullException(nameof(cmdlet));
 
-        Console = console;
+        Cmdlet = cmdlet;
     }
 
     /// <summary>
-    ///   Gets the underlying console implementation.
+    ///   Gets the cmdlet to use to write messages.
     /// </summary>
-    public IConsole Console { get; }
+    public PSCmdlet Cmdlet { get; }
 
     /// <inheritdoc/>
     public void ReportStarting()
     {
-        Console.WriteHost("Starting");
+        Cmdlet.WriteHost("Starting");
     }
 
     /// <inheritdoc/>
     public void ReportApplying(string migrationName, MigrationPhase phase)
     {
-        Console.WriteHost(string.Format(
+        Cmdlet.WriteHost(string.Format(
             "Applying {0} ({1})",
             migrationName,
             phase
@@ -48,7 +48,7 @@ internal class MigrationConsole : IMigrationConsole
     /// <inheritdoc/>
     public void ReportApplied(int count, TimeSpan elapsed, MigrationTargetDisposition disposition)
     {
-        Console.WriteHost(string.Format(
+        Cmdlet.WriteHost(string.Format(
             "Applied {0} migration(s) in {1:N3} second(s){2}",
             count,
             elapsed.TotalSeconds,
@@ -59,6 +59,6 @@ internal class MigrationConsole : IMigrationConsole
     /// <inheritdoc/>
     public void ReportProblem(string message)
     {
-        Console.WriteWarning(message);
+        Cmdlet.WriteWarning(message);
     }
 }

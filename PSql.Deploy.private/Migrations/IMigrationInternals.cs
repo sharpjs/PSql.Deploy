@@ -21,5 +21,24 @@ internal interface IMigrationInternals
     /// </param>
     void LoadContent(Migration migration);
 
-    ISqlConnection Connect(SqlContext context, IConsole logConsole);
+    /// <summary>
+    ///   Opens a connection as determined by the property values of the
+    ///   current context, optionally with the specified database name, logging
+    ///   server messages with the specified logger.
+    /// </summary>
+    /// <param name="databaseName">
+    ///   A database name.  If not <see langword="null"/>, this parameter
+    ///   overrides the value of the <see cref="DatabaseName"/> property.
+    /// </param>
+    /// <param name="logger">
+    ///   The object to use to log server messages received over the
+    ///   connection.
+    /// </param>
+    /// <returns>
+    ///   An object representing the open connection.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    ///   <paramref name="logger"/> is <see langword="null"/>.
+    /// </exception>
+    ISqlConnection Connect(SqlContext context, ISqlMessageLogger logger);
 }

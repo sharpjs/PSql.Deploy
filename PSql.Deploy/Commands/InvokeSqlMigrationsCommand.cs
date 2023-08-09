@@ -8,9 +8,28 @@ namespace PSql.Deploy.Commands;
 
 using static MigrationPhase;
 
-[Cmdlet(VerbsLifecycle.Invoke, "SqlMigrations", DefaultParameterSetName = "Target")]
-public class InvokeSqlMigrationsCommand : Cmdlet, IAsyncCmdlet
+[Cmdlet(VerbsLifecycle.Invoke, "SqlMigrations")]
+public class InvokeSqlMigrationsCommand : AsyncPSCmdlet
 {
+    private const string
+        SessionParameterSetName = nameof(Session);
+
+    // -Session
+    [Parameter(Mandatory = true, Position = 0, ValueFromPipeline = true)]
+    [ValidateNotNull]
+    public SqlMigrationSession? Session { get; set; }
+
+    // -Target
+    [Parameter(Mandatory = true, Position = 1)]
+    [ValidateNotNull]
+    public SqlContextWork? Target { get; set; }
+
+    // -Phase
+    [Parameter()]
+    [ValidateSet(nameof(Pre), nameof(Core), nameof(Post))]
+    public MigrationPhase Phase { get; set; }
+
+#if PREVIOUS
     // -Path
     [Parameter(Mandatory = true, Position = 0)]
     [Alias("PSPath")]
@@ -55,7 +74,22 @@ public class InvokeSqlMigrationsCommand : Cmdlet, IAsyncCmdlet
         => new[] { Pre, Core, Post };
 
     public List<SqlContextParallelSet> _targets = new();
+#endif
 
+    protected override void ProcessRecord()
+    {
+        Run(ProcessRecordAsync);
+    }
+
+    private Task ProcessRecordAsync()
+    {
+        if (Session is null || Target is null)
+            return Task.CompletedTask;
+
+        return Session.Session.ApplyAsync(Target, this);
+    }
+
+#if PREVIOUS
     protected override void ProcessRecord()
     {
         if (ParameterSetName == "Target")
@@ -97,14 +131,11 @@ public class InvokeSqlMigrationsCommand : Cmdlet, IAsyncCmdlet
 
     protected override void EndProcessing()
     {
-#if PREVIOUS
         using var scope = new AsyncCmdletScope(this);
 
         scope.Run(ProcessAsync);
-#endif
     }
 
-#if PREVIOUS
     private async Task ProcessAsync(IAsyncCmdletContext context)
     {
         var path   = SessionState.Path.CurrentFileSystemLocation.ProviderPath;

@@ -9,9 +9,6 @@ internal class MigrationSession : IMigrationSessionControl, IMigrationSession
     /// <summary>
     ///   Initializes a new <see cref="MigrationSession"/> instance.
     /// </summary>
-    /// <param name="console">
-    ///   The console on which to display status and important messages.
-    /// </param>
     /// <param name="logPath">
     ///   The path of a directory in which to save per-database log files.
     /// </param>
@@ -19,7 +16,6 @@ internal class MigrationSession : IMigrationSessionControl, IMigrationSession
     ///   The token to monitor for cancellation requests.
     /// </param>
     /// <exception cref="ArgumentNullException">
-    ///   <paramref name="console"/> and/or
     ///   <paramref name="logPath"/> is <see langword="null"/>.
     /// </exception>
     public MigrationSession(string logPath, CancellationToken cancellation)
@@ -71,9 +67,9 @@ internal class MigrationSession : IMigrationSessionControl, IMigrationSession
     }
 
     /// <inheritdoc/>
-    public async Task ApplyAsync(SqlContextWork target, IConsole console)
+    public async Task ApplyAsync(SqlContextWork target, PSCmdlet cmdlet)
     {
-        using var applicator = new MigrationApplicator(this, target, new MigrationConsole(console));
+        using var applicator = new MigrationApplicator(this, target, new MigrationConsole(cmdlet));
 
         try
         {
@@ -91,11 +87,11 @@ internal class MigrationSession : IMigrationSessionControl, IMigrationSession
     }
 
     Task<IReadOnlyList<Migration>> IMigrationSession
-        .GetAppliedMigrationsAsync(SqlContext context, IConsole console)
+        .GetAppliedMigrationsAsync(SqlContext context, ISqlMessageLogger logger)
     {
         return MigrationRepository.GetAllAsync(
             context, EarliestDefinedMigrationName,
-            console, CancellationToken
+            logger, CancellationToken
         );
     }
 

@@ -16,6 +16,7 @@ internal sealed class MigrationInternals : IMigrationInternals
     public void LoadContent(Migration migration)
         => MigrationLoader.LoadContent(migration);
 
-    public ISqlConnection Connect(SqlContext context, IConsole console)
-        => context.Connect(databaseName: null, console);
+    /// <inheritdoc/>
+    public ISqlConnection Connect(SqlContext context, ISqlMessageLogger logger)
+        => context.Connect(databaseName: null, logger);
 }

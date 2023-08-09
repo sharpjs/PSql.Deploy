@@ -12,7 +12,7 @@ namespace PSql.Deploy.Migrations;
 ///   information.  Higher-level code that controls the operation of the
 ///   session uses <see cref="IMigrationSessionControl"/> instead.
 /// </remarks>
-internal interface IMigrationSession
+public interface IMigrationSession
 {
     /// <summary>
     ///   Gets the defined migrations.
@@ -73,8 +73,8 @@ internal interface IMigrationSession
     /// <param name="context">
     ///   An object specifying how to connect to the target database.
     /// </param>
-    /// <param name="console">
-    ///   The console on which to output messages from the target database
+    /// <param name="logger">
+    ///   The object to use to log messages received from the target database
     ///   server.
     /// </param>
     /// <returns>
@@ -83,5 +83,6 @@ internal interface IMigrationSession
     ///   contains the migrations registered in the database specified by
     ///   <paramref name="context"/>.
     /// </returns>
-    Task<IReadOnlyList<Migration>> GetAppliedMigrationsAsync(SqlContext context, IConsole console);
+    Task<IReadOnlyList<Migration>> GetAppliedMigrationsAsync(
+        SqlContext context, ISqlMessageLogger logger);
 }

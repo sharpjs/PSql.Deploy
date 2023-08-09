@@ -10,17 +10,17 @@ internal static partial class MigrationRepository
     internal static async Task<IReadOnlyList<Migration>> GetAllAsync(
         SqlContext        context,
         string            minimumName,
-        IConsole          console,
+        ISqlMessageLogger logger,
         CancellationToken cancellation)
     {
         if (context is null)
             throw new ArgumentNullException(nameof(context));
         if (minimumName is null)
             throw new ArgumentNullException(nameof(minimumName));
-        if (console is null)
-            throw new ArgumentNullException(nameof(console));
+        if (logger is null)
+            throw new ArgumentNullException(nameof(logger));
 
-        await using var connection = context.Connect(null, console);
+        await using var connection = context.Connect(null, logger);
         await using var command    = connection.CreateCommand();
 
         command.CommandText =

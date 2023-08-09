@@ -19,19 +19,15 @@ namespace PSql.Deploy.Commands;
     ConfirmImpact           = ConfirmImpact.Low,
     RemotingCapability      = RemotingCapability.None
 )]
-public class InvokeForEachSqlContextCommand : Cmdlet, IDisposable
+public class InvokeForEachSqlContextCommand : AsyncPSCmdlet
 {
     private const string
         TargetParameterSetName  = nameof(Target),
         ContextParameterSetName = nameof(Context);
 
     // Internals
-    private readonly List<Task>               _tasks;
-    private readonly MainThreadDispatcher     _dispatcher;
     private readonly ConcurrentBag<Exception> _exceptions;
-    private readonly CancellationTokenSource  _cancellation;
     private          TaskHostFactory?         _hostFactory;
-    private SynchronizationContext? _previousSynchronizationContext;
 
     // Parameters
     private ScriptBlock?             _scriptBlock;
@@ -43,10 +39,7 @@ public class InvokeForEachSqlContextCommand : Cmdlet, IDisposable
 
     public InvokeForEachSqlContextCommand()
     {
-        _tasks        = new();
-        _dispatcher   = new();
-        _exceptions   = new();
-        _cancellation = new();
+        _exceptions = new();
     }
 
     // -ScriptBlock
@@ -114,15 +107,14 @@ public class InvokeForEachSqlContextCommand : Cmdlet, IDisposable
 
     protected override void BeginProcessing()
     {
-        _hostFactory = new(Host);
+        base.BeginProcessing();
 
-        _previousSynchronizationContext = SynchronizationContext.Current;
-        SynchronizationContext.SetSynchronizationContext(null);
+        _hostFactory = new(Host);
     }
 
     protected override void ProcessRecord()
     {
-        if (_cancellation.IsCancellationRequested)
+        if (CancellationToken.IsCancellationRequested)
             return;
 
         if (ParameterSetName == ContextParameterSetName)
@@ -140,7 +132,7 @@ public class InvokeForEachSqlContextCommand : Cmdlet, IDisposable
         Task ProcessAsync()
             => ProcessContextSetAsync(contextSet);
 
-        _tasks.Add(Task.Run(ProcessAsync));
+        Run(ProcessAsync);
     }
 
     private async Task ProcessContextSetAsync(SqlContextParallelSet contextSet)
@@ -162,7 +154,7 @@ public class InvokeForEachSqlContextCommand : Cmdlet, IDisposable
         await Task.Yield();
 
         // Limit parallelism
-        await limiter.WaitAsync(_cancellation.Token);
+        await limiter.WaitAsync(CancellationToken);
         try
         {
             await ProcessContextCoreAsync(context);
@@ -185,7 +177,7 @@ public class InvokeForEachSqlContextCommand : Cmdlet, IDisposable
         }
         catch (Exception e)
         {
-            _cancellation.Cancel();
+            StopProcessing();
             HandleException(e, scope.Host, work);
         }
     }
@@ -222,7 +214,7 @@ public class InvokeForEachSqlContextCommand : Cmdlet, IDisposable
             ));
 
         state.Variables.Add(new SessionStateVariableEntry(
-            "CancellationToken", _cancellation.Token, null
+            "CancellationToken", CancellationToken, null
         ));
 
         state.Variables.Add(new SessionStateVariableEntry(
@@ -259,7 +251,7 @@ public class InvokeForEachSqlContextCommand : Cmdlet, IDisposable
     {
         var item = new DictionaryEntry(source, obj);
 
-        _dispatcher.Post(() => WriteOutput(item));
+        WriteOutput(item);
     }
 
     // This method makes WriteObject virtual to accommodate testing.
@@ -290,35 +282,6 @@ public class InvokeForEachSqlContextCommand : Cmdlet, IDisposable
         }
     }
 
-    protected override void StopProcessing()
-    {
-        // Invoked when a running command needs to be stopped, such as when
-        // the user presses CTRL-C.  Invoked on a different thread than the
-        // Begin/Process/End sequence.
-
-        Host.UI.WriteWarningLine("Canceling...");
-        _cancellation.Cancel();
-    }
-
-    protected override void EndProcessing()
-    {
-        try
-        {
-            if (_tasks.Count == 0)
-                return;
-
-            Task.WhenAll(_tasks).ContinueWith(_ => _dispatcher.Complete());
-
-            _dispatcher.Run();
-
-            ThrowCollectedExceptions();
-        }
-        finally
-        {
-            SynchronizationContext.SetSynchronizationContext(_previousSynchronizationContext);
-        }
-    }
-
     private void ThrowCollectedExceptions()
     {
         if (!_exceptions.TryPeek(out var exception))
@@ -342,12 +305,5 @@ public class InvokeForEachSqlContextCommand : Cmdlet, IDisposable
         }
 
         return e.Message;
-    }
-
-    /// <inheritdoc/>
-    public void Dispose()
-    {
-        _cancellation.Dispose();
-        _dispatcher  .Dispose();
     }
 }

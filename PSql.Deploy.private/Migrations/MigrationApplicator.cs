@@ -53,7 +53,7 @@ internal class MigrationApplicator : IMigrationValidationContext, IDisposable
 
         var fileName = $"{ServerName}.{DatabaseName}.{(int) session.Phase}_{session.Phase}.log".SanitizeFileName();
         LogWriter    = session.CreateLog(fileName);
-        LogConsole   = new TextWriterConsole(LogWriter);
+        SqlMessageLogger   = new TextWriterSqlMessageLogger(LogWriter);
     }
 
     /// <summary>
@@ -94,10 +94,10 @@ internal class MigrationApplicator : IMigrationValidationContext, IDisposable
     public TextWriter LogWriter { get; }
 
     /// <summary>
-    ///   Gets an <see cref="IConsole"/> implementation that writes to the
-    ///   per-database log.
+    ///   Gets an <see cref="ISqlMessageLogger"/> implementation that writes to
+    ///   the per-database log.
     /// </summary>
-    public IConsole LogConsole { get; }
+    public ISqlMessageLogger SqlMessageLogger { get; }
 
     /// <summary>
     ///   Gets or sets whether the object allows a non-skippable <c>Core</c>
@@ -164,7 +164,7 @@ internal class MigrationApplicator : IMigrationValidationContext, IDisposable
 
     private Task<IReadOnlyList<Migration>> GetAppliedMigrationsAsync()
     {
-        return Session.GetAppliedMigrationsAsync(Context, LogConsole);
+        return Session.GetAppliedMigrationsAsync(Context, SqlMessageLogger);
     }
 
     private ImmutableArray<Migration> GetPendingMigrations(IReadOnlyList<Migration> appliedMigrations)
@@ -225,7 +225,7 @@ internal class MigrationApplicator : IMigrationValidationContext, IDisposable
         if (IsWhatIfMode)
             return;
 
-        using var connection = Internals.Connect(Context, LogConsole);
+        using var connection = Internals.Connect(Context, SqlMessageLogger);
         using var command    = connection.CreateCommand();
 
         command.CommandTimeout = 0; // No timeout

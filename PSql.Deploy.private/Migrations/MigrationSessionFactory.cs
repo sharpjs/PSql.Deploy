@@ -15,7 +15,6 @@ public static class MigrationSessionFactory
     ///   The token to monitor for cancellation requests.
     /// </param>
     /// <exception cref="ArgumentNullException">
-    ///   <paramref name="console"/> and/or
     ///   <paramref name="logPath"/> is <see langword="null"/>.
     /// </exception>
     public static IMigrationSessionControl Create(string logPath, CancellationToken cancellation)
