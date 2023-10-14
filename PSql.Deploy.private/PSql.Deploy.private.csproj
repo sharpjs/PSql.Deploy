@@ -23,10 +23,10 @@
     <ProjectReference Include="..\PSql.Deploy.Core\PSql.Deploy.Core.csproj"
                       Private="false" />
 
-    <Reference Include="PSql" HintPath="$(PSqlDirectory)PSql.dll"
+    <Reference Include="PSql" HintPath="$(PSqlDirectory)%(Identity).dll"
                Private="false" />
 
-    <Reference Include="PSql.Core" HintPath="$(PSqlDirectory)PSql.Core.dll"
+    <Reference Include="PSql.Core" HintPath="$(PSqlDirectory)%(Identity).dll"
                Private="false" />
   </ItemGroup>
 

@@ -17,10 +17,10 @@
     <PackageReference Include="System.Management.Automation"
                       Version="[7.0.0, 8.0.0)" PrivateAssets="all" />
 
-    <Reference Include="PSql" HintPath="$(PSqlDirectory)PSql.dll"
+    <Reference Include="PSql" HintPath="$(PSqlDirectory)%(Identity).dll"
                Private="false" />
 
-    <Reference Include="PSql.Core" HintPath="$(PSqlDirectory)PSql.Core.dll"
+    <Reference Include="PSql.Core" HintPath="$(PSqlDirectory)%(Identity).dll"
                Private="false" />
   </ItemGroup>
 
