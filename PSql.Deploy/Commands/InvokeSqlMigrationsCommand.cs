@@ -78,7 +78,7 @@ public class InvokeSqlMigrationsCommand : PerSqlContextCommand
         {
             _session.Phase = phase;
 
-            using var scope = TaskScope.Begin(_session.Phase.ToFixedWidthString());
+            using var scope = TaskScope.Begin(_session.Phase.ToString());
 
             base.BeginProcessing();
             base.ProcessRecord();
