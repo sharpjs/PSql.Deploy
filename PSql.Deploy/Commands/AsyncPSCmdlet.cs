@@ -23,7 +23,11 @@ public abstract class AsyncPSCmdlet : PSCmdlet, ICmdlet, IDisposable
     /// <inheritdoc/>
     protected override void BeginProcessing()
     {
-        _asyncScope = new(this);
+        var previous = _asyncScope;
+        _asyncScope  = new(this);
+
+        if (previous is not null)
+            previous.Dispose();
     }
 
     /// <inheritdoc/>

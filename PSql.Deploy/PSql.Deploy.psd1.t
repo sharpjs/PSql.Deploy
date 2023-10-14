@@ -21,6 +21,11 @@
             ModuleVersion = '3.0.0'
             GUID          = '218cb4b2-911a-46b1-b47c-d3504acd4627'
         }
+        @{
+            ModuleName    = 'TaskHost'
+            ModuleVersion = '2.0.0'
+            GUID          = 'd75e4bbd-4efd-4bb1-8324-b6d4ae0ed9a9'
+        }
     )
     RequiredAssemblies   = @('PSql.Deploy.Core')
 

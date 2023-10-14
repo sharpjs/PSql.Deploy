@@ -1,3 +1,4 @@
+#if ADJUST_FOR_TASKHOST_2
 // Copyright 2023 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
@@ -25,3 +26,4 @@ public sealed class TaskHostFactory
     public TaskHostScope BeginScope(string name)
         => new(_factory.Create(name));
 }
+#endif

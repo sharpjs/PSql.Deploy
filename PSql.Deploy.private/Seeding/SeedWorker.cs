@@ -1,3 +1,4 @@
+#if ADJUST_FOR_TASKHOST_2
 // Copyright 2023 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
@@ -74,3 +75,4 @@ internal class SeedWorker
         shell.AddScript(script).Invoke(null, settings);
     }
 }
+#endif

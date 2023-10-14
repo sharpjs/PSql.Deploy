@@ -1,3 +1,4 @@
+#if ADJUST_FOR_TASKHOST_2
 // Copyright 2023 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
@@ -27,3 +28,4 @@ public sealed class TaskHostScope : IDisposable
     public void Dispose()
         => _host.Dispose();
 }
+#endif

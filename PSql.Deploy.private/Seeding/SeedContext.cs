@@ -48,8 +48,8 @@ public class SeedContext
     /// </summary>
     public string Header
     {
-        get => _host.TaskHostUI.Header;
-        set => _host.TaskHostUI.Header = value;
+        get => ""; // _host.TaskHostUI.Header;
+        set { } // _host.TaskHostUI.Header = value;
     }
 
     /// <summary>

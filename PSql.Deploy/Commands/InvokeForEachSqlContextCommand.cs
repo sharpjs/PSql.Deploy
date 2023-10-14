@@ -1,12 +1,7 @@
 // Copyright 2023 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
-using System.Collections;
 using System.Collections.Concurrent;
-using System.Management.Automation.Host;
-using System.Management.Automation.Runspaces;
-using System.Runtime.ExceptionServices;
-using PSql.Deploy.Utilities;
 
 namespace PSql.Deploy.Commands;
 
@@ -15,27 +10,20 @@ namespace PSql.Deploy.Commands;
 ///   one or more sets.
 /// </summary>
 [Cmdlet(VerbsLifecycle.Invoke, "ForEachSqlContext",
-    DefaultParameterSetName = TargetParameterSetName,
+    DefaultParameterSetName = ContextSetParameterSetName,
     ConfirmImpact           = ConfirmImpact.Low,
     RemotingCapability      = RemotingCapability.None
 )]
-public class InvokeForEachSqlContextCommand : AsyncPSCmdlet
+public class InvokeForEachSqlContextCommand : PerSqlContextCommand
 {
-    private const string
-        TargetParameterSetName  = nameof(Target),
-        ContextParameterSetName = nameof(Context);
-
     // Internals
     private readonly ConcurrentBag<Exception> _exceptions;
-    private          TaskHostFactory?         _hostFactory;
+    //private          TaskHostFactory?         _hostFactory;
 
     // Parameters
-    private ScriptBlock?             _scriptBlock;
-    private PSModuleInfo[]?          _modules;
-    private PSVariable[]?            _variables;
-    private SqlContextParallelSet[]? _targets;
-    private SqlContext[]?            _contexts;
-    private int                      _parallelism;
+    private ScriptBlock?    _scriptBlock;
+    private PSModuleInfo[]? _modules;
+    private PSVariable[]?   _variables;
 
     public InvokeForEachSqlContextCommand()
     {
@@ -71,39 +59,17 @@ public class InvokeForEachSqlContextCommand : AsyncPSCmdlet
         set => _variables   = value.Sanitize();
     }
 
-    // -Target
-    [Parameter(Mandatory = true, ValueFromPipeline = true, ParameterSetName = TargetParameterSetName)]
-    [ValidateNotNullOrEmpty]
-    public SqlContextParallelSet[] Target
+    protected override void BeginProcessing()
     {
-        get => _targets ??= Array.Empty<SqlContextParallelSet>();
-        set => _targets   = value.Sanitize();
+        base.BeginProcessing();
     }
 
-    // -Context
-    [Parameter(Mandatory = true, ValueFromPipeline = true, ParameterSetName = ContextParameterSetName)]
-    [ValidateNotNullOrEmpty]
-    public SqlContext[] Context
+    protected override Task ProcessWorkAsync(SqlContextWork work)
     {
-        get => _contexts ??= Array.Empty<SqlContext>();
-        set => _contexts   = value.Sanitize();
+        return Task.CompletedTask;
     }
 
-    // -Parallelism
-    [Parameter(ParameterSetName = ContextParameterSetName)]
-    [Alias("ThrottleLimit")]
-    [ValidateRange(1, int.MaxValue)]
-    public int Parallelism
-    {
-        get => _parallelism > 0 ? _parallelism : _parallelism = Environment.ProcessorCount;
-        set
-        {
-            if (value <= 0)
-                throw new ArgumentOutOfRangeException(nameof(value));
-
-            _parallelism = value;
-        }
-    }
+    #if OLD
 
     protected override void BeginProcessing()
     {
@@ -118,10 +84,19 @@ public class InvokeForEachSqlContextCommand : AsyncPSCmdlet
             return;
 
         if (ParameterSetName == ContextParameterSetName)
-            ProcessContextSet(new() { Contexts = Context, Parallelism = Parallelism });
+            ProcessContextSet(SynthesizeParallelSet());
         else
             foreach (var contextSet in Target)
                 ProcessContextSet(contextSet);
+    }
+
+    private SqlContextParallelSet SynthesizeParallelSet()
+    {
+        return new()
+        {
+            Contexts    = (IReadOnlyList<SqlContext>) Context!,
+            Parallelism = Parallelism
+        };
     }
 
     private void ProcessContextSet(SqlContextParallelSet contextSet)
@@ -306,4 +281,5 @@ public class InvokeForEachSqlContextCommand : AsyncPSCmdlet
 
         return e.Message;
     }
+    #endif
 }

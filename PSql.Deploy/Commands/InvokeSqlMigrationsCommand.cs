@@ -2,59 +2,27 @@
 // SPDX-License-Identifier: ISC
 
 using PSql.Deploy.Migrations;
-using PSql.Deploy.Utilities;
+using Subatomix.PowerShell.TaskHost;
 
 namespace PSql.Deploy.Commands;
 
 using static MigrationPhase;
 
-[Cmdlet(VerbsLifecycle.Invoke, "SqlMigrations")]
-public class InvokeSqlMigrationsCommand : AsyncPSCmdlet
+[Cmdlet(
+    VerbsLifecycle.Invoke, "SqlMigrations",
+    DefaultParameterSetName = ContextParameterSetName
+)]
+public class InvokeSqlMigrationsCommand : PerSqlContextCommand
 {
-    private const string
-        SessionParameterSetName = nameof(Session);
-
-    // -Session
-    [Parameter(Mandatory = true, Position = 0, ValueFromPipeline = true)]
-    [ValidateNotNull]
-    public SqlMigrationSession? Session { get; set; }
-
-    // -Target
-    [Parameter(Mandatory = true, Position = 1)]
-    [ValidateNotNull]
-    public SqlContextWork? Target { get; set; }
+    // -Path
+    [Parameter()]
+    [Alias("PSPath", "SourcePath")]
+    [ValidateNotNullOrEmpty]
+    public string? Path { get; set; }
 
     // -Phase
     [Parameter()]
     [ValidateSet(nameof(Pre), nameof(Core), nameof(Post))]
-    public MigrationPhase Phase { get; set; }
-
-#if PREVIOUS
-    // -Path
-    [Parameter(Mandatory = true, Position = 0)]
-    [Alias("PSPath")]
-    [ValidateNotNullOrEmpty]
-    public string? Path { get; set; }
-
-    // -Target
-    [Parameter(Mandatory = true, Position = 1, ValueFromPipeline = true, ParameterSetName = "Target")]
-    [ValidateNotNullOrEmpty]
-    public SqlContextParallelSet[]? Target { get; set; }
-
-    // -Context
-    [Parameter(Mandatory = true, Position = 1, ValueFromPipeline = true, ParameterSetName = "Context")]
-    [ValidateNotNullOrEmpty]
-    public SqlContext[]? Context { get; set; }
-
-    // -Parallelism
-    [Parameter(ParameterSetName = "Context")]
-    [Alias("ThrottleLimit")]
-    [ValidateRange(1, int.MaxValue)]
-    public int Parallelism { get; set; }
-
-    // -Phase
-    [Parameter()]
-    [ValidateNotNullOrEmpty]
     public MigrationPhase[]? Phase { get; set; }
 
     // -MaximumMigrationName
@@ -73,82 +41,53 @@ public class InvokeSqlMigrationsCommand : AsyncPSCmdlet
     private static MigrationPhase[] AllPhases
         => new[] { Pre, Core, Post };
 
-    public List<SqlContextParallelSet> _targets = new();
-#endif
+    private IMigrationSessionControl? _session;
+
+    protected override void BeginProcessing() { } // do not call base
+    protected override void EndProcessing()   { } // do not call base
 
     protected override void ProcessRecord()
     {
-        Run(ProcessRecordAsync);
-    }
-
-    private Task ProcessRecordAsync()
-    {
-        if (Session is null || Target is null)
-            return Task.CompletedTask;
-
-        return Session.Session.ApplyAsync(Target, this);
-    }
-
-#if PREVIOUS
-    protected override void ProcessRecord()
-    {
-        if (ParameterSetName == "Target")
-            ProcessTargets(Target!);
+        if (TaskHost.Current is null)
+            ReinvokeWithTaskHost();
         else
-            ProcessContexts(Context!);
+            ProcessRecordCore();
     }
 
-    private void ProcessTargets(SqlContextParallelSet[] sets)
+    private void ReinvokeWithTaskHost()
     {
-        _targets.AddRange(sets);
+        using var invocation = new Invocation();
+
+        invocation
+            .AddReinvocation(MyInvocation)
+            .UseTaskHost(this, withElapsed: true)
+            .Invoke();
     }
 
-    private void ProcessContexts(SqlContext[] contexts)
+    private void ProcessRecordCore()
     {
-        var target = EnsureTarget();
+        var path = SessionState.Path.CurrentFileSystemLocation.Path;
+        _session = MigrationSessionFactory.Create(path, CancellationToken);
 
-        // TODO: Figure out better way
-        target.Contexts = contexts;
+        _session.AllowCorePhase = AllowCorePhase;
+        _session.IsWhatIfMode   = WhatIf;
 
-        //foreach (var context in contexts)
-        //    target.Contexts.Add(context);
-    }
-
-    private SqlContextParallelSet EnsureTarget()
-    {
-        if (_targets.Count > 0)
-            return _targets[0];
-
-        var target = new SqlContextParallelSet();
-
-        _targets.Add(target);
-
-        if (Parallelism > 0)
-            target.Parallelism = Parallelism;
-
-        return target;
-    }
-
-    protected override void EndProcessing()
-    {
-        using var scope = new AsyncCmdletScope(this);
-
-        scope.Run(ProcessAsync);
-    }
-
-    private async Task ProcessAsync(IAsyncCmdletContext context)
-    {
-        var path   = SessionState.Path.CurrentFileSystemLocation.ProviderPath;
-        var engine = MigrationEngineFactory.Create(console: this, path, context.CancellationToken);
-
-        engine.DiscoverMigrations(Path!, MaximumMigrationName);
-        engine.SpecifyTargets(_targets);
-
-        engine.AllowCorePhase = AllowCorePhase.IsPresent;
-        engine.IsWhatIfMode   = WhatIf        .IsPresent;
+        _session.DiscoverMigrations(Path ?? path, MaximumMigrationName);
 
         foreach (var phase in Phase ?? AllPhases)
-            await engine.ApplyAsync(phase);
+        {
+            _session.Phase = phase;
+
+            using var scope = TaskScope.Begin(_session.Phase.ToFixedWidthString());
+
+            base.BeginProcessing();
+            base.ProcessRecord();
+            base.EndProcessing();
+        }
     }
-#endif
+
+    protected override Task ProcessWorkAsync(SqlContextWork work)
+    {
+        return _session!.ApplyAsync(work, this);
+    }
 }

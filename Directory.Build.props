@@ -35,6 +35,7 @@
     <Nullable>enable</Nullable>
     <InheritDocEnabled>true</InheritDocEnabled>
     <PSqlVersion>3.0.0</PSqlVersion>
+    <TaskHostVersion>2.0.0</TaskHostVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
     <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
@@ -47,6 +48,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <PSqlDirectory>$(PowerShellModuleDirectory)\PSql\$(PSqlVersion)\</PSqlDirectory>
+    <TaskHostDirectory>$(PowerShellModuleDirectory)\TaskHost\$(TaskHostVersion)\</TaskHostDirectory>
   </PropertyGroup>
   <ItemGroup>
     <Using Include="System.FormattableString" Static="true" />

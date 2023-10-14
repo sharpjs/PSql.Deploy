@@ -1,3 +1,4 @@
+#if ADJUST_FOR_TASKHOST_2
 // Copyright 2023 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
@@ -146,3 +147,4 @@ public class SeedPlan : IDisposable
         public ContextData      ContextData { get; }
     }
 }
+#endif
