@@ -9,7 +9,8 @@ namespace PSql;
 public class SqlContextParallelSet
 {
     private IReadOnlyList<SqlContext>? _contexts;
-    private int                        _parallelism;
+    private int                        _maxParallelism;
+    private int                        _maxParallelismPerDatabase;
 
     /// <summary>
     ///   Gets or sets a descriptive name for the set.  The default value is
@@ -50,15 +51,36 @@ public class SqlContextParallelSet
     /// <exception cref="ArgumentOutOfRangeException">
     ///   Attempted to set the property to zero or to a negative integer.
     /// </exception>
-    public int Parallelism
+    public int MaxParallelism
     {
-        get => _parallelism > 0 ? _parallelism : _parallelism = Environment.ProcessorCount;
-        set
-        {
-            if (value < 1)
-                throw new ArgumentOutOfRangeException(nameof(value));
+        get => GetMaxParallelism(ref _maxParallelism);
+        set => SetMaxParallelism(ref _maxParallelism, value);
+    }
 
-            _parallelism = value;
-        }
+    /// <summary>
+    ///   Gets or sets the maximum degree of parallelism per database.  Must be
+    ///   a positive integer.  The default value is the count of logical
+    ///   processors on the current machine.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">
+    ///   Attempted to set the property to zero or to a negative integer.
+    /// </exception>
+    public int MaxParallelismPerDatabase
+    {
+        get => GetMaxParallelism(ref _maxParallelismPerDatabase);
+        set => SetMaxParallelism(ref _maxParallelismPerDatabase, value);
+    }
+
+    public static int GetMaxParallelism(ref int location)
+    {
+        return location > 0 ? location : Environment.ProcessorCount;
+    }
+
+    public static void SetMaxParallelism(ref int location, int value)
+    {
+        if (value < 1)
+            throw new ArgumentOutOfRangeException(nameof(value));
+
+        location = value;
     }
 }

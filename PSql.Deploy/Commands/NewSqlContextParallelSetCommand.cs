@@ -20,13 +20,22 @@ public class NewSqlContextParallelSetCommand : PSCmdlet
     [ValidateNotNullOrEmpty]
     public string? Name { get; set; }
 
-    // -Parallelism
+    // -MaxParallelism
     // Maximum count of operations to perform in parallel.  The default value
     // is the number of virtual processors on the local machine.
     [Parameter()]
     [Alias("ThrottleLimit")]
     [ValidateRange(1, int.MaxValue)]
-    public int Parallelism { get; set; }
+    public int MaxParallelism { get; set; }
+
+    // -MaxParallelismPerDatabase
+    // Maximum count of operations to perform in parallel against one database.
+    // The default value is the number of virtual processors on the local
+    // machine.
+    [Parameter()]
+    [Alias("ThrottleLimit")]
+    [ValidateRange(1, int.MaxValue)]
+    public int MaxParallelismPerDatabase { get; set; }
 
     // Collected contexts from all ProcessRecord invocations
     private IReadOnlyList<SqlContext>? _contexts;
@@ -53,8 +62,11 @@ public class NewSqlContextParallelSetCommand : PSCmdlet
         if (_contexts is not null)
             set.Contexts = _contexts;
 
-        if (Parallelism > 0)
-            set.Parallelism = Parallelism;
+        if (MaxParallelism > 0)
+            set.MaxParallelism = MaxParallelism;
+
+        if (MaxParallelismPerDatabase > 0)
+            set.MaxParallelismPerDatabase = MaxParallelismPerDatabase;
 
         WriteObject(set);
     }

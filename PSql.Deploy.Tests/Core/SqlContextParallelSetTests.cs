@@ -20,23 +20,46 @@ public class SqlContextParallelSetTests
     }
 
     [Test]
-    public void Parallelism_Get()
-    {
-        new SqlContextParallelSet().Parallelism.Should().Be(Environment.ProcessorCount);
-    }
-
-    [Test]
-    public void Parallelism_Set()
-    {
-        new SqlContextParallelSet() { Parallelism = 42 }
-            .Parallelism.Should().Be(42);
-    }
-
-    [Test]
-    public void Parallelism_Set_OutOfRange()
+    public void MaxParallelism_Get()
     {
         new SqlContextParallelSet()
-            .Invoking(s => s.Parallelism = 0)
+            .MaxParallelism.Should().Be(Environment.ProcessorCount);
+    }
+
+    [Test]
+    public void MaxParallelism_Set()
+    {
+        new SqlContextParallelSet() { MaxParallelism = 42 }
+            .MaxParallelism.Should().Be(42);
+    }
+
+    [Test]
+    public void MaxParallelism_Set_OutOfRange()
+    {
+        new SqlContextParallelSet()
+            .Invoking(s => s.MaxParallelism = 0)
+            .Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [Test]
+    public void MaxParallelismPerDatabase_Get()
+    {
+        new SqlContextParallelSet()
+            .MaxParallelismPerDatabase.Should().Be(Environment.ProcessorCount);
+    }
+
+    [Test]
+    public void MaxParallelismPerDatabase_Set()
+    {
+        new SqlContextParallelSet() { MaxParallelismPerDatabase = 42 }
+            .MaxParallelismPerDatabase.Should().Be(42);
+    }
+
+    [Test]
+    public void MaxParallelismPerDatabase_Set_OutOfRange()
+    {
+        new SqlContextParallelSet()
+            .Invoking(s => s.MaxParallelismPerDatabase = 0)
             .Should().Throw<ArgumentOutOfRangeException>();
     }
 

@@ -13,7 +13,7 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
 
     private SqlContextParallelSet[]? _targets;
     private SqlContext[]?            _contexts;
-    private int                      _parallelism;
+    private int                      _maxParallelism;
 
     // -ContextSet
     [Parameter(
@@ -42,20 +42,14 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
         set => _contexts   = value.Sanitize();
     }
 
-    // -Parallelism
+    // -MaxParallelism
     [Parameter(ParameterSetName = ContextParameterSetName)]
     [Alias("ThrottleLimit")]
     [ValidateRange(1, int.MaxValue)]
-    public int Parallelism
+    public int MaxParallelism
     {
-        get => _parallelism > 0 ? _parallelism : _parallelism = Environment.ProcessorCount;
-        set
-        {
-            if (value <= 0)
-                throw new ArgumentOutOfRangeException(nameof(value));
-
-            _parallelism = value;
-        }
+        get => SqlContextParallelSet.GetMaxParallelism(ref _maxParallelism);
+        set => SqlContextParallelSet.SetMaxParallelism(ref _maxParallelism, value);
     }
 
     protected override void ProcessRecord()
@@ -64,10 +58,20 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
             return;
 
         if (ParameterSetName == ContextParameterSetName)
-            ProcessContextSet(new() { Contexts = Context!, Parallelism = Parallelism });
+            ProcessContextSet(MakeContextSet());
         else
             foreach (var contextSet in ContextSet)
                 ProcessContextSet(contextSet);
+    }
+
+    private SqlContextParallelSet MakeContextSet()
+    {
+        return new()
+        {
+            Contexts                  = Context!,
+            MaxParallelism            = MaxParallelism,
+            MaxParallelismPerDatabase = MaxParallelism
+        };
     }
 
     private void ProcessContextSet(SqlContextParallelSet contextSet)
@@ -84,8 +88,8 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
     private async Task ProcessContextSetAsync(SqlContextParallelSet contextSet)
     {
         using var limiter = new SemaphoreSlim(
-            initialCount: contextSet.Parallelism,
-            maxCount:     contextSet.Parallelism
+            initialCount: contextSet.MaxParallelism,
+            maxCount:     contextSet.MaxParallelism
         );
 
         Task ProcessAsync(SqlContext context)
