@@ -94,7 +94,8 @@ jobs:
         shell: pwsh
         run: |
           Set-PSRepository PSGallery -InstallationPolicy Trusted
-          Install-Module PSql, TaskHost -Repository PSGallery -AllowPrerelease
+          Install-Module PSql     -Repository PSGallery -AllowPrerelease
+          Install-Module TaskHost -Repository PSGallery -AllowPrerelease
 
       - name: Restore NuGet Packages
         run: dotnet restore
