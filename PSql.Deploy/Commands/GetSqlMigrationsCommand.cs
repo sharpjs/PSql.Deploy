@@ -42,7 +42,9 @@ public sealed class GetSqlMigrationsCommand : AsyncPSCmdlet
         var migrations
             = Path   is { } path   ? GetMigrations(path)
             : Target is { } target ? await GetMigrationsAsync(target)
-            : throw new InvalidOperationException();
+            : throw new InvalidOperationException(
+                "Either the Path or the Target parameter must be given."
+            );
 
         if (IncludeContent.IsPresent)
             Parallel.ForEach(migrations, MigrationLoader.LoadContent);
