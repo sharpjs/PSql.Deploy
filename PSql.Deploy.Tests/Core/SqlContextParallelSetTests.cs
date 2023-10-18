@@ -79,7 +79,7 @@ public class SqlContextParallelSetTests
     }
 
     [Test]
-    public void Contexts_Set_OutOfRange()
+    public void Contexts_Set_Null()
     {
         new SqlContextParallelSet()
             .Invoking(s => s.Contexts = null!)
