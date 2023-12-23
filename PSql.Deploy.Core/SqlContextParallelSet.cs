@@ -71,11 +71,22 @@ public class SqlContextParallelSet
         set => SetMaxParallelism(ref _maxParallelismPerDatabase, value);
     }
 
+    /// <summary>
+    ///   TODO
+    /// </summary>
+    /// <param name="location"></param>
+    /// <returns></returns>
     public static int GetMaxParallelism(ref int location)
     {
         return location > 0 ? location : Environment.ProcessorCount;
     }
 
+    /// <summary>
+    ///  TODO
+    /// </summary>
+    /// <param name="location"></param>
+    /// <param name="value"></param>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
     public static void SetMaxParallelism(ref int location, int value)
     {
         if (value < 1)
