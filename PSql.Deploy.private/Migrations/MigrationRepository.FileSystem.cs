@@ -78,7 +78,8 @@ internal static partial class MigrationRepository
 
     private static Migration MakeMigration(FileInfo file)
     {
-        var directory = file.Directory;
+        // File is known to have a parent directory
+        var directory = file.Directory!;
 
         return new Migration(directory.Name)
         {
@@ -126,7 +127,8 @@ internal static partial class MigrationRepository
 
     private static ReadOnlySpan<byte> GetHash(Stream stream)
     {
-        using var algorithm = HashAlgorithm.Create("SHA1");
+        // Assume SHA1 is a supported hash algorithm
+        using var algorithm = HashAlgorithm.Create("SHA1")!;
 
         return algorithm.ComputeHash(stream);
     }
