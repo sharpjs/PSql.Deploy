@@ -14,7 +14,7 @@
 
   <ItemGroup>
     <PackageReference Include="System.Management.Automation"
-                      Version="[7.2.0, 8.0.0)" PrivateAssets="all" />
+                      PrivateAssets="all" />
 
     <Reference Include="PSql" HintPath="$(PSqlDirectory)%(Identity).dll"
                Private="false" />

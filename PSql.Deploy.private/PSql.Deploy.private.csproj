@@ -16,7 +16,7 @@
 
   <!-- Public dependencies (loaded in default AssemblyLoadContext) -->
   <ItemGroup>
-    <PackageReference Include="System.Management.Automation" Version="[7.2.0, 8.0.0)"
+    <PackageReference Include="System.Management.Automation"
                       IncludeAssets="compile" PrivateAssets="all" />
 
     <ProjectReference Include="..\PSql.Deploy.Core\PSql.Deploy.Core.csproj"
@@ -34,16 +34,16 @@
 
   <!-- Private dependencies shipped by PSql (loaded in private AssemblyLoadContext) -->
   <ItemGroup>
-    <PackageReference Include="Prequel" Version="1.0.3"
+    <PackageReference Include="Prequel"
                       IncludeAssets="compile" PrivateAssets="all" />
 
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.0.1"
+    <PackageReference Include="Microsoft.Data.SqlClient"
                       IncludeAssets="compile" PrivateAssets="all" />
   </ItemGroup>
 
   <!-- Private dependencies (loaded in private AssemblyLoadContext) -->
   <ItemGroup>
-    <PackageReference Include="DependencyQueue" Version="1.0.0-rc.1"
+    <PackageReference Include="DependencyQueue"
                       PrivateAssets="all" />
   </ItemGroup>
 

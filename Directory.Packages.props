@@ -1,0 +1,37 @@
+<Project>
+
+  <!--
+    Copyright 2023 Subatomix Research Inc.
+    SPDX-License-Identifier: ISC
+  -->
+
+  <!--
+    Central Package Management
+    https://learn.microsoft.com/en-us/nuget/consume-packages/central-package-management
+  -->
+
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <!-- PSqlVersion:     see Directory.Build.Props -->
+    <!-- TaskHostVersion: see Directory.Build.Props -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <GlobalPackageReference Include="SauceControl.InheritDoc"             Version="2.0.0" />
+    <GlobalPackageReference Include="Subatomix.Build.Versioning.Semantic" Version="1.0.1" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsTestProject)' != 'true'">
+    <GlobalPackageReference Include="Microsoft.SourceLink.GitHub"         Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageVersion Include="DependencyQueue"                            Version="1.0.0-rc.1" />
+    <PackageVersion Include="Microsoft.Data.SqlClient"                   Version="5.0.1" />
+    <PackageVersion Include="Microsoft.PowerShell.SDK"                   Version="7.2.17" />
+    <PackageVersion Include="Prequel"                                    Version="1.0.3" />
+    <PackageVersion Include="Subatomix.Build.Packaging.PowerShellModule" Version="1.1.1" />
+    <PackageVersion Include="Subatomix.Testing"                          Version="2.5.1" />
+    <PackageVersion Include="System.Management.Automation"               Version="[7.2.0, 8.0.0)" />
+  </ItemGroup>
+
+</Project>
