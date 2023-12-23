@@ -7,14 +7,12 @@ Most lines should begin with one of these words:
 <!--
 ## [Unreleased](https://github.com/sharpjs/PSql.Deploy/compare/release/2.0.1..HEAD)
 (none)
-
-## [2.0.1](https://github.com/sharpjs/PSql.Deploy/compare/release/2.0.0..release/2.0.1)
-Future release.
 -->
 
 ## [2.0.0](https://github.com/sharpjs/PSql.Deploy/tree/release/2.0.0)
 Future release.
 
+- Change: PSql.Deploy now requires PowerShell 7.2 or later.
 - Change: PSql.Deploy is now a binary module.
 
 <!--

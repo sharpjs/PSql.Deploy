@@ -7,7 +7,6 @@
 
   <PropertyGroup>
     <Description>Database migration and seeding system for SQL Server and Azure SQL Database.</Description>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
     <GenerateDependencyFile>false</GenerateDependencyFile>
     <PowerShellItemIncludes>$(PowerShellItemIncludes);**/*.sql</PowerShellItemIncludes>
   </PropertyGroup>
@@ -17,7 +16,7 @@
                       Version="1.1.1" PrivateAssets="all" />
 
     <PackageReference Include="System.Management.Automation"
-                      Version="[7.0.0, 8.0.0)" PrivateAssets="all" />
+                      Version="[7.2.0, 8.0.0)" PrivateAssets="all" />
 
     <ProjectReference Include="..\PSql.Deploy.Core\PSql.Deploy.Core.csproj" />
 
