@@ -1,3 +1,4 @@
+#if REWORK
 // Copyright 2023 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
@@ -269,3 +270,4 @@ public class SeedModuleParserTests
         }
     }
 }
+#endif

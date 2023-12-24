@@ -1,3 +1,4 @@
+#if REWORK
 // Copyright 2023 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
@@ -35,3 +36,4 @@ internal static class SeedQueue
 
     private static Queue Upcast(object obj) => (Queue) obj;
 }
+#endif

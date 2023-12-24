@@ -44,11 +44,11 @@
         'Get-SqlMigrations'
         'Invoke-ForEachSqlContext'
         'Invoke-SqlMigrations'
+        'Invoke-SqlSeed'
         'New-SqlContextParallelSet'
     )
     FunctionsToExport    = @(
         'Install-SqlMigrationSupport'
-        'Invoke-SqlSeed'
     )
 
     # Discoverability and URLs

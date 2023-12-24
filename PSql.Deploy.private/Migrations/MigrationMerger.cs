@@ -143,6 +143,11 @@ internal readonly ref struct MigrationMerger
         appliedMigration.Hash       = definedMigration.Hash;
         appliedMigration.HasChanged = hasChanged;
 
+        // Idea:
+        // IMigration
+        //  <- IDefinedMigration <- ILoadedMigration <-,_ IMergedMigration
+        //  <- IAppliedMigration <---------------------'
+
         // If migration might be applied, ensure its content is loaded
         if (!appliedMigration.IsAppliedThrough(MigrationPhase.Post))
         {

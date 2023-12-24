@@ -65,6 +65,6 @@ public class SeedContext
 
         return entry is null
             ? null
-            : new(entry);
+            : throw new NotImplementedException(); // new(entry);
     }
 }
