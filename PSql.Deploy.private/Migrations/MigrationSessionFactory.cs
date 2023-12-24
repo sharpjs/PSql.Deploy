@@ -3,6 +3,9 @@
 
 namespace PSql.Deploy.Migrations;
 
+/// <summary>
+///   A factory for migration sessions.
+/// </summary>
 public static class MigrationSessionFactory
 {
     /// <summary>

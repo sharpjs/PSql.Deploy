@@ -45,8 +45,8 @@ public interface IMigrationSession
     bool IsWhatIfMode { get; }
 
     /// <summary>
-    ///   Gets whether migration application to one or more target databases
-    ///   encountered an error.
+    ///   Gets whether any migration application in the session has encountered
+    ///   an error.
     /// </summary>
     bool HasErrors { get; }
 

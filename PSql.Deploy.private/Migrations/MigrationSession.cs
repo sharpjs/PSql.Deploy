@@ -3,7 +3,9 @@
 
 namespace PSql.Deploy.Migrations;
 
-/// <inheritdoc cref="IMigrationSessionControl"/>
+/// <summary>
+///   A session in which seeds are applied to a set of target databases.
+/// </summary>
 internal class MigrationSession : IMigrationSessionControl, IMigrationSession
 {
     /// <summary>

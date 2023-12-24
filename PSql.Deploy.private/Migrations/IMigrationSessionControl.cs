@@ -44,6 +44,9 @@ public interface IMigrationSessionControl : IMigrationSession
     ///   The latest (maximum) name of migrations to discover, or
     ///   <see langword="null"/> to discover all migrations.
     /// </param>
+    /// <exception cref="ArgumentNullException">
+    ///   <paramref name="path"/> is <see langword="null"/>.
+    /// </exception>
     void DiscoverMigrations(string path, string? latestName = null);
 
     /// <summary>
@@ -53,11 +56,15 @@ public interface IMigrationSessionControl : IMigrationSession
     /// <param name="target">
     ///   An object specifying the target database.
     /// </param>
-    /// <param name="console">
-    ///   The console on which to report progress.
+    /// <param name="cmdlet">
+    ///   The cmdlet through which to report progress.
     /// </param>
     /// <returns>
     ///   A <see cref="Task"/> representing the asynchronous operation.
     /// </returns>
+    /// <exception cref="ArgumentNullException">
+    ///   <paramref name="target"/> or <paramref name="target"/> is
+    ///   <see langword="null"/>.
+    /// </exception>
     Task ApplyAsync(SqlContextWork target, PSCmdlet cmdlet);
 }
