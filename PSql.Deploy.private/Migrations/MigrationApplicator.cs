@@ -119,7 +119,7 @@ internal class MigrationApplicator : IMigrationValidationContext, IDisposable
     private int _appliedCount;
 
     // Outcome
-    private MigrationTargetDisposition _disposition;
+    private TargetDisposition _disposition;
 
     /// <summary>
     ///   Applies outstanding migrations to the target database asynchronously.
@@ -147,12 +147,12 @@ internal class MigrationApplicator : IMigrationValidationContext, IDisposable
         }
         catch (OperationCanceledException)
         {
-            _disposition = MigrationTargetDisposition.Incomplete;
+            _disposition = TargetDisposition.Incomplete;
             throw;
         }
         catch (Exception e)
         {
-            _disposition = MigrationTargetDisposition.Failed;
+            _disposition = TargetDisposition.Failed;
             ReportException(e);
             throw;
         }
@@ -235,7 +235,7 @@ internal class MigrationApplicator : IMigrationValidationContext, IDisposable
             // Stop if a parallel invocation encountered an error
             if (Session.HasErrors)
             {
-                _disposition = MigrationTargetDisposition.Incomplete;
+                _disposition = TargetDisposition.Incomplete;
                 return;
             }
 

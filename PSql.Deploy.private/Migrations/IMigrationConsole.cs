@@ -38,7 +38,7 @@ public interface IMigrationConsole
     /// <param name="disposition">
     ///   The outcome of migration application to the target database.
     /// </param>
-    void ReportApplied(int count, TimeSpan duration, MigrationTargetDisposition disposition);
+    void ReportApplied(int count, TimeSpan duration, TargetDisposition disposition);
 
     /// <summary>
     ///   Reports a problem.

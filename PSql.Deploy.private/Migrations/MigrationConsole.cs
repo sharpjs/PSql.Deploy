@@ -46,7 +46,7 @@ internal class MigrationConsole : IMigrationConsole
     }
 
     /// <inheritdoc/>
-    public void ReportApplied(int count, TimeSpan elapsed, MigrationTargetDisposition disposition)
+    public void ReportApplied(int count, TimeSpan elapsed, TargetDisposition disposition)
     {
         Cmdlet.WriteHost(string.Format(
             "Applied {0} migration(s) in {1:N3} second(s){2}",

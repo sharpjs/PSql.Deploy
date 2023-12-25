@@ -60,12 +60,12 @@ internal class FormattingExtensionsTests
     }
 
     [Test]
-    [TestCase(MigrationTargetDisposition.Successful, null)]
-    [TestCase(MigrationTargetDisposition.Incomplete, " [INCOMPLETE]")]
-    [TestCase(MigrationTargetDisposition.Failed,     " [EXCEPTION]")]
-    [TestCase(-42,                                   " [EXCEPTION]")]
-    public void MigrationTargetDisposition_ToMarker(MigrationTargetDisposition mtd, string? expected)
+    [TestCase(TargetDisposition.Successful, null)]
+    [TestCase(TargetDisposition.Incomplete, " [INCOMPLETE]")]
+    [TestCase(TargetDisposition.Failed,     " [EXCEPTION]")]
+    [TestCase(-42,                          " [EXCEPTION]")]
+    public void MigrationTargetDisposition_ToMarker(TargetDisposition disposition, string? expected)
     {
-        mtd.ToMarker().Should().Be(expected);
+        disposition.ToMarker().Should().Be(expected);
     }
 }

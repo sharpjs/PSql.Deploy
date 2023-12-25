@@ -175,7 +175,7 @@ public class MigrationApplicatorTests : TestHarnessBase
         _console
             .Setup(c => c.ReportApplied(
                 0, It.Is<TimeSpan>(t => t >= TimeSpan.Zero),
-                MigrationTargetDisposition.Successful
+                TargetDisposition.Successful
             ))
             .Verifiable();
 
@@ -222,7 +222,7 @@ public class MigrationApplicatorTests : TestHarnessBase
         _console
             .Setup(c => c.ReportApplied(
                 0, It.Is<TimeSpan>(t => t >= TimeSpan.Zero),
-                MigrationTargetDisposition.Successful // TODO: really?
+                TargetDisposition.Successful // TODO: really?
             ))
             .Verifiable();
 
@@ -274,7 +274,7 @@ public class MigrationApplicatorTests : TestHarnessBase
         _console
             .Setup(c => c.ReportApplied(
                 0, It.Is<TimeSpan>(t => t >= TimeSpan.Zero),
-                MigrationTargetDisposition.Successful
+                TargetDisposition.Successful
             ))
             .Verifiable();
 
@@ -338,7 +338,7 @@ public class MigrationApplicatorTests : TestHarnessBase
         _console
             .Setup(c => c.ReportApplied(
                 0, It.Is<TimeSpan>(t => t >= TimeSpan.Zero),
-                MigrationTargetDisposition.Successful // TODO: Really?
+                TargetDisposition.Successful // TODO: Really?
             ))
             .Verifiable();
 
@@ -456,7 +456,7 @@ public class MigrationApplicatorTests : TestHarnessBase
         _console
             .Setup(c => c.ReportApplied(
                 1, It.Is<TimeSpan>(t => t >= TimeSpan.Zero),
-                MigrationTargetDisposition.Successful
+                TargetDisposition.Successful
             ))
             .Verifiable();
 
@@ -548,7 +548,7 @@ public class MigrationApplicatorTests : TestHarnessBase
         _console
             .Setup(c => c.ReportApplied(
                 1, It.Is<TimeSpan>(t => t >= TimeSpan.Zero),
-                MigrationTargetDisposition.Successful
+                TargetDisposition.Successful
             ))
             .Verifiable();
 
@@ -613,7 +613,7 @@ public class MigrationApplicatorTests : TestHarnessBase
         _console
             .Setup(c => c.ReportApplied(
                 0, It.Is<TimeSpan>(t => t >= TimeSpan.Zero),
-                MigrationTargetDisposition.Successful
+                TargetDisposition.Successful
             ))
             .Verifiable();
 
@@ -678,7 +678,7 @@ public class MigrationApplicatorTests : TestHarnessBase
         _console
             .Setup(c => c.ReportApplied(
                 0, It.Is<TimeSpan>(t => t >= TimeSpan.Zero),
-                MigrationTargetDisposition.Failed
+                TargetDisposition.Failed
             ))
             .Verifiable();
 
@@ -739,7 +739,7 @@ public class MigrationApplicatorTests : TestHarnessBase
         _console
             .Setup(c => c.ReportApplied(
                 0, It.Is<TimeSpan>(t => t >= TimeSpan.Zero),
-                MigrationTargetDisposition.Incomplete
+                TargetDisposition.Incomplete
             ))
             .Verifiable();
 
@@ -820,7 +820,7 @@ public class MigrationApplicatorTests : TestHarnessBase
         _console
             .Setup(c => c.ReportApplied(
                 0, It.Is<TimeSpan>(t => t >= TimeSpan.Zero),
-                MigrationTargetDisposition.Incomplete
+                TargetDisposition.Incomplete
             ))
             .Verifiable();
 

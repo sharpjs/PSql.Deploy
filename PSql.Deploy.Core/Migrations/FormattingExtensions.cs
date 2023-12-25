@@ -5,7 +5,7 @@ namespace PSql.Deploy.Migrations;
 
 using static MigrationPhase;
 using static MigrationState;
-using static MigrationTargetDisposition;
+using static TargetDisposition;
 
 internal static class FormattingExtensions
 {
@@ -44,7 +44,7 @@ internal static class FormattingExtensions
         };
     }
 
-    internal static string? ToMarker(this MigrationTargetDisposition disposition)
+    internal static string? ToMarker(this TargetDisposition disposition)
     {
         return disposition switch
         {
