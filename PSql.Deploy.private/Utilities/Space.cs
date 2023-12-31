@@ -13,7 +13,7 @@ internal static class Space
         return Get(width - s.Length);
     }
 
-    internal static (string, string) GetCentering(int n)
+    internal static (string Left, string Right) GetCentering(int n)
     {
         var half = n >> 1;
         return (Get(n - half), Get(half));
