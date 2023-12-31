@@ -23,12 +23,10 @@ internal interface IMigrationInternals
 
     /// <summary>
     ///   Opens a connection as determined by the property values of the
-    ///   current context, optionally with the specified database name, logging
-    ///   server messages with the specified logger.
+    ///   specified context, logging server messages with the specified logger.
     /// </summary>
-    /// <param name="databaseName">
-    ///   A database name.  If not <see langword="null"/>, this parameter
-    ///   overrides the value of the <see cref="DatabaseName"/> property.
+    /// <param name="context">
+    ///   An object specifying how to connect to the database.
     /// </param>
     /// <param name="logger">
     ///   The object to use to log server messages received over the

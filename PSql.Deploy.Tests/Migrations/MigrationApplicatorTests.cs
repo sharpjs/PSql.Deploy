@@ -9,7 +9,7 @@ namespace PSql.Deploy.Migrations;
 public class MigrationApplicatorTests : TestHarnessBase
 {
     private readonly MigrationApplicator       _applicator;
-    private readonly Mock<IMigrationSession>  _session;
+    private readonly Mock<IMigrationSession>   _session;
     private readonly Mock<IMigrationInternals> _internals;
     private readonly Mock<IMigrationConsole>   _console;
     private readonly SqlContextWork            _work;

@@ -127,9 +127,9 @@ internal class MigrationApplicator : IMigrationValidationContext, IDisposable
     /// <returns>
     ///   A <see cref="Task"/> representing the asynchronous operation.
     /// </returns>
-    /// <exception cref="MigrationValidationException">
-    ///   One or more validation errors was reported.
-    /// </exception>
+    // /// <exception cref="MigrationValidationException">
+    // ///   One or more validation errors was reported.
+    // /// </exception>
     public async Task ApplyAsync()
     {
         try
@@ -141,7 +141,7 @@ internal class MigrationApplicator : IMigrationValidationContext, IDisposable
             var plan              = ComputeMigrationPlan(pendingMigrations);
 
             if (!Validate(plan))
-                return;
+                return; // TODO: throw?
 
             await ExecuteAsync(plan);
         }

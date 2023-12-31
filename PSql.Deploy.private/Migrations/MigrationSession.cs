@@ -4,7 +4,8 @@
 namespace PSql.Deploy.Migrations;
 
 /// <summary>
-///   A session in which seeds are applied to a set of target databases.
+///   A session in which schema migrations are applied to a set of target
+///   databases.
 /// </summary>
 internal class MigrationSession : IMigrationSessionControl, IMigrationSession
 {
