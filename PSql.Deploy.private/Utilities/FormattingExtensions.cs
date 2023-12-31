@@ -1,7 +1,9 @@
 // Copyright 2023 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
-namespace PSql.Deploy.Migrations;
+using PSql.Deploy.Migrations;
+
+namespace PSql.Deploy;
 
 using static MigrationPhase;
 using static MigrationState;
