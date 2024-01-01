@@ -41,14 +41,15 @@ public class InvokeSqlSeedCommand : PerSqlContextCommand
 
     protected override void BeginProcessing()
     {
-        _session = SeedSessionFactory.Invoke(CurrentPath, CancellationToken);
+        _session = SeedSessionFactory.Invoke(new SeedConsole(this), CurrentPath, CancellationToken);
 
         base.BeginProcessing();
     }
 
     protected override void ProcessRecord()
     {
-        _session!.IsWhatIfMode = WhatIf;
+        _session!.IsWhatIfMode   = WhatIf;
+        _session!.MaxParallelism = MaxParallelism; // PerDatabase
         _session!.DiscoverSeeds(CurrentPath, Seed);
 
         base.ProcessRecord();
@@ -56,6 +57,6 @@ public class InvokeSqlSeedCommand : PerSqlContextCommand
 
     protected override Task ProcessWorkAsync(SqlContextWork work)
     {
-        return _session!.ApplyAsync(work, this);
+        return _session!.ApplyAsync(work);
     }
 }

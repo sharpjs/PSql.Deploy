@@ -23,6 +23,16 @@ public interface ISeedSessionControl : ISeedSession
     new bool IsWhatIfMode { get; set; }
 
     /// <summary>
+    ///   Gets or sets the maximum degree of parallelism.  Must be a positive
+    ///   integer.  The default value is the count of logical processors on the
+    ///   current machine.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">
+    ///   Attempted to set the property to zero or to a negative integer.
+    /// </exception>
+    new int MaxParallelism { get; set; }
+
+    /// <summary>
     ///   Discovers seeds in the specified directory path.
     /// </summary>
     /// <param name="path">
@@ -42,17 +52,13 @@ public interface ISeedSessionControl : ISeedSession
     ///   asynchronously.
     /// </summary>
     /// <param name="target">
-    ///   An object specifying the target database.
-    /// </param>
-    /// <param name="cmdlet">
-    ///   The cmdlet through which to report progress.
+    ///   An object specifying how to connect to the target database.
     /// </param>
     /// <returns>
     ///   A <see cref="Task"/> representing the asynchronous operation.
     /// </returns>
     /// <exception cref="ArgumentNullException">
-    ///   <paramref name="target"/> or <paramref name="target"/> is
-    ///   <see langword="null"/>.
+    ///   <paramref name="target"/> is <see langword="null"/>.
     /// </exception>
-    Task ApplyAsync(SqlContextWork target, PSCmdlet cmdlet);
+    Task ApplyAsync(SqlContextWork target);
 }

@@ -15,7 +15,7 @@ namespace PSql.Deploy.Seeding;
 public interface ISeedSession
 {
     /// <summary>
-    ///   Gets the discovered seeds.
+    ///   Gets the seeds to be applied.
     /// </summary>
     ImmutableArray<Seed> Seeds { get; }
 
@@ -27,13 +27,35 @@ public interface ISeedSession
     bool IsWhatIfMode { get; }
 
     /// <summary>
+    ///   Gets the maximum degree of parallelism.  Always a positive integer.
+    /// </summary>
+    int MaxParallelism { get; }
+
+    /// <summary>
     ///   Gets whether any seed application in the session has encountered an
     ///   error.
     /// </summary>
     bool HasErrors { get; }
 
     /// <summary>
+    ///   Gets the console on which to report the progress of seed application
+    ///   to a particular target database.
+    /// </summary>
+    ISeedConsole Console { get; }
+
+    /// <summary>
     ///   Gets the token to monitor for cancellation requests.
     /// </summary>
     CancellationToken CancellationToken { get; }
+
+    /// <summary>
+    ///   Creates a log file.
+    /// </summary>
+    /// <param name="fileName">
+    ///   The name of the log file.
+    /// </param>
+    /// <returns>
+    ///   A writer that writes to the log file.
+    /// </returns>
+    TextWriter CreateLog(string fileName);
 }
