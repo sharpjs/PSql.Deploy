@@ -1,4 +1,4 @@
-// Copyright 2023 Subatomix Research Inc.
+// Copyright 2024 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
 using Moq.Protected;
@@ -6,6 +6,7 @@ using Moq.Protected;
 namespace PSql.Deploy.Migrations;
 
 [TestFixture]
+[FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
 public class MigrationApplicatorTests : TestHarnessBase
 {
     private readonly MigrationApplicator       _applicator;

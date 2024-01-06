@@ -1,4 +1,4 @@
-// Copyright 2023 Subatomix Research Inc.
+// Copyright 2024 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
 namespace PSql.Deploy.Migrations;
@@ -6,6 +6,7 @@ namespace PSql.Deploy.Migrations;
 using static MigrationPhase;
 
 [TestFixture]
+[FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
 public class MigrationValidatorTests : TestHarnessBase
 {
     private readonly Mock<IMigrationValidationContext> _context;

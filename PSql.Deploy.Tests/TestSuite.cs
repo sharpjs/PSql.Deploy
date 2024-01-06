@@ -1,8 +1,7 @@
-// Copyright 2023 Subatomix Research Inc.
+// Copyright 2024 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
 [assembly: Parallelizable(ParallelScope.All)]
-[assembly: FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
 [assembly: SetCulture("en-US")]
 
 namespace PSql.Deploy;
