@@ -1,4 +1,4 @@
-// Copyright 2023 Subatomix Research Inc.
+// Copyright 2024 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
 using System.Diagnostics;
@@ -61,10 +61,10 @@ internal class SeedApplicator : IDisposable
         _seed        = seed;
         _target      = target;
 
+        SqlStrategy  = Deploy.SqlStrategy.GetInstance(_session.IsWhatIfMode);
+
         var fileName = $"{ServerName}.{DatabaseName}.Seed_{SeedName}.log".SanitizeFileName();
         _writer      = TextWriter.Synchronized(session.CreateLog(fileName));
-
-        Sql          = SqlStrategy.GetInstance(_session.IsWhatIfMode);
 
         _stopwatch   = Stopwatch.StartNew();
     }
@@ -85,7 +85,7 @@ internal class SeedApplicator : IDisposable
     public ISeedConsole Console => _session.Console;
 
     // Mockable boundary for testability
-    internal ISqlStrategy Sql { get; set; }
+    internal ISqlStrategy SqlStrategy { get; set; }
 
     /// <summary>
     ///   Applies the seed to the target database asynchronously.
@@ -161,7 +161,7 @@ internal class SeedApplicator : IDisposable
     {
         var logger = new SeedSqlMessageLogger(_writer, context.WorkerId);
 
-        using var connection = await Sql.ConnectAsync(Context, logger, _session.CancellationToken);
+        using var connection = await SqlStrategy.ConnectAsync(Context, logger, _session.CancellationToken);
         using var command    = connection.CreateCommand();
 
         await PrepareAsync(command, context);
@@ -186,7 +186,7 @@ internal class SeedApplicator : IDisposable
             """
         );
 
-        return Sql.ExecuteNonQueryAsync(command, context.CancellationToken);
+        return SqlStrategy.ExecuteNonQueryAsync(command, context.CancellationToken);
     }
 
     private async Task ExecuteAsync(SeedModule module, ISqlCommand command, QueueContext context)
@@ -203,7 +203,7 @@ internal class SeedApplicator : IDisposable
     {
         command.CommandText = batch;
 
-        return Sql.ExecuteNonQueryAsync(command, context.CancellationToken);
+        return SqlStrategy.ExecuteNonQueryAsync(command, context.CancellationToken);
     }
 
     private void ReportStarting()
