@@ -1,6 +1,8 @@
 // Copyright 2024 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
+#pragma warning disable IDE0001 // Simplify Names // Full names desired for disambiguation.
+
 [assembly: Parallelizable(ParallelScope.All)]
 [assembly: SetCulture("en-US")]
 
