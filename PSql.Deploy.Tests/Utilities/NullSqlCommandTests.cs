@@ -1,4 +1,4 @@
-// Copyright 2023 Subatomix Research Inc.
+// Copyright 2024 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
 using PSql.Internal;
@@ -43,6 +43,14 @@ public class NullSqlCommandTests
     {
         Command.CommandTimeout = 42;
         Command.CommandTimeout.Should().Be(42);
+    }
+
+    [Test]
+    public void ExecuteAndProjectToPSObjects()
+    {
+        using var enumerator = Command.ExecuteAndProjectToPSObjects();
+
+        enumerator.MoveNext().Should().BeFalse();
     }
 
     [Test]
