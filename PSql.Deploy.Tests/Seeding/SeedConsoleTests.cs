@@ -28,7 +28,7 @@ public class SeedConsoleTests : TestHarnessBase
     [Test]
     public void Cmdlet_Get()
     {
-        Console.Cmdlet.Should().BeSameAs(Cmdlet);
+        Console.Cmdlet.Should().BeSameAs(Cmdlet.Object);
     }
 
     [Test]
