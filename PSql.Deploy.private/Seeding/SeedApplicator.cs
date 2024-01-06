@@ -47,7 +47,11 @@ internal class SeedApplicator : IDisposable
     /// <param name="target">
     ///   An object specifying how to connect to the target database.
     /// </param>
-    /// <exception cref="ArgumentNullException"></exception>
+    /// <exception cref="ArgumentNullException">
+    ///   <paramref name="session"/>,
+    ///   <paramref name="seed"/>, and/or
+    ///   <paramref name="target"/> is <see langword="null"/>.
+    /// </exception>
     public SeedApplicator(ISeedSession session, LoadedSeed seed, SqlContextWork target)
     {
         if (session is null)
