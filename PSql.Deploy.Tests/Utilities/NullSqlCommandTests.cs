@@ -6,6 +6,7 @@ using PSql.Internal;
 namespace PSql.Deploy.Utilities;
 
 [TestFixture]
+[FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
 public class NullSqlCommandTests
 {
     private readonly ISqlCommand
