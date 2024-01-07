@@ -163,15 +163,20 @@ internal class SeedApplicator : IDisposable
 
     private async Task SeedWorkerMainAsync(QueueContext context)
     {
-        var logger = new SeedSqlMessageLogger(_writer, context.WorkerId);
-
-        using var connection = await SqlStrategy.ConnectAsync(Context, logger, _session.CancellationToken);
+        using var connection = await ConnectAsync(context);
         using var command    = connection.CreateCommand();
 
         await PrepareAsync(command, context);
 
         while (await context.GetNextEntryAsync() is { Value: var module })
             await ExecuteAsync(module, command, context);
+    }
+
+    private Task<ISqlConnection> ConnectAsync(QueueContext context)
+    {
+        var logger = new SeedSqlMessageLogger(_writer, context.WorkerId);
+
+        return SqlStrategy.ConnectAsync(Context, logger, _session.CancellationToken);
     }
 
     private Task PrepareAsync(ISqlCommand command, QueueContext context)
