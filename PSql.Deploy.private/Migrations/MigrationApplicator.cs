@@ -1,4 +1,4 @@
-// Copyright 2023 Subatomix Research Inc.
+// Copyright 2024 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
 using System.Diagnostics;
@@ -15,7 +15,7 @@ using static RuntimeInformation;
 internal class MigrationApplicator : IMigrationValidationContext, IDisposable
 {
     // The target of this applicator
-    private readonly SqlContextWork _work;
+    private readonly SqlContextWork _target;
 
     // Time elapsed since construction
     private readonly Stopwatch _stopwatch;
@@ -26,31 +26,31 @@ internal class MigrationApplicator : IMigrationValidationContext, IDisposable
     /// <param name="session">
     ///   The migration session.
     /// </param>
-    /// <param name="work">
+    /// <param name="target">
     ///   An object specifying how to connect to the target database.
     /// </param>
     /// <exception cref="ArgumentNullException">
     ///   <paramref name="session"/> and/or
-    ///   <paramref name="work"/> is <see langword="null"/>.
+    ///   <paramref name="target"/> is <see langword="null"/>.
     /// </exception>
     public MigrationApplicator(
         IMigrationSession session,
-        SqlContextWork    work,
+        SqlContextWork    target,
         IMigrationConsole console)
     {
         if (session is null)
             throw new ArgumentNullException(nameof(session));
-        if (work is null)
-            throw new ArgumentNullException(nameof(work));
+        if (target is null)
+            throw new ArgumentNullException(nameof(target));
         if (console is null)
             throw new ArgumentNullException(nameof(console));
 
-        _work              = work;
+        _target            = target;
         _stopwatch         = Stopwatch.StartNew();
 
         Session            = session;
         Console            = console;
-        LogWriter          = session.CreateLog(work);
+        LogWriter          = session.CreateLog(target);
         SqlMessageLogger   = new TextWriterSqlMessageLogger(LogWriter);
     }
 
@@ -73,7 +73,7 @@ internal class MigrationApplicator : IMigrationValidationContext, IDisposable
     /// <summary>
     ///   Gets an object that specifies how to connect to the target database.
     /// </summary>
-    public SqlContext Context => _work.Context;
+    public SqlContext Context => _target.Context;
 
     /// <summary>
     ///   TODO
@@ -81,10 +81,10 @@ internal class MigrationApplicator : IMigrationValidationContext, IDisposable
     public IMigrationConsole Console { get; }
 
     /// <inheritdoc/>
-    public string ServerName => _work.ServerDisplayName;
+    public string ServerName => _target.ServerDisplayName;
 
     /// <inheritdoc/>
-    public string DatabaseName => _work.DatabaseDisplayName;
+    public string DatabaseName => _target.DatabaseDisplayName;
 
     /// <summary>
     ///   Gets a writer that writes to the per-database log.
