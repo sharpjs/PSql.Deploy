@@ -40,6 +40,7 @@ public class SeedSession : ISeedSessionControl, ISeedSession
     ///   The token to monitor for cancellation requests.
     /// </param>
     /// <exception cref="ArgumentNullException">
+    ///   <paramref name="console"/> and/or
     ///   <paramref name="logPath"/> is <see langword="null"/>.
     /// </exception>
     public SeedSession(ISeedConsole console, string logPath, CancellationToken cancellation)
@@ -64,6 +65,9 @@ public class SeedSession : ISeedSessionControl, ISeedSession
     /// <inheritdoc/>
     public ImmutableArray<Seed> Seeds { get; private set; }
 
+    /// <inheritdoc/>
+    public ISeedConsole Console { get; }
+
     /// <summary>
     ///   Gets the path of a directory in which to save log files.
     /// </summary>
@@ -74,9 +78,6 @@ public class SeedSession : ISeedSessionControl, ISeedSession
 
     /// <inheritdoc/>
     public bool HasErrors => Volatile.Read(ref _errorCount) > 0;
-
-    /// <inheritdoc/>
-    public ISeedConsole Console { get; }
 
     // Count of applications to target databases that threw exceptions
     private int _errorCount;
