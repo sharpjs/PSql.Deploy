@@ -179,6 +179,7 @@ internal class SeedApplicator : IDisposable
         command.CommandText = string.Create(
             CultureInfo.InvariantCulture,
             $"""
+            -- PrepareAsync
             DECLARE
                 @RunId    uniqueidentifier = '{context.RunId:D}',
                 @WorkerId int              = '{context.WorkerId:D}';
