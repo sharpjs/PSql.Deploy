@@ -99,9 +99,17 @@ internal class MigrationSession : IMigrationSessionControl, IMigrationSession
     }
 
     /// <inheritdoc/>
-    TextWriter IMigrationSession.CreateLog(string fileName)
+    TextWriter IMigrationSession.CreateLog(SqlContextWork target)
     {
+        if (target is null)
+            throw new ArgumentNullException(nameof(target));
+
         Directory.CreateDirectory(LogPath);
+
+        var server   = target.ServerDisplayName;
+        var database = target.DatabaseDisplayName;
+        var fileName = $"{server}.{database}.{(int) Phase}_{Phase}.log".SanitizeFileName();
+
         return new StreamWriter(Path.Combine(LogPath, fileName));
     }
 }

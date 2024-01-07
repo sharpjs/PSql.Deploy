@@ -67,8 +67,7 @@ internal class SeedApplicator : IDisposable
 
         SqlStrategy  = Deploy.SqlStrategy.GetInstance(_session.IsWhatIfMode);
 
-        var fileName = $"{ServerName}.{DatabaseName}.Seed_{SeedName}.log".SanitizeFileName();
-        _writer      = TextWriter.Synchronized(session.CreateLog(fileName));
+        _writer      = TextWriter.Synchronized(session.CreateLog(seed.Seed, target));
 
         _stopwatch   = Stopwatch.StartNew();
     }

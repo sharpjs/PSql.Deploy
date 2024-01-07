@@ -37,7 +37,7 @@ public class MigrationApplicatorTests : TestHarnessBase
             .Setup(s => s.Phase)
             .Returns(MigrationPhase.Pre);
         _session
-            .Setup(s => s.CreateLog("db.example.com.test.0_Pre.log"))
+            .Setup(s => s.CreateLog(_work))
             .Returns(_log);
 
         _internals = Mocks.Create<IMigrationInternals>();

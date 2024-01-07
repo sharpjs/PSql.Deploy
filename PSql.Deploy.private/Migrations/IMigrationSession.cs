@@ -56,15 +56,19 @@ public interface IMigrationSession
     CancellationToken CancellationToken { get; }
 
     /// <summary>
-    ///   Creates a log file.
+    ///   Creates a log file for migration application to the specified target
+    ///   database.
     /// </summary>
-    /// <param name="fileName">
-    ///   The name of the log file.
+    /// <param name="target">
+    ///   An object specifying how to connect to the target database.
     /// </param>
     /// <returns>
     ///   A writer that writes to the log file.
     /// </returns>
-    TextWriter CreateLog(string fileName);
+    /// <exception cref="ArgumentNullException">
+    ///   <paramref name="target"/> is <see langword="null"/>.
+    /// </exception>
+    TextWriter CreateLog(SqlContextWork target);
 
     /// <summary>
     ///   Gets migrations applied to the specified target database

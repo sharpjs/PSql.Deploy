@@ -45,14 +45,12 @@ internal class MigrationApplicator : IMigrationValidationContext, IDisposable
         if (console is null)
             throw new ArgumentNullException(nameof(console));
 
-        _work        = work;
-        _stopwatch   = Stopwatch.StartNew();
+        _work              = work;
+        _stopwatch         = Stopwatch.StartNew();
 
-        Session      = session;
-        Console      = console;
-
-        var fileName = $"{ServerName}.{DatabaseName}.{(int) session.Phase}_{session.Phase}.log".SanitizeFileName();
-        LogWriter    = session.CreateLog(fileName);
+        Session            = session;
+        Console            = console;
+        LogWriter          = session.CreateLog(work);
         SqlMessageLogger   = new TextWriterSqlMessageLogger(LogWriter);
     }
 

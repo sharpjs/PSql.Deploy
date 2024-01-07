@@ -151,7 +151,7 @@ public class SeedApplicatorTests
                 .Returns(whatIf);
 
             Session
-                .Setup(s => s.CreateLog($"db.example.com.test.Seed_{seed.Seed.Name}.log"))
+                .Setup(s => s.CreateLog(seed.Seed, Target))
                 .Returns(Log)
                 .Verifiable();
         }

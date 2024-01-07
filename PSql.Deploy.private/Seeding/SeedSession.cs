@@ -111,9 +111,19 @@ public class SeedSession : ISeedSessionControl, ISeedSession
     }
 
     /// <inheritdoc/>
-    TextWriter ISeedSession.CreateLog(string fileName)
+    TextWriter ISeedSession.CreateLog(Seed seed, SqlContextWork target)
     {
+        if (seed is null)
+            throw new ArgumentNullException(nameof(seed));
+        if (target is null)
+            throw new ArgumentNullException(nameof(target));
+
         Directory.CreateDirectory(LogPath);
+
+        var server   = target.ServerDisplayName;
+        var database = target.DatabaseDisplayName;
+        var fileName = $"{server}.{database}.Seed_{seed.Name}.log".SanitizeFileName();
+
         return new StreamWriter(Path.Combine(LogPath, fileName));
     }
 }

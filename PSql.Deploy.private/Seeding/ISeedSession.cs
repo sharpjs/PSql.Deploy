@@ -49,13 +49,21 @@ public interface ISeedSession
     CancellationToken CancellationToken { get; }
 
     /// <summary>
-    ///   Creates a log file.
+    ///   Creates a log file for seed application to the specified target
+    ///   database.
     /// </summary>
-    /// <param name="fileName">
-    ///   The name of the log file.
+    /// <param name="seed">
+    ///   The seed being applied.
+    /// </param>
+    /// <param name="target">
+    ///   An object specifying how to connect to the target database.
     /// </param>
     /// <returns>
     ///   A writer that writes to the log file.
     /// </returns>
-    TextWriter CreateLog(string fileName);
+    /// <exception cref="ArgumentNullException">
+    ///   <paramref name="seed"/> and/or
+    ///   <paramref name="target"/> is <see langword="null"/>.
+    /// </exception>
+    TextWriter CreateLog(Seed seed, SqlContextWork target);
 }
