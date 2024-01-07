@@ -1,4 +1,4 @@
-// Copyright 2023 Subatomix Research Inc.
+// Copyright 2024 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
 using PSql.Deploy.Migrations;
@@ -66,8 +66,10 @@ public class InvokeSqlMigrationsCommand : PerSqlContextCommand
 
     private void ProcessRecordCore()
     {
-        var path = SessionState.Path.CurrentFileSystemLocation.Path;
-        _session = MigrationSessionFactory.Create(path, CancellationToken);
+        var path    = SessionState.Path.CurrentFileSystemLocation.Path;
+        var console = new MigrationConsole(this);
+
+        _session = MigrationSessionFactory.Create(console, path, CancellationToken);
 
         _session.AllowCorePhase = AllowCorePhase;
         _session.IsWhatIfMode   = WhatIf;

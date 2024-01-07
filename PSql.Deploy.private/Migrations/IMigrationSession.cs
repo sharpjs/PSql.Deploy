@@ -1,4 +1,4 @@
-// Copyright 2023 Subatomix Research Inc.
+// Copyright 2024 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
 namespace PSql.Deploy.Migrations;
@@ -49,6 +49,12 @@ public interface IMigrationSession
     ///   an error.
     /// </summary>
     bool HasErrors { get; }
+
+    /// <summary>
+    ///   Gets the console on which to report the progress of migration
+    ///   application to a particular target database.
+    /// </summary>
+    IMigrationConsole Console { get; }
 
     /// <summary>
     ///   Gets the token to monitor for cancellation requests.

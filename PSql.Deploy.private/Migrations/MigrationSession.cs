@@ -1,4 +1,4 @@
-// Copyright 2023 Subatomix Research Inc.
+// Copyright 2024 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
 namespace PSql.Deploy.Migrations;
@@ -12,23 +12,21 @@ internal class MigrationSession : IMigrationSessionControl, IMigrationSession
     /// <summary>
     ///   Initializes a new <see cref="MigrationSession"/> instance.
     /// </summary>
-    /// <param name="logPath">
-    ///   The path of a directory in which to save per-database log files.
-    /// </param>
-    /// <param name="cancellation">
-    ///   The token to monitor for cancellation requests.
-    /// </param>
-    /// <exception cref="ArgumentNullException">
-    ///   <paramref name="logPath"/> is <see langword="null"/>.
-    /// </exception>
-    public MigrationSession(string logPath, CancellationToken cancellation)
+    /// <inheritdoc cref="MigrationSessionFactory.Create"/>
+    public MigrationSession(
+        IMigrationConsole console,
+        string            logPath,
+        CancellationToken cancellation)
     {
+        if (console is null)
+            throw new ArgumentNullException(nameof(console));
         if (logPath is null)
             throw new ArgumentNullException(nameof(logPath));
 
         Migrations                   = ImmutableArray<Migration>.Empty;
         EarliestDefinedMigrationName = "";
 
+        Console              = console;
         LogPath              = logPath;
         CancellationToken    = cancellation;
     }
@@ -47,6 +45,9 @@ internal class MigrationSession : IMigrationSessionControl, IMigrationSession
 
     /// <inheritdoc/>
     public string EarliestDefinedMigrationName { get; private set; }
+
+    /// <inheritdoc/>
+    public IMigrationConsole Console { get; }
 
     /// <summary>
     ///   Gets the path of a directory in which to save log files.
@@ -72,7 +73,7 @@ internal class MigrationSession : IMigrationSessionControl, IMigrationSession
     /// <inheritdoc/>
     public async Task ApplyAsync(SqlContextWork target, PSCmdlet cmdlet)
     {
-        using var applicator = new MigrationApplicator(this, target, new MigrationConsole(cmdlet));
+        using var applicator = new MigrationApplicator(this, target);
 
         try
         {

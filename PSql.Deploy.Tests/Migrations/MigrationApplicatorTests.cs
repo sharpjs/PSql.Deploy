@@ -11,8 +11,8 @@ public class MigrationApplicatorTests : TestHarnessBase
 {
     private readonly MigrationApplicator       _applicator;
     private readonly Mock<IMigrationSession>   _session;
-    private readonly Mock<IMigrationInternals> _internals;
     private readonly Mock<IMigrationConsole>   _console;
+    private readonly Mock<IMigrationInternals> _internals;
     private readonly SqlContextWork            _work;
     private readonly StringWriter              _log;
 
@@ -24,9 +24,11 @@ public class MigrationApplicatorTests : TestHarnessBase
             DatabaseName = "test",
         });
 
-        _log = new StringWriter();
+        _session   = Mocks.Create<IMigrationSession>();
+        _console   = Mocks.Create<IMigrationConsole>();
+        _internals = Mocks.Create<IMigrationInternals>();
+        _log       = new StringWriter();
 
-        _session = Mocks.Create<IMigrationSession>();
         _session
             .Setup(s => s.AllowCorePhase)
             .Returns(false);
@@ -37,14 +39,13 @@ public class MigrationApplicatorTests : TestHarnessBase
             .Setup(s => s.Phase)
             .Returns(MigrationPhase.Pre);
         _session
+            .Setup(s => s.Console)
+            .Returns(_console.Object);
+        _session
             .Setup(s => s.CreateLog(_work))
             .Returns(_log);
 
-        _internals = Mocks.Create<IMigrationInternals>();
-
-        _console = Mocks.Create<IMigrationConsole>();
-
-        _applicator = new MigrationApplicator(_session.Object, _work, _console.Object)
+        _applicator = new MigrationApplicator(_session.Object, _work)
         {
             Internals = _internals.Object
         };
@@ -60,21 +61,14 @@ public class MigrationApplicatorTests : TestHarnessBase
     [Test]
     public void Construct_NullSession()
     {
-        Invoking(() => new MigrationApplicator(null!, _work, _console.Object))
+        Invoking(() => new MigrationApplicator(null!, _work))
             .Should().Throw<ArgumentNullException>();
     }
 
     [Test]
     public void Construct_NullContext()
     {
-        Invoking(() => new MigrationApplicator(_session.Object, null!, _console.Object))
-            .Should().Throw<ArgumentNullException>();
-    }
-
-    [Test]
-    public void Construct_NullConsole()
-    {
-        Invoking(() => new MigrationApplicator(_session.Object, _work, null!))
+        Invoking(() => new MigrationApplicator(_session.Object, null!))
             .Should().Throw<ArgumentNullException>();
     }
 

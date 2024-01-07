@@ -33,31 +33,29 @@ internal class MigrationApplicator : IMigrationValidationContext, IDisposable
     ///   <paramref name="session"/> and/or
     ///   <paramref name="target"/> is <see langword="null"/>.
     /// </exception>
-    public MigrationApplicator(
-        IMigrationSession session,
-        SqlContextWork    target,
-        IMigrationConsole console)
+    public MigrationApplicator(IMigrationSession session, SqlContextWork target)
     {
         if (session is null)
             throw new ArgumentNullException(nameof(session));
         if (target is null)
             throw new ArgumentNullException(nameof(target));
-        if (console is null)
-            throw new ArgumentNullException(nameof(console));
 
-        _target            = target;
-        _stopwatch         = Stopwatch.StartNew();
+        Session          = session;
+        _target          = target;
 
-        Session            = session;
-        Console            = console;
-        LogWriter          = session.CreateLog(target);
-        SqlMessageLogger   = new TextWriterSqlMessageLogger(LogWriter);
+        LogWriter        = session.CreateLog(target);
+        SqlMessageLogger = new TextWriterSqlMessageLogger(LogWriter);
+
+        _stopwatch       = Stopwatch.StartNew();
     }
 
     /// <summary>
     ///   Gets the migration session.
     /// </summary>
     public IMigrationSession Session { get; }
+
+    /// <inheritdoc cref="IMigrationSession.Console"/>
+    public IMigrationConsole Console => Session.Console;
 
     /// <inheritdoc cref="IMigrationSession.EarliestDefinedMigrationName"/>
     public string EarliestDefinedMigrationName => Session.EarliestDefinedMigrationName;
@@ -74,11 +72,6 @@ internal class MigrationApplicator : IMigrationValidationContext, IDisposable
     ///   Gets an object that specifies how to connect to the target database.
     /// </summary>
     public SqlContext Context => _target.Context;
-
-    /// <summary>
-    ///   TODO
-    /// </summary>
-    public IMigrationConsole Console { get; }
 
     /// <inheritdoc/>
     public string ServerName => _target.ServerDisplayName;
