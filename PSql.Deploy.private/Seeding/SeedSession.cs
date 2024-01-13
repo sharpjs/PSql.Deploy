@@ -91,11 +91,15 @@ public class SeedSession : ISeedSessionControl, ISeedSession
     /// <inheritdoc/>
     public async Task ApplyAsync(SqlContextWork target)
     {
+        if (target is null)
+            throw new ArgumentNullException(nameof(target));
+
         try
         {
             foreach (var seed in Seeds)
             {
                 var loadedSeed = SeedLoader.Load(seed); // TODO: once
+
                 using (var applicator = new SeedApplicator(this, loadedSeed, target))
                     await applicator.ApplyAsync();
             }

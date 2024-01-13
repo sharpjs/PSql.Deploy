@@ -65,27 +65,25 @@ internal class SeedApplicator : IDisposable
         _seed        = seed;
         _target      = target;
 
-        SqlStrategy  = Deploy.SqlStrategy.GetInstance(_session.IsWhatIfMode);
-
+        SqlStrategy  = Deploy.SqlStrategy.GetInstance(session.IsWhatIfMode);
         _writer      = TextWriter.Synchronized(session.CreateLog(seed.Seed, target));
-
         _stopwatch   = Stopwatch.StartNew();
     }
 
+    /// <inheritdoc cref="SeedSession.Console"/>
+    public ISeedConsole Console => _session.Console;
+
     /// <inheritdoc cref="Seed.Name"/>
     public string SeedName => _seed.Seed.Name;
+
+    /// <inheritdoc cref="SqlContextWork.Context"/>
+    public SqlContext Context => _target.Context;
 
     /// <inheritdoc cref="SqlContextWork.ServerDisplayName"/>
     public string ServerName => _target.ServerDisplayName;
 
     /// <inheritdoc cref="SqlContextWork.DatabaseDisplayName"/>
     public string DatabaseName => _target.DatabaseDisplayName;
-
-    /// <inheritdoc cref="SqlContextWork.Context"/>
-    public SqlContext Context => _target.Context;
-
-    /// <inheritdoc cref="SeedSession.Console"/>
-    public ISeedConsole Console => _session.Console;
 
     // Mockable boundary for testability
     internal ISqlStrategy SqlStrategy { get; set; }
@@ -217,7 +215,7 @@ internal class SeedApplicator : IDisposable
 
     private void ReportStarting()
     {
-        _session.Console.ReportStarting();
+        Console.ReportStarting();
 
         var process = Process.GetCurrentProcess();
 
@@ -431,7 +429,5 @@ internal class SeedApplicator : IDisposable
 
     /// <inheritdoc/>
     public void Dispose()
-    {
-        _writer.Dispose();
-    }
+        => _writer.Dispose();
 }
