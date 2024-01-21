@@ -14,7 +14,9 @@ namespace PSql.Deploy.Commands;
 /// </remarks>
 [Cmdlet(
     VerbsLifecycle.Invoke, "SqlSeed",
-    DefaultParameterSetName = ContextParameterSetName
+    DefaultParameterSetName = ContextParameterSetName,
+    SupportsShouldProcess   = true, // -Confirm and -WhatIf
+    ConfirmImpact           = ConfirmImpact.High
 )]
 public class InvokeSqlSeedCommand : PerSqlContextCommand
 {
@@ -39,9 +41,8 @@ public class InvokeSqlSeedCommand : PerSqlContextCommand
     [AllowEmptyCollection]
     public Hashtable? Define { get; set; }
 
-    // TODO: Use SupportsShouldProcess
-    [Parameter()]
-    public SwitchParameter WhatIf { get; set; }
+    private bool IsWhatIf
+        => this.IsWhatIf();
 
     internal SeedSession.Factory
         SeedSessionFactory { get; set; } = SeedSession.DefaultFactory;
@@ -60,7 +61,7 @@ public class InvokeSqlSeedCommand : PerSqlContextCommand
 
     protected override void ProcessRecord()
     {
-        _session!.IsWhatIfMode   = WhatIf;
+        _session!.IsWhatIfMode   = IsWhatIf;
         _session!.MaxParallelism = MaxParallelism; // PerDatabase
         _session!.DiscoverSeeds(CurrentPath, Seed);
 

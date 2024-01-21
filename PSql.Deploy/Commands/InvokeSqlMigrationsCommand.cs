@@ -16,7 +16,9 @@ using static MigrationPhase;
 /// </remarks>
 [Cmdlet(
     VerbsLifecycle.Invoke, "SqlMigrations",
-    DefaultParameterSetName = ContextParameterSetName
+    DefaultParameterSetName = ContextParameterSetName,
+    SupportsShouldProcess   = true, // -Confirm and -WhatIf
+    ConfirmImpact           = ConfirmImpact.High
 )]
 public class InvokeSqlMigrationsCommand : PerSqlContextCommand
 {
@@ -52,9 +54,8 @@ public class InvokeSqlMigrationsCommand : PerSqlContextCommand
     [Parameter()]
     public SwitchParameter AllowCorePhase { get; set; }
 
-    // -WhatIf
-    [Parameter()]
-    public SwitchParameter WhatIf { get; set; }
+    private bool IsWhatIf
+        => this.IsWhatIf();
 
     private static MigrationPhase[] AllPhases
         => new[] { Pre, Core, Post };
@@ -90,7 +91,7 @@ public class InvokeSqlMigrationsCommand : PerSqlContextCommand
         _session = MigrationSessionFactory.Create(console, path, CancellationToken);
 
         _session.AllowCorePhase = AllowCorePhase;
-        _session.IsWhatIfMode   = WhatIf;
+        _session.IsWhatIfMode   = IsWhatIf;
 
         _session.DiscoverMigrations(Path ?? path, MaximumMigrationName);
 
