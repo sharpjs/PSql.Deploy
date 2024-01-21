@@ -63,7 +63,10 @@ public class InvokeSqlMigrationsCommand : PerSqlContextCommand
     private static MigrationPhase[] AllPhases
         => new[] { Pre, Core, Post };
 
-    private IMigrationSessionControl? _session;
+#nullable disable warnings
+    // Set in BeginProcessing
+    private IMigrationSessionControl _session;
+#nullable restore
 
     protected override void BeginProcessing() { } // do not call base
     protected override void EndProcessing()   { } // do not call base
@@ -112,6 +115,6 @@ public class InvokeSqlMigrationsCommand : PerSqlContextCommand
 
     protected override Task ProcessWorkAsync(SqlContextWork work)
     {
-        return _session!.ApplyAsync(work, this);
+        return _session.ApplyAsync(work, this);
     }
 }
