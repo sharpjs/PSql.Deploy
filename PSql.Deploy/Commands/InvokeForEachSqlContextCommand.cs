@@ -1,4 +1,4 @@
-// Copyright 2023 Subatomix Research Inc.
+// Copyright 2024 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
 using System.Collections.Concurrent;
@@ -6,9 +6,12 @@ using System.Collections.Concurrent;
 namespace PSql.Deploy.Commands;
 
 /// <summary>
-///   Invokes a <see cref="ScriptBlock"/> for each <see cref="SqlContext"/> in
-///   one or more sets.
+///   The <c>Invoke-ForEachSqlContext</c> cmdlet.
 /// </summary>
+/// <remarks>
+///   Invokes a <see cref="System.Management.Automation.ScriptBlock"/> for each
+///   <see cref="SqlContext"/> in one or more sets.
+/// </remarks>
 [Cmdlet(VerbsLifecycle.Invoke, "ForEachSqlContext",
     DefaultParameterSetName = ContextSetParameterSetName,
     ConfirmImpact           = ConfirmImpact.Low,
@@ -30,7 +33,10 @@ public class InvokeForEachSqlContextCommand : PerSqlContextCommand
         _exceptions = new();
     }
 
-    // -ScriptBlock
+    /// <summary>
+    ///   <b>-ScriptBlock:</b>
+    ///   Script block to execute for each <see cref="SqlContext"/>.
+    /// </summary>
     [Parameter(Mandatory = true, Position = 0)]
     [ValidateNotNull]
     public ScriptBlock ScriptBlock
@@ -39,7 +45,10 @@ public class InvokeForEachSqlContextCommand : PerSqlContextCommand
         set => _scriptBlock   = value;
     }
 
-    // -Module
+    /// <summary>
+    ///   <b>-Module:</b>
+    ///   Modules to import before invoking <see cref="ScriptBlock"/>.
+    /// </summary>
     [Parameter()]
     [ValidateNotNull]
     [AllowEmptyCollection]
@@ -49,7 +58,10 @@ public class InvokeForEachSqlContextCommand : PerSqlContextCommand
         set => _modules   = value.Sanitize();
     }
 
-    // -Variable
+    /// <summary>
+    ///   <b>-Variable:</b>
+    ///   Variables to predefine before invoking <see cref="ScriptBlock"/>.
+    /// </summary>
     [Parameter()]
     [ValidateNotNull]
     [AllowEmptyCollection]

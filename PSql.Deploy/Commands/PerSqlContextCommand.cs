@@ -1,10 +1,13 @@
-// Copyright 2023 Subatomix Research Inc.
+// Copyright 2024 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
 using Subatomix.PowerShell.TaskHost;
 
 namespace PSql.Deploy.Commands;
 
+/// <summary>
+///   Base class for cmdlets that operate on multiple databases in parallel.
+/// </summary>
 public abstract class PerSqlContextCommand : AsyncPSCmdlet
 {
     internal const string
@@ -15,7 +18,11 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
     private SqlContext[]?            _contexts;
     private int                      _maxParallelism;
 
-    // -ContextSet
+    /// <summary>
+    ///   <b>-ContextSet:</b>
+    ///   Objects specifying sets of databases on which to operate with limited
+    ///   parallelism.  Obtain via the <c>New-SqlContextParallelSet</c> cmdlet.
+    /// </summary>
     [Parameter(
         Position          = 0,
         Mandatory         = true,
@@ -29,7 +36,11 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
         set => _targets   = value.Sanitize();
     }
 
-    // -Context
+    /// <summary>
+    ///   <b>-Context:</b>
+    ///   Objects specifying how to connect to databases.  Obtain via the
+    ///   <c>New-SqlContext</c> cmdlet.
+    /// </summary>
     [Parameter(
         Position          = 0,
         ValueFromPipeline = true,
@@ -42,9 +53,12 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
         set => _contexts   = value.Sanitize();
     }
 
-    // -MaxParallelism
+    /// <summary>
+    ///   <b>-MaxParallelism:</b>
+    ///   Maximum count of operations to perform in parallel.  The default
+    ///   value is the number of logical processors on the local machine.
+    /// </summary>
     [Parameter(ParameterSetName = ContextParameterSetName)]
-    [Alias("ThrottleLimit")]
     [ValidateRange(1, int.MaxValue)]
     public int MaxParallelism
     {

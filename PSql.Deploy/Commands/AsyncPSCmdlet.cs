@@ -20,7 +20,9 @@ public abstract class AsyncPSCmdlet : PSCmdlet, ICmdlet, IDisposable
     public CancellationToken CancellationToken
         => _asyncScope?.CancellationToken ?? default;
 
-    /// <inheritdoc/>
+    /// <summary>
+    ///   Performs initialization of command execution.
+    /// </summary>
     protected override void BeginProcessing()
     {
         var previous = _asyncScope;
@@ -30,7 +32,9 @@ public abstract class AsyncPSCmdlet : PSCmdlet, ICmdlet, IDisposable
             previous.Dispose();
     }
 
-    /// <inheritdoc/>
+    /// <summary>
+    ///   Performs cleanup after command execution.
+    /// </summary>
     protected override void EndProcessing()
     {
         _asyncScope?.Complete();

@@ -8,29 +8,47 @@ namespace PSql.Deploy.Commands;
 
 using static MigrationPhase;
 
+/// <summary>
+///   The <c>Invoke-SqlMigrations</c> cmdlet.
+/// </summary>
+/// <remarks>
+///   Invokes database schema migrations against sets of target databases.
+/// </remarks>
 [Cmdlet(
     VerbsLifecycle.Invoke, "SqlMigrations",
     DefaultParameterSetName = ContextParameterSetName
 )]
 public class InvokeSqlMigrationsCommand : PerSqlContextCommand
 {
-    // -Path
+    /// <summary>
+    ///   <b>-Path:</b>
+    ///   Path to a directory containing migrations.
+    /// </summary>
     [Parameter()]
     [Alias("PSPath", "SourcePath")]
     [ValidateNotNullOrEmpty]
     public string? Path { get; set; }
 
-    // -Phase
+    /// <summary>
+    ///   <b>-Phase:</b>
+    ///   Deployment phases in which to run migrations.
+    /// </summary>
     [Parameter()]
     [ValidateSet(nameof(Pre), nameof(Core), nameof(Post))]
     public MigrationPhase[]? Phase { get; set; }
 
-    // -MaximumMigrationName
+    /// <summary>
+    ///   <b>-MaximumMigrationName:</b>
+    ///   Latest (maximum) name of migrations to discover.
+    /// </summary>
     [Parameter()]
     [ValidateNotNullOrEmpty]
     public string? MaximumMigrationName { get; set; }
 
-    // -AllowCorePhase
+    /// <summary>
+    ///   <b>-AllowCorePhase:</b>
+    ///   Allow a non-skippable <c>Core</c> phase.
+    /// </summary>
     [Parameter()]
     public SwitchParameter AllowCorePhase { get; set; }
 

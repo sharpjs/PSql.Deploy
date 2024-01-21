@@ -1,4 +1,4 @@
-// Copyright 2023 Subatomix Research Inc.
+// Copyright 2024 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
 using System.Collections;
@@ -6,13 +6,22 @@ using PSql.Deploy.Seeding;
 
 namespace PSql.Deploy.Commands;
 
+/// <summary>
+///   The <c>Invoke-SqlSeed</c> cmdlet.
+/// </summary>
+/// <remarks>
+///   Invokes database content seeds against sets of target databases.
+/// </remarks>
 [Cmdlet(
     VerbsLifecycle.Invoke, "SqlSeed",
     DefaultParameterSetName = ContextParameterSetName
 )]
 public class InvokeSqlSeedCommand : PerSqlContextCommand
 {
-    // -Seed
+    /// <summary>
+    ///   <b>-Seed:</b>
+    ///   Names of seeds to apply.
+    /// </summary>
     [Parameter]
     [ValidateNotNullOrEmpty]
     public string[] Seed
@@ -21,13 +30,16 @@ public class InvokeSqlSeedCommand : PerSqlContextCommand
         set => _seed   = value.Sanitize();
     }
 
-    // -Define
+    /// <summary>
+    ///   <b>-Define:</b>
+    ///   SQLCMD preprocessor variables to define.
+    /// </summary>
     [Parameter]
     [ValidateNotNull]
     [AllowEmptyCollection]
     public Hashtable? Define { get; set; }
 
-    // -WhatIf
+    // TODO: Use SupportsShouldProcess
     [Parameter()]
     public SwitchParameter WhatIf { get; set; }
 
