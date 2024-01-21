@@ -44,17 +44,21 @@ public class InvokeSqlSeedCommand : PerSqlContextCommand
     private bool IsWhatIf
         => this.IsWhatIf();
 
+    private string CurrentPath
+        => this.GetCurrentPath();
+
     internal SeedSession.Factory
         SeedSessionFactory { get; set; } = SeedSession.DefaultFactory;
 
     private ISeedSessionControl? _session;
     private string[]? _seed;
 
-    private string CurrentPath => SessionState.Path.CurrentFileSystemLocation.Path;
-
     protected override void BeginProcessing()
     {
-        _session = SeedSessionFactory.Invoke(new SeedConsole(this), CurrentPath, CancellationToken);
+        var path    = CurrentPath;
+        var console = new SeedConsole(this);
+
+        _session = SeedSessionFactory.Invoke(console, path, CancellationToken);
 
         base.BeginProcessing();
     }

@@ -12,4 +12,12 @@ internal static class CmdletExtensions
 
         return cmdlet.GetVariableValue("WhatIfPreference") is not null or false;
     }
+
+    public static string GetCurrentPath(this PSCmdlet cmdlet)
+    {
+        if (cmdlet is null)
+            throw new ArgumentNullException(nameof(cmdlet));
+
+        return cmdlet.SessionState.Path.CurrentFileSystemLocation.Path;
+    }
 }

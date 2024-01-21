@@ -57,6 +57,9 @@ public class InvokeSqlMigrationsCommand : PerSqlContextCommand
     private bool IsWhatIf
         => this.IsWhatIf();
 
+    private string CurrentPath
+        => this.GetCurrentPath();
+
     private static MigrationPhase[] AllPhases
         => new[] { Pre, Core, Post };
 
@@ -85,7 +88,7 @@ public class InvokeSqlMigrationsCommand : PerSqlContextCommand
 
     private void ProcessRecordCore()
     {
-        var path    = SessionState.Path.CurrentFileSystemLocation.Path;
+        var path    = CurrentPath;
         var console = new MigrationConsole(this);
 
         _session = MigrationSessionFactory.Create(console, path, CancellationToken);
