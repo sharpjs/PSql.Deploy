@@ -71,14 +71,9 @@ public class InvokeForEachSqlContextCommand : PerSqlContextCommand
         set => _variables   = value.Sanitize();
     }
 
-    protected override void BeginProcessing()
-    {
-        base.BeginProcessing();
-    }
-
     protected override Task ProcessWorkAsync(SqlContextWork work)
     {
-        return Task.CompletedTask;
+        throw new NotImplementedException();
     }
 
     #if OLD

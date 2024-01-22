@@ -1,7 +1,10 @@
 // Copyright 2024 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using PSql.Deploy.Migrations;
+using PSql.Deploy.Utilities;
 using Subatomix.PowerShell.TaskHost;
 
 namespace PSql.Deploy.Commands;
@@ -60,36 +63,81 @@ public class InvokeSqlMigrationsCommand : PerSqlContextCommand
     private string CurrentPath
         => this.GetCurrentPath();
 
+    private bool HasMultiplePhases
+        => Phase!.Length > 1;
+
     private static MigrationPhase[] AllPhases
         => new[] { Pre, Core, Post };
 
-#nullable disable warnings
-    // Set in BeginProcessing
-    private IMigrationSessionControl _session;
-#nullable restore
+    private IMigrationSessionControl?           _session;
+    private ICollection<SqlContextParallelSet>? _contextSets;
+    private TaskScope?                          _taskScope;
+    private int                                 _phaseIndex = -1;
 
-    protected override void BeginProcessing() { } // do not call base
-    protected override void EndProcessing()   { } // do not call base
-
-    protected override void ProcessRecord()
+    protected override void BeginProcessingCore()
     {
-        if (TaskHost.Current is null)
-            ReinvokeWithTaskHost();
+        ValidatePhase();
+        CreateSession();
+        AdvanceToNextPhase();
+
+        base.BeginProcessingCore();
+    }
+
+    protected override void ProcessContextSet(SqlContextParallelSet contextSet)
+    {
+        AssertInitialized();
+
+        // Cache context set for later phases
+        _contextSets.Add(contextSet);
+
+        base.ProcessContextSet(contextSet);
+    }
+
+    protected override Task ProcessWorkAsync(SqlContextWork work)
+    {
+        AssertInitialized();
+
+        return _session.ApplyAsync(work, this);
+    }
+
+    protected override void EndProcessingCore()
+    {
+        AssertInitialized();
+
+        // Waits for all tasks in progress
+        base.EndProcessingCore();
+
+        while (AdvanceToNextPhase())
+            ProcessSubsequentPhase();
+    }
+
+    [MemberNotNull(nameof(Phase), nameof(_contextSets))]
+    private void ValidatePhase()
+    {
+        if (Phase is null or [])
+        {
+            Phase = AllPhases;
+        }
         else
-            ProcessRecordCore();
+        {
+            var next = Pre;
+
+            foreach (var phase in Phase)
+            {
+                if (phase < next || phase > Post)
+                    ThrowInvalidPhase();
+
+                next = phase + 1;
+            }
+        }
+
+        _contextSets = Phase.Length > 1
+            ? new List<SqlContextParallelSet>()
+            : EmptyCollection<SqlContextParallelSet>.Instance;
     }
 
-    private void ReinvokeWithTaskHost()
-    {
-        using var invocation = new Invocation();
-
-        invocation
-            .AddReinvocation(MyInvocation)
-            .UseTaskHost(this, withElapsed: true)
-            .Invoke();
-    }
-
-    private void ProcessRecordCore()
+    [MemberNotNull(nameof(_session))]
+    private void CreateSession()
     {
         var path    = CurrentPath;
         var console = new MigrationConsole(this);
@@ -100,21 +148,61 @@ public class InvokeSqlMigrationsCommand : PerSqlContextCommand
         _session.IsWhatIfMode   = IsWhatIf;
 
         _session.DiscoverMigrations(Path ?? path, MaximumMigrationName);
-
-        foreach (var phase in Phase ?? AllPhases)
-        {
-            _session.Phase = phase;
-
-            using var scope = TaskScope.Begin(_session.Phase.ToString());
-
-            base.BeginProcessing();
-            base.ProcessRecord();
-            base.EndProcessing();
-        }
     }
 
-    protected override Task ProcessWorkAsync(SqlContextWork work)
+    private bool AdvanceToNextPhase()
     {
-        return _session.ApplyAsync(work, this);
+        AssertInitialized();
+
+        if (_phaseIndex >= Phase.Length)
+            return false;
+
+        var phase = Phase[++_phaseIndex];
+
+        _taskScope?.Dispose();
+        _taskScope = TaskScope.Begin(phase.ToString());
+
+        _session.Phase = phase;
+
+        return true;
+    }
+
+    // Re-runs cmdlet logic in new phase with cached context sets
+    private void ProcessSubsequentPhase()
+    {
+        AssertInitialized();
+
+        base.BeginProcessingCore();
+
+        foreach (var contextSet in _contextSets)
+            base.ProcessContextSet(contextSet);
+
+        base.EndProcessingCore();
+    }
+
+    [Conditional("DEBUG")]
+    [MemberNotNull(nameof(Phase), nameof(_session), nameof(_contextSets))]
+    private void AssertInitialized()
+    {
+        Debug.Assert(Phase        is not null);
+        Debug.Assert(_session     is not null);
+        Debug.Assert(_contextSets is not null);
+    }
+
+    [DoesNotReturn]
+    private static void ThrowInvalidPhase()
+    {
+        throw new ValidationMetadataException(
+            "-Phase must be a unique, ordered array of valid phases. " +
+            "The possible phases are Pre, Core, and Post."
+        );
+    }
+
+    protected override void Dispose(bool managed)
+    {
+        if (managed)
+            _taskScope?.Dispose();
+
+        base.Dispose(managed);
     }
 }

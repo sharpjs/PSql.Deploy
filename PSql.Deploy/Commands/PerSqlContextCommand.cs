@@ -66,16 +66,61 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
         set => SqlContextParallelSet.SetMaxParallelism(ref _maxParallelism, value);
     }
 
+    /// <inheritdoc/>
+    protected sealed override void BeginProcessing()
+    {
+        if (TaskHost.Current is not null)
+            BeginProcessingCore();
+    }
+
+    /// <summary>
+    ///   Performs execution of the command.
+    /// </summary>
     protected override void ProcessRecord()
     {
-        if (CancellationToken.IsCancellationRequested)
-            return;
+        if (TaskHost.Current is not null)
+            ProcessRecordCore();
+        else
+            ReinvokeWithTaskHost();
+    }
 
+    /// <inheritdoc/>
+    protected sealed override void EndProcessing()
+    {
+        if (TaskHost.Current is not null)
+            EndProcessingCore();
+    }
+
+    private void ReinvokeWithTaskHost()
+    {
+        using var invocation = new Invocation();
+
+        invocation
+            .AddReinvocation(MyInvocation)
+            .UseTaskHost(this, withElapsed: true)
+            .Invoke();
+    }
+
+    /// <inheritdoc cref="BeginProcessing"/>
+    protected virtual void BeginProcessingCore()
+    {
+        base.BeginProcessing();
+    }
+
+    /// <inheritdoc cref="ProcessRecord"/>
+    protected virtual void ProcessRecordCore()
+    {
         if (ParameterSetName == ContextParameterSetName)
             ProcessContextSet(MakeContextSet());
         else
             foreach (var contextSet in ContextSet)
                 ProcessContextSet(contextSet);
+    }
+
+    /// <inheritdoc cref="EndProcessing"/>
+    protected virtual void EndProcessingCore()
+    {
+        base.EndProcessing();
     }
 
     private SqlContextParallelSet MakeContextSet()
@@ -88,7 +133,7 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
         };
     }
 
-    private void ProcessContextSet(SqlContextParallelSet contextSet)
+    protected virtual void ProcessContextSet(SqlContextParallelSet contextSet)
     {
         if (contextSet.Contexts.Count == 0)
             return;
