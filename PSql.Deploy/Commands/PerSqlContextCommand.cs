@@ -14,10 +14,6 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
         ContextSetParameterSetName = nameof(ContextSet),
         ContextParameterSetName    = nameof(Context);
 
-    private SqlContextParallelSet[]? _targets;
-    private SqlContext[]?            _contexts;
-    private int                      _maxParallelism;
-
     /// <summary>
     ///   <b>-ContextSet:</b>
     ///   Objects specifying sets of databases on which to operate with limited
@@ -35,6 +31,7 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
         get => _targets ??= Array.Empty<SqlContextParallelSet>();
         set => _targets   = value.Sanitize();
     }
+    private SqlContextParallelSet[]? _targets;
 
     /// <summary>
     ///   <b>-Context:</b>
@@ -52,6 +49,7 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
         get => _contexts ??= Array.Empty<SqlContext>();
         set => _contexts   = value.Sanitize();
     }
+    private SqlContext[]? _contexts;
 
     /// <summary>
     ///   <b>-MaxParallelism:</b>
@@ -65,6 +63,7 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
         get => SqlContextParallelSet.GetMaxParallelism(ref _maxParallelism);
         set => SqlContextParallelSet.SetMaxParallelism(ref _maxParallelism, value);
     }
+    private int _maxParallelism;
 
     /// <inheritdoc/>
     protected sealed override void BeginProcessing()
