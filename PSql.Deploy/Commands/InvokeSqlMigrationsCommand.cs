@@ -154,10 +154,10 @@ public class InvokeSqlMigrationsCommand : PerSqlContextCommand
     {
         AssertInitialized();
 
-        if (_phaseIndex >= Phase.Length)
+        if (++_phaseIndex >= Phase.Length)
             return false;
 
-        var phase = Phase[++_phaseIndex];
+        var phase = Phase[_phaseIndex];
 
         _taskScope?.Dispose();
         _taskScope = TaskScope.Begin(phase.ToString());
