@@ -10,7 +10,7 @@ internal static class CmdletExtensions
         if (cmdlet is null)
             throw new ArgumentNullException(nameof(cmdlet));
 
-        return cmdlet.GetVariableValue("WhatIfPreference") is not null or false;
+        return cmdlet.GetVariableValue("WhatIfPreference") is not (null or false);
     }
 
     public static string GetCurrentPath(this PSCmdlet cmdlet)
