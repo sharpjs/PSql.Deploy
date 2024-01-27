@@ -1,4 +1,4 @@
-// Copyright 2023 Subatomix Research Inc.
+// Copyright 2024 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
 namespace PSql.Deploy.Migrations;
@@ -16,7 +16,7 @@ internal class MigrationConsole : IMigrationConsole
     /// <exception cref="ArgumentNullException">
     ///   <paramref name="cmdlet"/> is <see langword="null"/>.
     /// </exception>
-    public MigrationConsole(PSCmdlet cmdlet)
+    public MigrationConsole(ICmdlet cmdlet)
     {
         if (cmdlet is null)
             throw new ArgumentNullException(nameof(cmdlet));
@@ -27,7 +27,7 @@ internal class MigrationConsole : IMigrationConsole
     /// <summary>
     ///   Gets the cmdlet to use to write messages.
     /// </summary>
-    public PSCmdlet Cmdlet { get; }
+    public ICmdlet Cmdlet { get; }
 
     /// <inheritdoc/>
     public void ReportStarting()
