@@ -1,6 +1,7 @@
 // Copyright 2024 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
+using System.Collections.Concurrent;
 using Subatomix.PowerShell.TaskHost;
 
 namespace PSql.Deploy.Commands;
@@ -65,13 +66,33 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
     }
     private int _maxParallelism;
 
+    /// <summary>
+    ///   <b>-MaxErrors:</b>
+    ///   Maximum count of errors to allow.  If the count exceeds this value,
+    ///   the command attempts to cancel in-progress operations and terminate
+    ///   early.
+    /// </summary>
+    [Parameter()]
+    [ValidateRange(0, int.MaxValue)]
+    public int MaxErrorCount
+    {
+        get => _maxErrorCount;
+        set => _maxErrorCount = value >= 0
+            ? value
+            : throw new ArgumentOutOfRangeException(nameof(value));
+    }
+    private int _maxErrorCount = int.MaxValue;
+
+    // Accumulated errors
+    private readonly ConcurrentQueue<Exception> _exceptions = new();
+
     /// <inheritdoc/>
     protected sealed override void BeginProcessing()
     {
         if (TaskHost.Current is null)
             return;
 
-            BeginProcessingCore();
+        BeginProcessingCore();
     }
 
     /// <summary>
@@ -91,7 +112,8 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
         if (TaskHost.Current is null)
             return;
 
-            EndProcessingCore();
+        EndProcessingCore();
+        ThrowAccumulatedErrors();
     }
 
     private void ReinvokeWithTaskHost()
@@ -163,7 +185,15 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
     private async Task ProcessContextAsync(SqlContext context, SemaphoreSlim limiter)
     {
         // Move to another thread so that caller's context iterator continues
-        await Task.Yield();
+        try
+        {
+            await Task.Yield();
+        }
+        catch (OperationCanceledException)
+        {
+            // Not an error
+            return;
+        }
 
         // Limit parallelism
         await limiter.WaitAsync(CancellationToken);
@@ -174,6 +204,17 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
             using (TaskScope.Begin(work.DatabaseDisplayName))
                 await ProcessWorkAsync(work);
         }
+        catch (OperationCanceledException)
+        {
+            // Not an error
+        }
+        catch (Exception e)
+        {
+            _exceptions.Enqueue(e);
+
+            if (_exceptions.Count > MaxErrorCount)
+                StopProcessing();
+        }
         finally
         {
             limiter.Release();
@@ -181,4 +222,24 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
     }
 
     protected abstract Task ProcessWorkAsync(SqlContextWork work);
+
+    private void ThrowAccumulatedErrors()
+    {
+        if (GetAccumulatedErrors() is not { } exception)
+            return;
+
+        ThrowTerminatingError(new(
+            exception, "", ErrorCategory.OperationStopped, null!
+        ));
+    }
+
+    private Exception? GetAccumulatedErrors()
+    {
+        return _exceptions.Count switch
+        {
+            0 => null,
+            1 => _exceptions.First(),
+            _ => new AggregateException(_exceptions),
+        };
+    }
 }
