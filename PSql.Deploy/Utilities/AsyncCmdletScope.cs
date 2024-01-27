@@ -1,4 +1,4 @@
-// Copyright 2023 Subatomix Research Inc.
+// Copyright 2024 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
 using System.Collections.Concurrent;
@@ -105,9 +105,12 @@ internal sealed class AsyncCmdletScope : IDisposable
         if (_tasks.Count == 0)
             return;
 
-        var task = Task
-            .WhenAll(_tasks)
-            .ContinueWith(_ => _dispatcher.Complete());
+        var task = Task.WhenAll(_tasks);
+
+        task.ContinueWith(
+            _ => _dispatcher.Complete(),
+            TaskContinuationOptions.ExecuteSynchronously
+        );
 
         _dispatcher.Run();
 
