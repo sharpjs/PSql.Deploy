@@ -113,7 +113,6 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
             return;
 
         EndProcessingCore();
-        ThrowAccumulatedErrors();
     }
 
     private void ReinvokeWithTaskHost()
@@ -146,6 +145,8 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
     protected virtual void EndProcessingCore()
     {
         base.EndProcessing();
+
+        ThrowAccumulatedErrors();
     }
 
     private SqlContextParallelSet MakeContextSet()
