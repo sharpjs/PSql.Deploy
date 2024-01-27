@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: ISC
 
 using System.Collections;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using PSql.Deploy.Seeding;
 
 namespace PSql.Deploy.Commands;
@@ -51,32 +53,32 @@ public class InvokeSqlSeedCommand : PerSqlContextCommand
     internal SeedSession.Factory
         SeedSessionFactory { get; set; } = SeedSession.DefaultFactory;
 
-#nullable disable warnings
-    // Set in BeginProcessing
-    private ISeedSessionControl _session;
-#nullable restore
+    private ISeedSessionControl? _session;
 
     protected override void BeginProcessingCore()
     {
         var path    = CurrentPath;
         var console = new SeedConsole(this);
 
-        _session              = SeedSessionFactory.Invoke(console, path, CancellationToken);
-        _session.IsWhatIfMode = IsWhatIf;
+        _session                = SeedSessionFactory.Invoke(console, path, CancellationToken);
+        _session.IsWhatIfMode   = IsWhatIf;
+        _session.MaxParallelism = MaxParallelism; // PerDatabase
+        _session.DiscoverSeeds(CurrentPath, Seed);
 
         base.BeginProcessingCore();
     }
 
-    protected override void ProcessRecordCore()
-    {
-        _session.MaxParallelism = MaxParallelism; // PerDatabase
-        _session.DiscoverSeeds(CurrentPath, Seed);
-
-        base.ProcessRecordCore();
-    }
-
     protected override Task ProcessWorkAsync(SqlContextWork work)
     {
+        AssertInitialized();
+
         return _session.ApplyAsync(work);
+    }
+
+    [Conditional("DEBUG")]
+    [MemberNotNull(nameof(_session))]
+    private void AssertInitialized()
+    {
+        Debug.Assert(_session != null);
     }
 }
