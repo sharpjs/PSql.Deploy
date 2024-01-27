@@ -68,7 +68,9 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
     /// <inheritdoc/>
     protected sealed override void BeginProcessing()
     {
-        if (TaskHost.Current is not null)
+        if (TaskHost.Current is null)
+            return;
+
             BeginProcessingCore();
     }
 
@@ -77,16 +79,18 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
     /// </summary>
     protected override void ProcessRecord()
     {
-        if (TaskHost.Current is not null)
-            ProcessRecordCore();
-        else
+        if (TaskHost.Current is null)
             ReinvokeWithTaskHost();
+        else
+            ProcessRecordCore();
     }
 
     /// <inheritdoc/>
     protected sealed override void EndProcessing()
     {
-        if (TaskHost.Current is not null)
+        if (TaskHost.Current is null)
+            return;
+
             EndProcessingCore();
     }
 
