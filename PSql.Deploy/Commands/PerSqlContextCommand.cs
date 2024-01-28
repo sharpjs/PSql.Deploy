@@ -211,10 +211,7 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
         }
         catch (Exception e)
         {
-            _exceptions.Enqueue(e);
-
-            if (_exceptions.Count > MaxErrorCount)
-                StopProcessing();
+            HandleError(e);
         }
         finally
         {
@@ -224,14 +221,12 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
 
     protected abstract Task ProcessWorkAsync(SqlContextWork work);
 
-    private void ThrowAccumulatedErrors()
+    private void HandleError(Exception e)
     {
-        if (GetAccumulatedErrors() is not { } exception)
-            return;
+        _exceptions.Enqueue(e);
 
-        ThrowTerminatingError(new(
-            exception, "", ErrorCategory.OperationStopped, null!
-        ));
+        if (_exceptions.Count > MaxErrorCount)
+            StopProcessing();
     }
 
     private Exception? GetAccumulatedErrors()
@@ -242,5 +237,15 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
             1 => _exceptions.First(),
             _ => new AggregateException(_exceptions),
         };
+    }
+
+    private void ThrowAccumulatedErrors()
+    {
+        if (GetAccumulatedErrors() is not { } exception)
+            return;
+
+        ThrowTerminatingError(new(
+            exception, "", ErrorCategory.OperationStopped, null!
+        ));
     }
 }
