@@ -44,12 +44,6 @@ public class InvokeSqlSeedCommand : PerSqlContextCommand
     [AllowEmptyCollection]
     public Hashtable? Define { get; set; }
 
-    private bool IsWhatIf
-        => this.IsWhatIf();
-
-    private string CurrentPath
-        => this.GetCurrentPath();
-
     internal SeedSession.Factory
         SeedSessionFactory { get; set; } = SeedSession.DefaultFactory;
 
@@ -57,13 +51,13 @@ public class InvokeSqlSeedCommand : PerSqlContextCommand
 
     protected override void BeginProcessingCore()
     {
-        var path    = CurrentPath;
+        var path    = this.GetCurrentPath();
         var console = new SeedConsole(this);
 
         _session                = SeedSessionFactory.Invoke(console, path, CancellationToken);
-        _session.IsWhatIfMode   = IsWhatIf;
+        _session.IsWhatIfMode   = this.IsWhatIf();
         _session.MaxParallelism = MaxParallelism; // PerDatabase
-        _session.DiscoverSeeds(CurrentPath, Seed);
+        _session.DiscoverSeeds(path, Seed);
 
         base.BeginProcessingCore();
     }

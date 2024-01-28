@@ -57,18 +57,6 @@ public class InvokeSqlMigrationsCommand : PerSqlContextCommand
     [Parameter()]
     public SwitchParameter AllowCorePhase { get; set; }
 
-    private bool IsWhatIf
-        => this.IsWhatIf();
-
-    private string CurrentPath
-        => this.GetCurrentPath();
-
-    private bool HasMultiplePhases
-        => Phase!.Length > 1;
-
-    private static MigrationPhase[] AllPhases
-        => new[] { Pre, Core, Post };
-
     private IMigrationSessionControl?           _session;
     private ICollection<SqlContextParallelSet>? _contextSets;
     private TaskScope?                          _taskScope;
@@ -116,7 +104,7 @@ public class InvokeSqlMigrationsCommand : PerSqlContextCommand
     {
         if (Phase is null or [])
         {
-            Phase = AllPhases;
+            Phase = [Pre, Core, Post]; // all
         }
         else
         {
@@ -139,13 +127,13 @@ public class InvokeSqlMigrationsCommand : PerSqlContextCommand
     [MemberNotNull(nameof(_session))]
     private void CreateSession()
     {
-        var path    = CurrentPath;
+        var path    = this.GetCurrentPath();
         var console = new MigrationConsole(this);
 
         _session = MigrationSessionFactory.Create(console, path, CancellationToken);
 
         _session.AllowCorePhase = AllowCorePhase;
-        _session.IsWhatIfMode   = IsWhatIf;
+        _session.IsWhatIfMode   = this.IsWhatIf();
 
         _session.DiscoverMigrations(Path ?? path, MaximumMigrationName);
     }
