@@ -26,7 +26,7 @@ public abstract class AsyncPSCmdlet : PSCmdlet, ICmdlet, IDisposable
     protected override void BeginProcessing()
     {
         var previous = _asyncScope;
-        _asyncScope  = new(this);
+        _asyncScope  = new();
 
         if (previous is not null)
             previous.Dispose();
@@ -47,6 +47,7 @@ public abstract class AsyncPSCmdlet : PSCmdlet, ICmdlet, IDisposable
         // the user presses CTRL-C.  Invoked on a different thread than the
         // Begin/Process/End sequence.
 
+        WriteHost("Canceling...");
         _asyncScope?.Cancel();
     }
 

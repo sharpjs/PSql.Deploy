@@ -10,7 +10,6 @@ namespace PSql.Deploy.Utilities;
 /// </summary>
 internal sealed class AsyncCmdletScope : IDisposable
 {
-    private readonly Cmdlet                  _cmdlet;
     private readonly ConcurrentBag<Task>     _tasks;
     private readonly MainThreadDispatcher    _dispatcher;
     private readonly CancellationTokenSource _cancellation;
@@ -20,18 +19,8 @@ internal sealed class AsyncCmdletScope : IDisposable
     ///   Initializes a new <see cref="AsyncCmdletScope"/> instance for the
     ///   specified cmdlet, with the current thread as the main thread.
     /// </summary>
-    /// <param name="cmdlet">
-    ///   The cmdlet that will invoke asynchronous code in the scope.
-    /// </param>
-    /// <exception cref="ArgumentNullException">
-    ///   <paramref name="cmdlet"/> is <see langword="null"/>.
-    /// </exception>
-    public AsyncCmdletScope(Cmdlet cmdlet)
+    public AsyncCmdletScope()
     {
-        if (cmdlet is null)
-            throw new ArgumentNullException(nameof(cmdlet));
-
-        _cmdlet          = cmdlet;
         _tasks           = new();
         _dispatcher      = new MainThreadDispatcher();
         _cancellation    = new CancellationTokenSource();
@@ -121,11 +110,8 @@ internal sealed class AsyncCmdletScope : IDisposable
     ///   Requests cancellation of any asynchronous actions queued by
     ///   <see cref="Run"/>.
     /// </summary>
-    public void Cancel(bool silent = false)
+    public void Cancel()
     {
-        if (!silent)
-            _cmdlet.WriteHost("Canceling...");
-
         _cancellation.Cancel();
     }
 
