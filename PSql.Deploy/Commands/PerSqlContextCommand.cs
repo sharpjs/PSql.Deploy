@@ -67,10 +67,10 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
     private int _maxParallelism;
 
     /// <summary>
-    ///   <b>-MaxErrors:</b>
-    ///   Maximum count of errors to allow.  If the count exceeds this value,
-    ///   the command attempts to cancel in-progress operations and terminate
-    ///   early.
+    ///   <b>-MaxErrorCount:</b>
+    ///   Maximum count of errors to allow.  If the count of errors exceeds
+    ///   this value, the command attempts to cancel in-progress operations and
+    ///   terminates early.
     /// </summary>
     [Parameter()]
     [ValidateRange(0, int.MaxValue)]
@@ -81,7 +81,7 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
             ? value
             : throw new ArgumentOutOfRangeException(nameof(value));
     }
-    private int _maxErrorCount = int.MaxValue;
+    private int _maxErrorCount;
 
     // Accumulated errors
     private readonly ConcurrentQueue<Exception> _exceptions = new();
