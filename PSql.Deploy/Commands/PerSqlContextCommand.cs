@@ -134,6 +134,8 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
     /// <inheritdoc cref="ProcessRecord"/>
     protected virtual void ProcessRecordCore()
     {
+        InvokePendingMainThreadActions();
+
         if (ParameterSetName == ContextParameterSetName)
             ProcessContextSet(MakeContextSet());
         else

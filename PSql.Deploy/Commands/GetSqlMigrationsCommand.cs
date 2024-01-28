@@ -46,6 +46,7 @@ public sealed class GetSqlMigrationsCommand : AsyncPSCmdlet
 
     protected override void ProcessRecord()
     {
+        InvokePendingMainThreadActions();
         Run(ProcessRecordAsync);
     }
 

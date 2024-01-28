@@ -1,4 +1,4 @@
-// Copyright 2023 Subatomix Research Inc.
+// Copyright 2024 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
 using PSql.Deploy.Utilities;
@@ -12,69 +12,144 @@ public abstract class AsyncPSCmdlet : PSCmdlet, ICmdlet, IDisposable
 {
     private AsyncCmdletScope? _asyncScope;
 
+    private readonly CancellationTokenSource _cancellation = new();
+
     /// <inheritdoc cref="AsyncCmdletScope.Dispatcher"/>
     public IDispatcher Dispatcher
         => _asyncScope?.Dispatcher ?? ImmediateDispatcher.Instance;
 
     /// <inheritdoc cref="AsyncCmdletScope.CancellationToken"/>
     public CancellationToken CancellationToken
-        => _asyncScope?.CancellationToken ?? default;
+        => _cancellation.Token;
 
     /// <summary>
     ///   Performs initialization of command execution.
     /// </summary>
+    /// <remarks>
+    ///   <para>
+    ///     The base implementation begins the cmdlet's ability to execute
+    ///     asynchronous code via the <see cref="Run"/> method.
+    ///   </para>
+    /// </remarks>
     protected override void BeginProcessing()
     {
-        var previous = _asyncScope;
-        _asyncScope  = new();
-
-        if (previous is not null)
-            previous.Dispose();
+        BeginAsyncScope();
     }
 
     /// <summary>
     ///   Performs cleanup after command execution.
     /// </summary>
+    /// <remarks>
+    ///   <para>
+    ///     This method <b>must</b> be invoked on the main thread (the thread
+    ///     that invoked <see cref="BeginProcessing"/> instance).
+    ///   </para>
+    ///   <para>
+    ///     This method invokes pending actions dispatched to the main thread,
+    ///     continuously, until all asynchronous actions queued by
+    ///     <see cref="Run"/> complete.  This method then ends the cmdlet's
+    ///     ability to execute asynchronous code.
+    ///   </para>
+    /// </remarks>
     protected override void EndProcessing()
     {
-        _asyncScope?.Complete();
+        EndAsyncScope();
     }
 
-    /// <inheritdoc/>
+    /// <summary>
+    ///   Requests cancellation of command execution.
+    /// </summary>
+    /// <remarks>
+    ///   PowerShell invokes this method to interrupt a running command, such
+    ///   as when the user presses CTRL-C.  PowerShell invokes this method on a
+    ///   different thread than the main thread used for
+    ///   <see cref="Cmdlet.BeginProcessing"/>,
+    ///   <see cref="Cmdlet.ProcessRecord"/>, and
+    ///   <see cref="Cmdlet.EndProcessing"/>.
+    /// </remarks>
     protected override void StopProcessing()
     {
-        // Invoked when a running command needs to be stopped, such as when
-        // the user presses CTRL-C.  Invoked on a different thread than the
-        // Begin/Process/End sequence.
-
         WriteHost("Canceling...");
-        _asyncScope?.Cancel();
+        _cancellation.Cancel();
     }
 
-    /// <inheritdoc cref="AsyncCmdletScope.Run"/>
+    /// <inheritdoc cref="AsyncCmdletScope.Run(Func{Task})"/>
     /// <exception cref="InvalidOperationException">
     ///   <see cref="BeginProcessing"/> has not been invoked.
     /// </exception>
+    /// <exception cref="ObjectDisposedException">
+    ///   The <see cref="AsyncPSCmdlet"/> has been disposed.
+    /// </exception>
     protected void Run(Func<Task> action)
     {
-        if (_asyncScope is not { } scope)
-            throw new InvalidOperationException(
-                "This method requires prior invocation of BeginProcessing."
-            );
-
-        // If some prior invocation of Run has already dispatched actions to
-        // the main thread, run them now.
-        InvokePendingMainThreadActions();
-
-        scope.Run(action);
+        RequireAsyncScope().Run(action);
     }
 
     /// <summary>
     ///   Invokes any pending actions dispatched to the main thread.
     /// </summary>
+    /// <remarks>
+    ///   <para>
+    ///     This method <b>must</b> be invoked on the main thread (the thread
+    ///     that invoked <see cref="BeginProcessing"/> instance).
+    ///   </para>
+    ///   <para>
+    ///     A long-running cmdlet might accrue pending actions dispatched to
+    ///     the main thread long before the cmdlet enters a dispatch loop in
+    ///     <see cref="WaitForAsyncActions"/> or <see cref="EndProcessing"/>.
+    ///     To maximize responsiveness, use this method to invoke such pending
+    ///     actions when an opportunity arises.
+    ///   </para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    ///   This method was invoked on a thread other than the thread that
+    ///   invoked <see cref="BeginProcessing"/>.
+    /// </exception>
+    /// <exception cref="ObjectDisposedException">
+    ///   The <see cref="AsyncPSCmdlet"/> has been disposed.
+    /// </exception>
     protected void InvokePendingMainThreadActions()
     {
-        _asyncScope?.InvokePendingMainThreadActions();
+        RequireAsyncScope().InvokePendingMainThreadActions();
+    }
+
+    /// <summary>
+    ///   Invokes pending actions dispatched to the main thread, continuously,
+    ///   until all asynchronous actions queued by <see cref="Run"/> complete.
+    /// </summary>
+    /// <remarks>
+    ///   <para>
+    ///     This method <b>must</b> be invoked on the main thread (the thread
+    ///     that invoked <see cref="BeginProcessing"/> instance).
+    ///   </para>
+    ///   <para>
+    ///     After invoking this method, the cmdlet remains able to execute
+    ///     asynchronous code via the <see cref="Run"/> method.
+    ///   </para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    ///   This method was invoked on a thread other than the thread that
+    ///   invoked <see cref="BeginProcessing"/>.
+    /// </exception>
+    /// <exception cref="ObjectDisposedException">
+    ///   The <see cref="AsyncPSCmdlet"/> has been disposed.
+    /// </exception>
+    protected void WaitForAsyncActions()
+    {
+        EndAsyncScope();
+        BeginAsyncScope();
+    }
+
+    private void BeginAsyncScope()
+    {
+        _asyncScope?.Dispose();
+        _asyncScope = new(_cancellation.Token);
+    }
+
+    private void EndAsyncScope()
+    {
+        // Throws if invoked from non-main thread or if scope is disposed
+        RequireAsyncScope().Complete();
     }
 
     /// <inheritdoc/>
@@ -90,7 +165,15 @@ public abstract class AsyncPSCmdlet : PSCmdlet, ICmdlet, IDisposable
         if (!managed)
             return;
 
-        _asyncScope?.Dispose();
+        _asyncScope? .Dispose();
+        _cancellation.Dispose();
+    }
+
+    private AsyncCmdletScope RequireAsyncScope()
+    {
+        return _asyncScope ?? throw new InvalidOperationException(
+            "This method requires prior invocation of BeginProcessing."
+        );
     }
 
     #region PSCmdlet/ICmdlet (Re)Implementation

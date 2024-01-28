@@ -12,18 +12,21 @@ internal sealed class AsyncCmdletScope : IDisposable
 {
     private readonly ConcurrentBag<Task>     _tasks;
     private readonly MainThreadDispatcher    _dispatcher;
-    private readonly CancellationTokenSource _cancellation;
+    private readonly CancellationToken       _cancellation;
     private readonly SynchronizationContext? _previousContext;
 
     /// <summary>
-    ///   Initializes a new <see cref="AsyncCmdletScope"/> instance for the
-    ///   specified cmdlet, with the current thread as the main thread.
+    ///   Initializes a new <see cref="AsyncCmdletScope"/> instance with the
+    ///   current thread as the main thread.
     /// </summary>
-    public AsyncCmdletScope()
+    /// <param name="cancellation">
+    ///   A token to monitor for cancellation requests.
+    /// </param>
+    public AsyncCmdletScope(CancellationToken cancellation = default)
     {
         _tasks           = new();
         _dispatcher      = new MainThreadDispatcher();
-        _cancellation    = new CancellationTokenSource();
+        _cancellation    = cancellation;
         _previousContext = SynchronizationContext.Current;
 
         // Ensure no synchronization context with conflicting thread mobility ideas
@@ -39,7 +42,7 @@ internal sealed class AsyncCmdletScope : IDisposable
     /// <summary>
     ///   Gets the token to monitor for cancellation requests.
     /// </summary>
-    public CancellationToken CancellationToken => _cancellation.Token;
+    public CancellationToken CancellationToken => _cancellation;
 
     /// <summary>
     ///   Queues the specified action to run asynchronously on the thread pool.
@@ -58,7 +61,7 @@ internal sealed class AsyncCmdletScope : IDisposable
         if (action is null)
             throw new ArgumentNullException(nameof(action));
 
-        _tasks.Add(Task.Run(action, _cancellation.Token));
+        _tasks.Add(Task.Run(action, _cancellation));
     }
 
     /// <summary>
@@ -68,6 +71,13 @@ internal sealed class AsyncCmdletScope : IDisposable
     ///   This method <b>must</b> be invoked on the main thread (the thread
     ///   that constructed the <see cref="AsyncCmdletScope"/> instance).
     /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    ///   This method was invoked on a thread other than the thread that
+    ///   constructed the <see cref="AsyncCmdletScope"/> instance.
+    /// </exception>
+    /// <exception cref="ObjectDisposedException">
+    ///   The <see cref="AsyncCmdletScope"/> has been disposed.
+    /// </exception>
     public void InvokePendingMainThreadActions()
     {
         _dispatcher.RunPending();
@@ -87,12 +97,16 @@ internal sealed class AsyncCmdletScope : IDisposable
     ///     <see cref="AsyncCmdletScope"/> instance.
     ///   </para>
     /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    ///   This method was invoked on a thread other than the thread that
+    ///   constructed the <see cref="AsyncCmdletScope"/> instance.
+    /// </exception>
+    /// <exception cref="ObjectDisposedException">
+    ///   The <see cref="AsyncCmdletScope"/> has been disposed.
+    /// </exception>
     public void Complete()
     {
         InvokePendingMainThreadActions();
-
-        if (_tasks.Count == 0)
-            return;
 
         var task = Task.WhenAll(_tasks);
 
@@ -103,16 +117,8 @@ internal sealed class AsyncCmdletScope : IDisposable
 
         _dispatcher.Run();
 
+        // Observe task exceptions
         task.GetAwaiter().GetResult();
-    }
-
-    /// <summary>
-    ///   Requests cancellation of any asynchronous actions queued by
-    ///   <see cref="Run"/>.
-    /// </summary>
-    public void Cancel()
-    {
-        _cancellation.Cancel();
     }
 
     /// <inheritdoc/>
@@ -122,7 +128,6 @@ internal sealed class AsyncCmdletScope : IDisposable
         if (_previousContext is not null)
             SynchronizationContext.SetSynchronizationContext(_previousContext);
 
-        _cancellation.Dispose();
-        _dispatcher  .Dispose();
+        _dispatcher.Dispose();
     }
 }

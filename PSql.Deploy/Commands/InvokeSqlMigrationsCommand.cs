@@ -60,13 +60,13 @@ public class InvokeSqlMigrationsCommand : PerSqlContextCommand
     private IMigrationSessionControl?           _session;
     private ICollection<SqlContextParallelSet>? _contextSets;
     private TaskScope?                          _taskScope;
-    private int                                 _phaseIndex = -1;
+    private int                                 _phaseIndex;
 
     protected override void BeginProcessingCore()
     {
-        ValidatePhase();
+        ValidatePhases();
         CreateSession();
-        AdvanceToNextPhase();
+        SetPhase();
 
         base.BeginProcessingCore();
     }
@@ -92,15 +92,18 @@ public class InvokeSqlMigrationsCommand : PerSqlContextCommand
     {
         AssertInitialized();
 
-        // Waits for all tasks in progress
-        base.EndProcessingCore();
-
         while (AdvanceToNextPhase())
-            ProcessSubsequentPhase();
+        {
+            WaitForAsyncActions();
+            SetPhase();
+            ProcessCachedContextSets();
+        }
+
+        base.EndProcessingCore();
     }
 
     [MemberNotNull(nameof(Phase), nameof(_contextSets))]
-    private void ValidatePhase()
+    private void ValidatePhases()
     {
         if (Phase is null or [])
         {
@@ -142,8 +145,13 @@ public class InvokeSqlMigrationsCommand : PerSqlContextCommand
     {
         AssertInitialized();
 
-        if (++_phaseIndex >= Phase.Length)
-            return false;
+        return ++_phaseIndex < Phase.Length;
+    }
+
+    [MemberNotNull(nameof(_taskScope))]
+    private void SetPhase()
+    {
+        AssertInitialized();
 
         var phase = Phase[_phaseIndex];
 
@@ -151,21 +159,15 @@ public class InvokeSqlMigrationsCommand : PerSqlContextCommand
         _taskScope = TaskScope.Begin(phase.ToString());
 
         _session.Phase = phase;
-
-        return true;
     }
 
     // Re-runs cmdlet logic in new phase with cached context sets
-    private void ProcessSubsequentPhase()
+    private void ProcessCachedContextSets()
     {
         AssertInitialized();
 
-        base.BeginProcessingCore();
-
         foreach (var contextSet in _contextSets)
             base.ProcessContextSet(contextSet);
-
-        base.EndProcessingCore();
     }
 
     [Conditional("DEBUG")]
