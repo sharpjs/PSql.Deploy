@@ -45,12 +45,6 @@ public interface IMigrationSession
     bool IsWhatIfMode { get; }
 
     /// <summary>
-    ///   Gets whether any migration application in the session has encountered
-    ///   an error.
-    /// </summary>
-    bool HasErrors { get; }
-
-    /// <summary>
     ///   Gets the console on which to report the progress of migration
     ///   application to a particular target database.
     /// </summary>

@@ -223,13 +223,6 @@ internal class MigrationApplicator : IMigrationValidationContext, IDisposable
 
         foreach (var (migration, phase) in plan.GetItems(Phase))
         {
-            // Stop if a parallel invocation encountered an error
-            if (Session.HasErrors)
-            {
-                _disposition = TargetDisposition.Incomplete;
-                return;
-            }
-
             // Prepare to run the item
             ReportApplying(migration, phase);
             connection.ClearErrors();

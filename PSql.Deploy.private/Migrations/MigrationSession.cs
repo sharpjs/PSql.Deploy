@@ -58,12 +58,6 @@ internal class MigrationSession : IMigrationSessionControl, IMigrationSession
     public CancellationToken CancellationToken { get; }
 
     /// <inheritdoc/>
-    public bool HasErrors => Volatile.Read(ref _errorCount) > 0;
-
-    // Count of applications to target databases that threw exceptions
-    private int _errorCount;
-
-    /// <inheritdoc/>
     public void DiscoverMigrations(string path, string? maxName = null)
     {
         Migrations                   = MigrationRepository.GetAll(path, maxName);
@@ -75,19 +69,7 @@ internal class MigrationSession : IMigrationSessionControl, IMigrationSession
     {
         using var applicator = new MigrationApplicator(this, target);
 
-        try
-        {
-            await applicator.ApplyAsync();
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception e)
-        {
-            Interlocked.Increment(ref _errorCount);
-            throw new MigrationException(null, e);
-        }
+        await applicator.ApplyAsync();
     }
 
     Task<IReadOnlyList<Migration>> IMigrationSession
@@ -95,7 +77,7 @@ internal class MigrationSession : IMigrationSessionControl, IMigrationSession
     {
         return MigrationRepository.GetAllAsync(
             context, EarliestDefinedMigrationName,
-            logger, CancellationToken
+            logger,  CancellationToken
         );
     }
 
