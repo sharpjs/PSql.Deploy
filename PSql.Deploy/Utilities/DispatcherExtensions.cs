@@ -1,5 +1,7 @@
-// Copyright 2023 Subatomix Research Inc.
+// Copyright 2024 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
+
+using Subatomix.PowerShell.TaskHost;
 
 namespace PSql.Deploy.Utilities;
 
@@ -31,11 +33,19 @@ internal static class DispatcherExtensions
         if (action is null)
             throw new ArgumentNullException(nameof(action));
 
-        var tcs = new TaskCompletionSource<Void>();
+        var info = TaskInfo.Current;
+        var task = new TaskCompletionSource<Void>();
 
-        dispatcher.Post(() => { action(); tcs.SetResult(default); });
+        void Invoke()
+        {
+            using var _ = info.Use();
+            action();
+            task.SetResult(default);
+        }
 
-        tcs.Task.GetAwaiter().GetResult();
+        dispatcher.Post(Invoke);
+
+        task.Task.GetAwaiter().GetResult();
     }
 
     /// <summary>
@@ -62,11 +72,19 @@ internal static class DispatcherExtensions
         if (action is null)
             throw new ArgumentNullException(nameof(action));
 
-        var tcs = new TaskCompletionSource<Void>();
+        var info = TaskInfo.Current;
+        var task = new TaskCompletionSource<Void>();
 
-        dispatcher.Post(() => { action(arg); tcs.SetResult(default); });
+        void Invoke()
+        {
+            using var _ = info.Use();
+            action(arg);
+            task.SetResult(default);
+        }
 
-        tcs.Task.GetAwaiter().GetResult();
+        dispatcher.Post(Invoke);
+
+        task.Task.GetAwaiter().GetResult();
     }
 
     /// <summary>
@@ -93,11 +111,18 @@ internal static class DispatcherExtensions
         if (action is null)
             throw new ArgumentNullException(nameof(action));
 
-        var tcs = new TaskCompletionSource<TResult>();
+        var info = TaskInfo.Current;
+        var task = new TaskCompletionSource<TResult>();
 
-        dispatcher.Post(() => tcs.SetResult(action()));
+        void Invoke()
+        {
+            using var _ = info.Use();
+            task.SetResult(action());
+        }
 
-        return tcs.Task.GetAwaiter().GetResult();
+        dispatcher.Post(Invoke);
+
+        return task.Task.GetAwaiter().GetResult();
     }
 
     /// <summary>
@@ -127,10 +152,22 @@ internal static class DispatcherExtensions
         if (action is null)
             throw new ArgumentNullException(nameof(action));
 
-        var tcs = new TaskCompletionSource<TResult>();
+        var info = TaskInfo.Current;
+        var task = new TaskCompletionSource<TResult>();
 
-        dispatcher.Post(() => tcs.SetResult(action(arg)));
+        void Invoke()
+        {
+            using var _ = info.Use();
+            task.SetResult(action(arg));
+        }
 
-        return tcs.Task.GetAwaiter().GetResult();
+        dispatcher.Post(Invoke);
+
+        return task.Task.GetAwaiter().GetResult();
+    }
+
+    private static TaskScope? Use(this TaskInfo? info)
+    {
+        return info is null ? null : new TaskScope(info);
     }
 }
