@@ -118,7 +118,14 @@ internal sealed class AsyncCmdletScope : IDisposable
         _dispatcher.Run();
 
         // Observe task exceptions
-        task.GetAwaiter().GetResult();
+        try
+        {
+            task.GetAwaiter().GetResult();
+        }
+        catch (OperationCanceledException)
+        {
+            // Not an error
+        }
     }
 
     /// <inheritdoc/>
