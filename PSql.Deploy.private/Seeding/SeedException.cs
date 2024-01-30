@@ -1,4 +1,4 @@
-// Copyright 2023 Subatomix Research Inc.
+// Copyright 2024 Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
 #if !NET8_0_OR_GREATER
@@ -15,19 +15,22 @@ namespace PSql.Deploy.Seeding;
 #endif
 public class SeedException : Exception
 {
+    private const string
+        DefaultMessage = "One or more errors occurred during seed application.";
+
     /// <inheritdoc/>
     public SeedException()
-        : base("One or more errors occurred during seed application.")
+        : base(DefaultMessage)
     { }
 
     /// <inheritdoc/>
     public SeedException(string? message)
-        : base(message)
+        : base(message ?? DefaultMessage)
     { }
 
     /// <inheritdoc/>
     public SeedException(string? message, Exception? innerException)
-        : base(message, innerException)
+        : base(message ?? DefaultMessage, innerException)
     { }
 
 #if !NET8_0_OR_GREATER
