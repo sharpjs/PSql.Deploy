@@ -49,6 +49,7 @@ public class InvokeSqlSeedCommand : PerSqlContextCommand
 
     private ISeedSessionControl? _session;
 
+    /// <inheritdoc/>
     protected override void BeginProcessingCore()
     {
         var path    = this.GetCurrentPath();
@@ -62,6 +63,7 @@ public class InvokeSqlSeedCommand : PerSqlContextCommand
         base.BeginProcessingCore();
     }
 
+    /// <inheritdoc/>
     protected override Task ProcessWorkAsync(SqlContextWork work)
     {
         AssertInitialized();
