@@ -69,6 +69,13 @@ public class InvokeSqlSeedCommand : PerSqlContextCommand
         return _session.ApplyAsync(work);
     }
 
+    /// <inheritdoc/>
+    protected override Exception Transform(Exception exception)
+    {
+        return exception as SeedException
+            ?? new SeedException(null, exception);
+    }
+
     [Conditional("DEBUG")]
     [MemberNotNull(nameof(_session))]
     private void AssertInitialized()

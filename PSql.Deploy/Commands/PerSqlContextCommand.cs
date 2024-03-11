@@ -247,7 +247,19 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
             return;
 
         ThrowTerminatingError(new(
-            exception, "", ErrorCategory.OperationStopped, null!
+            Transform(exception), "", ErrorCategory.OperationStopped, null!
         ));
+    }
+
+    /// <summary>
+    ///   Transforms the specified exception for subsequent throwing as a
+    ///   command-terminating error.
+    /// </summary>
+    /// <param name="exception">
+    ///   The exception to transform.
+    /// </param>
+    protected virtual Exception Transform(Exception exception)
+    {
+        return exception;
     }
 }

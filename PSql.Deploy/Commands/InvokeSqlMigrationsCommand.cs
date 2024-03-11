@@ -188,6 +188,14 @@ public class InvokeSqlMigrationsCommand : PerSqlContextCommand
         );
     }
 
+    /// <inheritdoc/>
+    protected override Exception Transform(Exception exception)
+    {
+        return exception as MigrationException
+            ?? new MigrationException(null, exception);
+    }
+
+    /// <inheritdoc/>
     protected override void Dispose(bool managed)
     {
         if (managed)
