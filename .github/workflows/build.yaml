@@ -116,7 +116,7 @@ jobs:
           -s https://www.powershellgallery.com/
           -k $env:PSGALLERY_API_KEY
           --skip-duplicate
-          --no-symbols 1
+          --no-symbols
         env:
           PSGALLERY_API_KEY: ${{ secrets.PSGALLERY_API_KEY }}
 
