@@ -308,5 +308,8 @@ WHEN NOT MATCHED BY TARGET
 
 IF @@ROWCOUNT != 1
     THROW 50000, 'Migration registration for $Name failed.', 0;
+
+IF OBJECT_ID('_deploy.Reset', 'P') IS NOT NULL
+    EXEC _deploy.Reset;
 "@
 }
