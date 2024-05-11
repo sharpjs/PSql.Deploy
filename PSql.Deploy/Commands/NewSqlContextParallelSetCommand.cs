@@ -49,6 +49,7 @@ public class NewSqlContextParallelSetCommand : PSCmdlet
     // Collected contexts from all ProcessRecord invocations
     private IReadOnlyList<SqlContext>? _contexts;
 
+    /// <inheritdoc/>
     protected override void ProcessRecord()
     {
         var contexts = Context.Sanitize();
@@ -61,6 +62,7 @@ public class NewSqlContextParallelSetCommand : PSCmdlet
             PromoteToList(ref _contexts).AddRange(contexts);
     }
 
+    /// <inheritdoc/>
     protected override void EndProcessing()
     {
         var set = new SqlContextParallelSet();

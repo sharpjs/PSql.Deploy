@@ -44,7 +44,7 @@ public class InvokeSqlMigrationsCommand : PerSqlContextCommand
 
     /// <summary>
     ///   <b>-MaximumMigrationName:</b>
-    ///   Latest (maximum) name of migrations to discover.
+    ///   Maximum name of migrations to invoke.
     /// </summary>
     [Parameter()]
     [ValidateNotNullOrEmpty]
@@ -52,7 +52,7 @@ public class InvokeSqlMigrationsCommand : PerSqlContextCommand
 
     /// <summary>
     ///   <b>-AllowCorePhase:</b>
-    ///   Allow a non-skippable <c>Core</c> phase.
+    ///   Allow migration content in the <c>Core</c> phase.
     /// </summary>
     [Parameter()]
     public SwitchParameter AllowCorePhase { get; set; }
@@ -62,6 +62,7 @@ public class InvokeSqlMigrationsCommand : PerSqlContextCommand
     private TaskScope?                          _taskScope;
     private int                                 _phaseIndex;
 
+    /// <inheritdoc/>
     protected override void BeginProcessingCore()
     {
         ValidatePhases();
@@ -71,16 +72,15 @@ public class InvokeSqlMigrationsCommand : PerSqlContextCommand
         base.BeginProcessingCore();
     }
 
+    /// <inheritdoc/>
     protected override void ProcessContextSet(SqlContextParallelSet contextSet)
     {
-        AssertInitialized();
-
-        // Cache context set for later phases
-        _contextSets.Add(contextSet);
+        CacheContextSet(contextSet);
 
         base.ProcessContextSet(contextSet);
     }
 
+    /// <inheritdoc/>
     protected override Task ProcessWorkAsync(SqlContextWork work)
     {
         AssertInitialized();
@@ -88,6 +88,7 @@ public class InvokeSqlMigrationsCommand : PerSqlContextCommand
         return _session.ApplyAsync(work, this);
     }
 
+    /// <inheritdoc/>
     protected override void EndProcessingCore()
     {
         AssertInitialized();
@@ -122,6 +123,10 @@ public class InvokeSqlMigrationsCommand : PerSqlContextCommand
             }
         }
 
+        // ProcessRecord invokes the first phase.  If invoking multiple phases,
+        // the cmdlet must cache each context set provided to ProcessRecord.
+        // EndProcessing invokes the subsequent phases, enumerating context
+        // sets from the cache.
         _contextSets = Phase.Length > 1
             ? new List<SqlContextParallelSet>()
             : EmptyCollection<SqlContextParallelSet>.Instance;
@@ -161,6 +166,14 @@ public class InvokeSqlMigrationsCommand : PerSqlContextCommand
         _session.Phase = phase;
     }
 
+    // Caches context set for re-running in later phases
+    private void CacheContextSet(SqlContextParallelSet contextSet)
+    {
+        AssertInitialized();
+
+        _contextSets.Add(contextSet);
+    }
+
     // Re-runs cmdlet logic in new phase with cached context sets
     private void ProcessCachedContextSets()
     {
@@ -170,21 +183,12 @@ public class InvokeSqlMigrationsCommand : PerSqlContextCommand
             base.ProcessContextSet(contextSet);
     }
 
-    [Conditional("DEBUG")]
-    [MemberNotNull(nameof(Phase), nameof(_session), nameof(_contextSets))]
-    private void AssertInitialized()
-    {
-        Debug.Assert(Phase        is not null);
-        Debug.Assert(_session     is not null);
-        Debug.Assert(_contextSets is not null);
-    }
-
     [DoesNotReturn]
     private static void ThrowInvalidPhase()
     {
         throw new ValidationMetadataException(
             "-Phase must be a unique, ordered array of valid phases. " +
-            "The possible phases are Pre, Core, and Post."
+            "The possible phases are Pre, Core, and Post, in that order."
         );
     }
 
@@ -193,6 +197,15 @@ public class InvokeSqlMigrationsCommand : PerSqlContextCommand
     {
         return exception as MigrationException
             ?? new MigrationException(null, exception);
+    }
+
+    [Conditional("DEBUG")]
+    [MemberNotNull(nameof(Phase), nameof(_session), nameof(_contextSets))]
+    private void AssertInitialized()
+    {
+        Debug.Assert(Phase        is not null);
+        Debug.Assert(_session     is not null);
+        Debug.Assert(_contextSets is not null);
     }
 
     /// <inheritdoc/>

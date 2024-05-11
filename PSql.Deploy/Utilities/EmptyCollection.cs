@@ -14,13 +14,16 @@ namespace PSql.Deploy.Utilities;
 /// <typeparam name="T">
 ///   The type of item (not) in the collection.
 /// </typeparam>
-internal partial class EmptyCollection<T> : ICollection<T>, IReadOnlyCollection<T>
+internal class EmptyCollection<T> : ICollection<T>, IReadOnlyCollection<T>
 {
     /// <summary>
     ///   Gets the singleton instance of <see cref="EmptyCollection{T}"/>.
     /// </summary>
     public static EmptyCollection<T> Instance { get; } = new();
 
+    /// <summary>
+    ///   Initializes a new <see cref="EmptyCollection{T}"/> instance.
+    /// </summary>
     protected EmptyCollection() { }
 
     /// <inheritdoc/>

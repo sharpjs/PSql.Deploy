@@ -29,7 +29,7 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
     [ValidateNotNullOrEmpty]
     public SqlContextParallelSet[] ContextSet
     {
-        get => _targets ??= Array.Empty<SqlContextParallelSet>();
+        get => _targets ??= [];
         set => _targets   = value.Sanitize();
     }
     private SqlContextParallelSet[]? _targets;
@@ -47,7 +47,7 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
     [ValidateNotNullOrEmpty]
     public SqlContext[] Context
     {
-        get => _contexts ??= Array.Empty<SqlContext>();
+        get => _contexts ??= [];
         set => _contexts   = value.Sanitize();
     }
     private SqlContext[]? _contexts;
@@ -86,7 +86,15 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
     // Accumulated errors
     private readonly ConcurrentQueue<Exception> _exceptions = new();
 
-    /// <inheritdoc/>
+    /// <summary>
+    ///   Performs initialization of command execution.
+    /// </summary>
+    /// <remarks>
+    ///   If a <see cref="TaskHost"/> is available, this method invokes
+    ///   <see cref="BeginProcessingCore"/>.  Otherwise, this method does
+    ///   nothing and assumes that <see cref="ProcessRecord"/> will reinvoke
+    ///   the current command with an active <see cref="TaskHost"/>.
+    /// </remarks>
     protected sealed override void BeginProcessing()
     {
         if (TaskHost.Current is null)
@@ -98,7 +106,12 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
     /// <summary>
     ///   Performs execution of the command.
     /// </summary>
-    protected override void ProcessRecord()
+    /// <remarks>
+    ///   If a <see cref="TaskHost"/> is available, this method invokes
+    ///   <see cref="ProcessRecordCore"/>.  Otherwise, this method reinvokes
+    ///   the current command with an active <see cref="TaskHost"/>.
+    /// </remarks>
+    protected sealed override void ProcessRecord()
     {
         if (TaskHost.Current is null)
             ReinvokeWithTaskHost();
@@ -106,7 +119,15 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
             ProcessRecordCore();
     }
 
-    /// <inheritdoc/>
+    /// <summary>
+    ///   Performs cleanup after command execution.
+    /// </summary>
+    /// <remarks>
+    ///   If a <see cref="TaskHost"/> is available, this method invokes
+    ///   <see cref="EndProcessingCore"/>.  Otherwise, this method does nothing
+    ///   and assumes that <see cref="ProcessRecord"/> will reinvoke the
+    ///   current command with an active <see cref="TaskHost"/>.
+    /// </remarks>
     protected sealed override void EndProcessing()
     {
         if (TaskHost.Current is null)
@@ -125,25 +146,32 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
             .Invoke();
     }
 
-    /// <inheritdoc cref="BeginProcessing"/>
+    /// <inheritdoc cref="AsyncPSCmdlet.BeginProcessing"/>
     protected virtual void BeginProcessingCore()
     {
         base.BeginProcessing();
     }
 
-    /// <inheritdoc cref="ProcessRecord"/>
+    /// <summary>
+    ///   Performs execution of the command.
+    /// </summary>
+    /// <remarks>
+    ///   This implementation invokes <see cref="ProcessContextSet"/> with each
+    ///   <see cref="SqlContextParallelSet"/> specified by the current
+    ///   parameter values.
+    /// </remarks>
     protected virtual void ProcessRecordCore()
     {
         InvokePendingMainThreadActions();
 
-        if (ParameterSetName == ContextParameterSetName)
+        if (ParameterSetName is ContextParameterSetName)
             ProcessContextSet(MakeContextSet());
         else
             foreach (var contextSet in ContextSet)
                 ProcessContextSet(contextSet);
     }
 
-    /// <inheritdoc cref="EndProcessing"/>
+    /// <inheritdoc cref="AsyncPSCmdlet.EndProcessing"/>
     protected virtual void EndProcessingCore()
     {
         base.EndProcessing();
@@ -161,6 +189,18 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
         };
     }
 
+    /// <summary>
+    ///   Performs execution of the command for the specified context set.
+    /// </summary>
+    /// <param name="contextSet">
+    ///   An object specifying sets of databases on which to operate with
+    ///   limited parallelism.
+    /// </param>
+    /// <remarks>
+    ///   This implementation invokes <see cref="ProcessWorkAsync"/> for each
+    ///   <see cref="SqlContext"/> in the <paramref name="contextSet"/> in
+    ///   parallel, obeying parallelism limits.
+    /// </remarks>
     protected virtual void ProcessContextSet(SqlContextParallelSet contextSet)
     {
         if (contextSet.Contexts.Count == 0)
@@ -221,7 +261,18 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
         }
     }
 
+    /// <summary>
+    ///   Performs execution of the command for the specified work item
+    ///   asynchronously.
+    /// </summary>
+    /// <param name="work">
+    ///   The work item against which to execute.
+    /// </param>
+    /// <returns>
+    ///   A <see cref="Task"/> representing the asynchronous operation.
+    /// </returns>
     protected abstract Task ProcessWorkAsync(SqlContextWork work);
+    // TODO: CancellationToken?
 
     private void HandleError(Exception e)
     {
