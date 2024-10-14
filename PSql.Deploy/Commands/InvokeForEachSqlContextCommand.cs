@@ -116,7 +116,7 @@ public class InvokeForEachSqlContextCommand : PerSqlContextCommand
         await shell
             .AddCommand("ForEach-Object")
             .AddParameter("Process", ScriptBlock.Clone())
-            .AddParameter("InputObject", work)
+            .AddParameter("InputObject", work.Context)
             .InvokeAsync(NoInput, SetUpOutput(work));
     }
 
