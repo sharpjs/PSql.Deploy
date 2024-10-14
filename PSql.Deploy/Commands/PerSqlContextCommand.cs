@@ -227,22 +227,21 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
     private async Task ProcessContextAsync(SqlContext context, SemaphoreSlim limiter)
     {
         // Move to another thread so that caller's context iterator continues
+        await Task.Yield();
+
+        var limited = false;
+        var work    = null as SqlContextWork;
+
         try
         {
-            await Task.Yield();
-        }
-        catch (OperationCanceledException)
-        {
-            // Not an error
-            return;
-        }
+            // Limit parallelism
+            await limiter.WaitAsync(CancellationToken);
+            limited = true;
 
-        // Limit parallelism
-        await limiter.WaitAsync(CancellationToken);
-        try
-        {
-            var work = new SqlContextWork(context);
+            // Describe work
+            work = new(context);
 
+            // Process work
             using (TaskScope.Begin(work.DatabaseDisplayName))
                 await ProcessWorkAsync(work);
         }
@@ -256,7 +255,8 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
         }
         finally
         {
-            limiter.Release();
+            if (limited)
+                limiter.Release();
         }
     }
 
