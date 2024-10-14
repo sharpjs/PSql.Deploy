@@ -1,7 +1,7 @@
 <Project>
 
   <!--
-    Copyright 2023 Subatomix Research Inc.
+    Copyright Subatomix Research Inc.
     SPDX-License-Identifier: ISC
   -->
 
@@ -17,21 +17,22 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <GlobalPackageReference Include="SauceControl.InheritDoc"             Version="2.0.1" />
-    <GlobalPackageReference Include="Subatomix.Build.Versioning.Semantic" Version="1.0.1" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(IsTestProject)' != 'true'">
-    <GlobalPackageReference Include="Microsoft.SourceLink.GitHub"         Version="8.0.0" />
+    <PackageVersion Include="DependencyQueue"                             Version="1.0.0-rc.1" />
+    <PackageVersion Include="Microsoft.Data.SqlClient"                    Version="5.2.0" />
+    <PackageVersion Include="Microsoft.PowerShell.SDK"                    Version="7.2.18" />
+    <PackageVersion Include="Prequel"                                     Version="1.0.3" />
+    <PackageVersion Include="Subatomix.Build.Packaging.PowerShellModule"  Version="1.1.1" />
+    <PackageVersion Include="Subatomix.Testing"                           Version="3.1.0" />
+    <PackageVersion Include="System.Management.Automation"                Version="[7.2.0, 8.0.0)" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageVersion Include="DependencyQueue"                            Version="1.0.0-rc.1" />
-    <PackageVersion Include="Microsoft.Data.SqlClient"                   Version="5.2.0" />
-    <PackageVersion Include="Microsoft.PowerShell.SDK"                   Version="7.2.18" />
-    <PackageVersion Include="Prequel"                                    Version="1.0.3" />
-    <PackageVersion Include="Subatomix.Build.Packaging.PowerShellModule" Version="1.1.1" />
-    <PackageVersion Include="Subatomix.Testing"                          Version="3.1.0" />
-    <PackageVersion Include="System.Management.Automation"               Version="[7.2.0, 8.0.0)" />
+    <GlobalPackageReference Include="SauceControl.InheritDoc"             Version="2.0.2" />
+    <GlobalPackageReference Include="Subatomix.Build.Versioning.Semantic" Version="1.0.1" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(IsTestProject)' != 'true'">
+    <GlobalPackageReference Include="Microsoft.SourceLink.GitHub"         Version="8.0.0" />
   </ItemGroup>
 
 </Project>
