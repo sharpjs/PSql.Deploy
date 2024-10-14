@@ -115,12 +115,9 @@ public class InvokeForEachSqlContextCommand : PerSqlContextCommand
 
         await shell
             .AddCommand("ForEach-Object")
-            .AddParameter("Process", ScriptBlock.Create(ScriptBlock.ToString()))
+            .AddParameter("Process", ScriptBlock.Clone())
             .AddParameter("InputObject", work)
             .InvokeAsync(NoInput, SetUpOutput(work));
-
-        // FUTURE: In PS 7.2+, try ScriptBlock.Ast.GetScriptBlock()
-        // ((ScriptBlockAst) ScriptBlock.Ast).GetScriptBlock();
     }
 
     private PSDataCollection<PSObject> SetUpOutput(SqlContextWork work)
