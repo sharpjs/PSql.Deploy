@@ -2,7 +2,7 @@
 # https://editorconfig.org
 # https://aka.ms/editorconfigdocs
 #
-# Copyright 2024 Subatomix Research Inc.
+# Copyright Subatomix Research Inc.
 # SPDX-License-Identifier: ISC
 
 root = true
@@ -24,7 +24,7 @@ charset = utf-8-bom
 [*.*proj]
 charset = utf-8-bom
 
-[*.{config,json,jsonc,md,*proj,props,runsettings,targets,*xml,yaml,yml}]
+[*.{config,json,jsonc,md,*proj,props,runsettings,slnLaunch,targets,*xml,yaml,yml}]
 indent_size = 2
 
 [*.cs]
