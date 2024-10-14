@@ -1,4 +1,4 @@
-// Copyright 2024 Subatomix Research Inc.
+// Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
 using System.Collections.Concurrent;
@@ -190,16 +190,15 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
     }
 
     /// <summary>
-    ///   Performs execution of the command for the specified context set.
+    ///   Performs execution of the command for the specified set of databases.
     /// </summary>
     /// <param name="contextSet">
-    ///   An object specifying sets of databases on which to operate with
+    ///   An object specifying a set of databases on which to operate with
     ///   limited parallelism.
     /// </param>
     /// <remarks>
-    ///   This implementation invokes <see cref="ProcessWorkAsync"/> for each
-    ///   <see cref="SqlContext"/> in the <paramref name="contextSet"/> in
-    ///   parallel, obeying parallelism limits.
+    ///   This method queues processing of <paramref name="contextSet"/> on the
+    ///   thread pool and returns immediately.
     /// </remarks>
     protected virtual void ProcessContextSet(SqlContextParallelSet contextSet)
     {
@@ -262,17 +261,16 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
     }
 
     /// <summary>
-    ///   Performs execution of the command for the specified work item
+    ///   Performs execution of the command for the specified database
     ///   asynchronously.
     /// </summary>
     /// <param name="work">
-    ///   The work item against which to execute.
+    ///   An object specifying a database on which to operate.
     /// </param>
     /// <returns>
     ///   A <see cref="Task"/> representing the asynchronous operation.
     /// </returns>
     protected abstract Task ProcessWorkAsync(SqlContextWork work);
-    // TODO: CancellationToken?
 
     private void HandleError(Exception e)
     {
