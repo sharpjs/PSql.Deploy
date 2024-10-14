@@ -1,4 +1,4 @@
-// Copyright 2024 Subatomix Research Inc.
+// Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: ISC
 
 using System.Diagnostics;
@@ -93,6 +93,7 @@ public class InvokeSqlMigrationsCommand : PerSqlContextCommand
     {
         AssertInitialized();
 
+        // Re-run for later phases
         while (AdvanceToNextPhase())
         {
             WaitForAsyncActions();
