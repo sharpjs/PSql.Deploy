@@ -251,7 +251,7 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
         }
         catch (Exception e)
         {
-            HandleError(e);
+            HandleError(e, work);
         }
         finally
         {
@@ -272,8 +272,11 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
     /// </returns>
     protected abstract Task ProcessWorkAsync(SqlContextWork work);
 
-    private void HandleError(Exception e)
+    private void HandleError(Exception e, SqlContextWork? work)
     {
+        if (e.Data is { IsReadOnly: false } data && work is { })
+            data[nameof(SqlContextWork)] = work;
+
         _exceptions.Enqueue(e);
 
         if (_exceptions.Count > MaxErrorCount)
