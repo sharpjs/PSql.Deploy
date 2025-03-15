@@ -1,5 +1,5 @@
-// Copyright 2024 Subatomix Research Inc.
-// SPDX-License-Identifier: ISC
+// Copyright Subatomix Research Inc.
+// SPDX-License-Identifier: MIT
 
 #if !NET8_0_OR_GREATER
 using System.Runtime.Serialization;

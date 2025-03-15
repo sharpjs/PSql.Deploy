@@ -1,8 +1,8 @@
 <Project>
 
   <!--
-    Copyright 2023 Subatomix Research Inc.
-    SPDX-License-Identifier: ISC
+    Copyright Subatomix Research Inc.
+    SPDX-License-Identifier: MIT
   -->
 
   <!--
@@ -19,7 +19,7 @@
     <Authors>Subatomix Research Inc.</Authors>
     <Company>Subatomix Research Inc.</Company>
     <Copyright>© $([System.DateTime]::UtcNow.Year) $(Company)</Copyright>
-    <PackageLicenseExpression>ISC</PackageLicenseExpression>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/sharpjs/PSql</PackageProjectUrl>
     <PackageTags>PowerShell SQL Server Azure Invoke SqlCmd Deploy Migration</PackageTags>
     <PackageReleaseNotes>$(PackageProjectUrl)/blob/master/CHANGES.md</PackageReleaseNotes>

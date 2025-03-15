@@ -1,5 +1,5 @@
 # {Copyright}
-# SPDX-License-Identifier: ISC
+# SPDX-License-Identifier: MIT
 @{
     # Identity
     GUID          = '0d5df8dd-afcc-42cc-9175-a8dac81f779e'

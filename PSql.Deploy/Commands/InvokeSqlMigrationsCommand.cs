@@ -1,5 +1,5 @@
 // Copyright Subatomix Research Inc.
-// SPDX-License-Identifier: ISC
+// SPDX-License-Identifier: MIT
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;

@@ -1,6 +1,6 @@
 #if REWORK
-// Copyright 2023 Subatomix Research Inc.
-// SPDX-License-Identifier: ISC
+// Copyright Subatomix Research Inc.
+// SPDX-License-Identifier: MIT
 
 namespace PSql.Deploy.Seeding;
 

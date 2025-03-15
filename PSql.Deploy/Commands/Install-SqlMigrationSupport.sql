@@ -1,5 +1,5 @@
--- Copyright 2023 Subatomix Research Inc.
--- SPDX-License-Identifier: ISC
+-- Copyright Subatomix Research Inc.
+-- SPDX-License-Identifier: MIT
 
 IF SCHEMA_ID('_deploy') IS NULL
     EXEC('CREATE SCHEMA _deploy AUTHORIZATION dbo;');
