@@ -78,4 +78,12 @@
   </PropertyGroup>
   <Import Project="$(StampFilePath)" Condition="Exists('$(StampFilePath)')"/>
 
+  <ItemGroup>
+    <Using Remove="System.Net.Http" />
+    <Using Include="System.Collections.Immutable" />
+    <Using Include="System.Data" />
+    <Using Include="System.Data.Common" />
+    <Using Include="System.Management.Automation" />
+  </ItemGroup>
+
 </Project>
