@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Tests for PSql.Deploy.Engine</Description>
+    <RootNamespace>PSql.Deploy</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Subatomix.Testing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PSql.Deploy.Engine\PSql.Deploy.Engine.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Remove="FluentAssertions" />
+    <Using Remove="System.Management.Automation" />
+    <Using Include="Microsoft.Data.SqlClient" />
+    <Using Include="Microsoft.Data.SqlClient" Alias="Mds" />
+  </ItemGroup>
+
+</Project>

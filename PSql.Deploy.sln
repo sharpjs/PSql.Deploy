@@ -11,6 +11,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PSql.Deploy.Core", "PSql.De
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PSql.Deploy.Engine", "PSql.Deploy.Engine\PSql.Deploy.Engine.csproj", "{5DC9D594-AB83-48F7-B07A-3A5416D9969A}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PSql.Deploy.Engine.Tests", "PSql.Deploy.Engine.Tests\PSql.Deploy.Engine.Tests.csproj", "{5CE8E1DD-A6A5-4675-9014-11B97B664CCF}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PSql.Deploy.private", "PSql.Deploy.private\PSql.Deploy.private.csproj", "{6C376E59-BD86-4B40-81BB-E769077D8F4B}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PSql.Deploy.Tests", "PSql.Deploy.Tests\PSql.Deploy.Tests.csproj", "{A18D29F8-9B50-46D8-A786-DB77BDF7C7F0}"
@@ -35,6 +37,10 @@ Global
 		{5DC9D594-AB83-48F7-B07A-3A5416D9969A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5DC9D594-AB83-48F7-B07A-3A5416D9969A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5DC9D594-AB83-48F7-B07A-3A5416D9969A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5CE8E1DD-A6A5-4675-9014-11B97B664CCF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5CE8E1DD-A6A5-4675-9014-11B97B664CCF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5CE8E1DD-A6A5-4675-9014-11B97B664CCF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5CE8E1DD-A6A5-4675-9014-11B97B664CCF}.Release|Any CPU.Build.0 = Release|Any CPU
 		{6C376E59-BD86-4B40-81BB-E769077D8F4B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{6C376E59-BD86-4B40-81BB-E769077D8F4B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6C376E59-BD86-4B40-81BB-E769077D8F4B}.Release|Any CPU.ActiveCfg = Release|Any CPU
