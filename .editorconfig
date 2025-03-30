@@ -53,9 +53,8 @@ csharp_style_var_elsewhere                     = true                   # was fa
 csharp_style_var_for_built_in_types            = true                   # was false
 csharp_style_var_when_type_is_apparent         = true                   # was false
 
-dotnet_sort_system_directives_first                               = true          # was false
-dotnet_style_allow_multiple_blank_lines_experimental              = false:warning # was true
-dotnet_style_allow_statement_immediately_after_block_experimental = false:warning # was true
+dotnet_sort_system_directives_first                  = true          # was false
+dotnet_style_allow_multiple_blank_lines_experimental = false:warning # was true
 
 # C# Naming Conventions
 # Dcocumentation Here
