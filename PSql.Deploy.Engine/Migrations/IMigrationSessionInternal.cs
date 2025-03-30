@@ -27,4 +27,12 @@ internal interface IMigrationSessionInternal : IMigrationSession
     ///   <paramref name="target"/>.
     /// </returns>
     Task<IReadOnlyList<Migration>> GetAppliedMigrationsAsync(Target target);
+
+    /// <summary>
+    ///   Loads the specified migration's SQL content.
+    /// </summary>
+    /// <param name="migration">
+    ///   The migration for which to load SQL content.
+    /// </param>
+    void LoadContent(Migration migration);
 }
