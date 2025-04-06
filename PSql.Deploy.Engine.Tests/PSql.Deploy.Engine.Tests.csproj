@@ -20,4 +20,8 @@
     <Using Include="Microsoft.Data.SqlClient" Alias="Mds" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="TestDbs\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>
