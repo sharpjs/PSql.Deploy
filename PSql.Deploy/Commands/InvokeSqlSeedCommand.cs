@@ -1,3 +1,4 @@
+#if CONVERTED
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
@@ -85,3 +86,4 @@ public class InvokeSqlSeedCommand : PerSqlContextCommand
         Debug.Assert(_session != null);
     }
 }
+#endif

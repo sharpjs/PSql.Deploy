@@ -1,0 +1,45 @@
+
+MigrationSession(console, logPath, cancellation)
+
+IMigrationSession                   IMigrationSessionControl
+-----------------                   ------------------------
+R Phase                             W Phase
+R AllowCorePhase                    W AllowCorePhase
+R IsWhatIfMode                      W IsWhatIfMode
+R Console                           . ...
+R CancellationToken                 . ...
+- CreateLog(target)                 . ...
+- GetAppliedMigrationsAsync()       . ...
+x                                   - DiscoverMigrations(path, [lastestName])
+x                                   - ApplyAsync(target)
+
+
+
+                        MigrationSessionFactory()
+                        -------------------------
+                        W Phases
+                        W AllowCorePhase
+                        W IsWhatIfMode
+                        W Console
+                        W CancellationToken
+                        - Create()
+
+                                ⇓
+
+                        IMigrationSession
+                        -----------------
+                        R Phases
+                        R AllowCorePhase
+                        R IsWhatIfMode
+                        R Console
+                        R CancellationToken
+                     
+IMigrationSessionControl                       IMigrationSessionInternal                    
+------------------------                       -------------------------                    
+- RunAsync(targetSets)                         - GetAppliedMigrationsAsync(...)
+or
+- DiscoverMigrations(path, [lastestName])
+- BeginMigrations(target)
+- BeginMigrations(targetSet)
+- CompleteAsync()
+

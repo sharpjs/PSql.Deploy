@@ -1,107 +1,51 @@
-// Copyright Subatomix Research Inc.
+// iopyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 
 namespace PSql.Deploy.Migrations;
 
-using static Environment;
-using static RuntimeInformation;
-
-/// <summary>
-///   An algorithm that applies schema migrations a target database.
-/// </summary>
-internal class MigrationApplicator : IMigrationValidationContext, IDisposable
+internal class MigrationApplicator : IMigrationValidationContext
 {
-    // The target of this applicator
-    private readonly SqlContextWork _target;
-
-    // Time elapsed since construction
-    private readonly Stopwatch _stopwatch;
-
-    /// <summary>
-    ///   Initializes a new <see cref="MigrationApplicator"/> instance.
-    /// </summary>
-    /// <param name="session">
-    ///   The migration session.
-    /// </param>
-    /// <param name="target">
-    ///   An object specifying how to connect to the target database.
-    /// </param>
-    /// <exception cref="ArgumentNullException">
-    ///   <paramref name="session"/> and/or
-    ///   <paramref name="target"/> is <see langword="null"/>.
-    /// </exception>
-    public MigrationApplicator(IMigrationSession session, SqlContextWork target)
+    public MigrationApplicator(IMigrationSessionInternal session, Target target)
     {
         if (session is null)
             throw new ArgumentNullException(nameof(session));
         if (target is null)
             throw new ArgumentNullException(nameof(target));
 
-        Session          = session;
-        _target          = target;
+        Session = session;
+        Target  = target;
 
-        LogWriter        = session.CreateLog(target);
-        SqlMessageLogger = new TextWriterSqlMessageLogger(LogWriter);
-
-        _stopwatch       = Stopwatch.StartNew();
+        _stopwatch = new();
     }
 
     /// <summary>
     ///   Gets the migration session.
     /// </summary>
-    public IMigrationSession Session { get; }
+    public IMigrationSessionInternal Session { get; }
+
+    internal DbProviderFactory DbProviderFactory { get; } = DbProviderFactories.GetFactory("SqlClient");
 
     /// <inheritdoc cref="IMigrationSession.Console"/>
     public IMigrationConsole Console => Session.Console;
 
-    /// <inheritdoc cref="IMigrationSession.EarliestDefinedMigrationName"/>
-    public string EarliestDefinedMigrationName => Session.EarliestDefinedMigrationName;
-
-    /// <inheritdoc/>
-    public MigrationPhase Phase => Session.Phase;
-
-    /// <inheritdoc cref="IMigrationSession.CancellationToken"/>
-    public CancellationToken CancellationToken => Session.CancellationToken;
-
-    internal IMigrationInternals Internals { get; set; } = MigrationInternals.Instance;
+    /// <inheritdoc cref="IMigrationSession.CurrentPhase"/>
+    public MigrationPhase Phase => Session.CurrentPhase;
 
     /// <summary>
-    ///   Gets an object that specifies how to connect to the target database.
+    ///   Gets an object representing the target database.
     /// </summary>
-    public SqlContext Context => _target.Context;
+    public Target Target { get; }
 
-    /// <inheritdoc/>
-    public string ServerName => _target.ServerDisplayName;
+    // TODO: Find a better way maybe?
+    string IMigrationValidationContext.ServerName                   => Target.ServerDisplayName;
+    string IMigrationValidationContext.DatabaseName                 => Target.DatabaseDisplayName;
+    string IMigrationValidationContext.EarliestDefinedMigrationName => Session.EarliestDefinedMigrationName;
+    bool   IMigrationValidationContext.AllowCorePhase               => Session.AllowContentInCorePhase;
 
-    /// <inheritdoc/>
-    public string DatabaseName => _target.DatabaseDisplayName;
-
-    /// <summary>
-    ///   Gets a writer that writes to the per-database log.
-    /// </summary>
-    public TextWriter LogWriter { get; }
-
-    /// <summary>
-    ///   Gets an <see cref="ISqlMessageLogger"/> implementation that writes to
-    ///   the per-database log.
-    /// </summary>
-    public ISqlMessageLogger SqlMessageLogger { get; }
-
-    /// <summary>
-    ///   Gets or sets whether the object allows a non-skippable <c>Core</c>
-    ///   phase to exist.  The default is <see langword="false"/>.
-    /// </summary>
-    public bool AllowCorePhase => Session.AllowCorePhase;
-
-    /// <summary>
-    ///   Gets or sets whether the object operates in what-if mode.  In this
-    ///   mode, the object reports what actions it would perform against the
-    ///   target database but does not perform the actions.
-    /// </summary>
-    public bool IsWhatIfMode => Session.IsWhatIfMode;
+    // Time elapsed in ApplyAsync
+    private readonly Stopwatch _stopwatch;
 
     // Dynamic column width
     private int _migrationNameMaxLength;
@@ -112,17 +56,13 @@ internal class MigrationApplicator : IMigrationValidationContext, IDisposable
     // Outcome
     private TargetDisposition _disposition;
 
-    /// <summary>
-    ///   Applies outstanding migrations to the target database asynchronously.
-    /// </summary>
-    /// <returns>
-    ///   A <see cref="Task"/> representing the asynchronous operation.
-    /// </returns>
-    // /// <exception cref="MigrationValidationException">
-    // ///   One or more validation errors was reported.
-    // /// </exception>
-    public async Task ApplyAsync()
+    private TextWriter? _logWriter;
+
+    internal async Task ApplyAsync()
     {
+        BeginLog();
+
+        await Task.Yield();
         try
         {
             ReportStarting();
@@ -149,19 +89,24 @@ internal class MigrationApplicator : IMigrationValidationContext, IDisposable
         }
         finally
         {
-            ReportEnded();
+            try
+            {
+                ReportEnded();
+                await CloseLogAsync();
+            }
+            catch { /* best effort only */ }
         }
     }
 
     private Task<IReadOnlyList<Migration>> GetAppliedMigrationsAsync()
     {
-        return Session.GetAppliedMigrationsAsync(Context, SqlMessageLogger);
+        return Session.GetAppliedMigrationsAsync(Target);
     }
 
     private ImmutableArray<Migration> GetPendingMigrations(IReadOnlyList<Migration> appliedMigrations)
     {
-        var pendingMigrations = new MigrationMerger(Internals).Merge(
-            definedMigrations: Session.Migrations.AsSpan(),
+        var pendingMigrations = new MigrationMerger(Session).Merge(
+            definedMigrations: Session.Migrations.CastArray<Migration>().AsSpan(),
             appliedMigrations
         );
 
@@ -200,7 +145,7 @@ internal class MigrationApplicator : IMigrationValidationContext, IDisposable
             return false;
         }
 
-        if (!AllowCorePhase && plan.IsCoreRequired)
+        if (!Session.AllowContentInCorePhase && plan.IsCoreRequired)
         {
             ReportCoreRequired();
             return false;
@@ -211,15 +156,20 @@ internal class MigrationApplicator : IMigrationValidationContext, IDisposable
 
     private async Task ExecuteAsync(MigrationPlan plan)
     {
+        Assume.NotNull(_logWriter);
         ReportApplying();
 
-        if (IsWhatIfMode)
+        if (Session.IsWhatIfMode)
             return;
 
-        using var connection = Internals.Connect(Context, SqlMessageLogger);
-        using var command    = connection.CreateCommand();
+        var logger = new TextWriterSqlMessageLogger(_logWriter);
 
-        command.CommandTimeout = 0; // No timeout
+        using var connection = Target.CreateConnectionScope(logger);
+        using var command    = connection.Connection.CreateCommand();
+
+        command.CommandType        = CommandType.Text;
+        command.CommandTimeout     = 0; // No timeout
+        command.RetryLogicProvider = connection.Connection.RetryLogicProvider;
 
         foreach (var (migration, phase) in plan.GetItems(Phase))
         {
@@ -236,7 +186,7 @@ internal class MigrationApplicator : IMigrationValidationContext, IDisposable
         }
     }
 
-    private Task ExecuteAsync(Migration migration, MigrationPhase phase, ISqlCommand command)
+    private Task ExecuteAsync(Migration migration, MigrationPhase phase, SqlCommand command)
     {
         var sql = migration[phase].Sql;
         if (sql.IsNullOrEmpty())
@@ -244,27 +194,27 @@ internal class MigrationApplicator : IMigrationValidationContext, IDisposable
 
         command.CommandText = sql;
 
-        return command.UnderlyingCommand.ExecuteNonQueryAsync(CancellationToken);
+        return command.ExecuteNonQueryAsync(Session.CancellationToken);
     }
 
     private void ReportStarting()
     {
-        Console.ReportStarting();
+        Console.ReportStarting(Target); // TODO: Phase
 
-        var process = Process.GetCurrentProcess();
+        var i = ProcessInfo.Instance;
 
         Log("PSql.Deploy Migration Log");
         Log("");
         Log($"Migration Phase:    {Phase}");
-        Log($"Target Server:      {ServerName}");
-        Log($"Target Database:    {DatabaseName}");
+        Log($"Target Server:      {Target.ServerDisplayName}");
+        Log($"Target Database:    {Target.DatabaseDisplayName}");
         Log($"Start Time:         {DateTime.UtcNow:o}");
-        Log($"Machine:            {MachineName}");
-        Log($"Logical CPUs:       {ProcessorCount}");
-        Log($"User:               {UserName}");
-        Log($"Process:            {process.Id} {process.ProcessName} ({ProcessArchitecture})");
-        Log($"Operating System:   {OSDescription} ({OSArchitecture})");
-        Log($".NET Runtime:       {FrameworkDescription}");
+        Log($"Machine:            {i.MachineName}");
+        Log($"Logical CPUs:       {i.ProcessorCount}");
+        Log($"User:               {i.UserName}");
+        Log($"Process:            {i.ProcessId} {i.ProcessName} ({i.ProcessArchitecture})");
+        Log($"Operating System:   {i.OSDescription} ({i.OSArchitecture})");
+        Log($".NET Runtime:       {i.FrameworkDescription}");
     }
 
     private void ReportNoPendingMigrations()
@@ -414,7 +364,7 @@ internal class MigrationApplicator : IMigrationValidationContext, IDisposable
 
     private void ReportDiagnostic(MigrationDiagnostic diagnostic)
     {
-        Console.ReportProblem(diagnostic.Message);
+        Console.ReportProblem(Target, diagnostic.Message);
 
         Log(string.Concat(
             diagnostic.IsError ? "Error: " : "Warning: ",
@@ -440,11 +390,11 @@ internal class MigrationApplicator : IMigrationValidationContext, IDisposable
             "Otherwise, ensure that all migrations begin with a '--# PRE' or " +
             "'--# POST' directive and that any '--# REQUIRES:' directives "    +
             "reference only migrations that have been completely applied.",
-            ServerName,
-            DatabaseName
+            Target.ServerDisplayName,
+            Target.DatabaseDisplayName
         );
 
-        Console.ReportProblem(message);
+        Console.ReportProblem(Target, message);
 
         Log("");
         Log("Error: " + message);
@@ -459,7 +409,7 @@ internal class MigrationApplicator : IMigrationValidationContext, IDisposable
 
     private void ReportApplying(Migration migration, MigrationPhase phase)
     {
-        Console.ReportApplying(migration.Name, phase);
+        Console.ReportApplying(Target, migration.Name, phase);
 
         Log(string.Concat("[", migration.Name, " ", phase.ToString(), "]"));
 
@@ -468,7 +418,7 @@ internal class MigrationApplicator : IMigrationValidationContext, IDisposable
 
     private void ReportException(Exception exception)
     {
-        Console.ReportProblem(exception.Message);
+        Console.ReportProblem(Target, exception.Message);
 
         Log(exception.ToString());
     }
@@ -477,7 +427,7 @@ internal class MigrationApplicator : IMigrationValidationContext, IDisposable
     {
         var elapsed = _stopwatch.Elapsed;
 
-        Console.ReportApplied(_appliedCount, elapsed, _disposition);
+        Console.ReportApplied(Target, _appliedCount, elapsed, _disposition);
 
         // Footer
         Log("");
@@ -488,6 +438,21 @@ internal class MigrationApplicator : IMigrationValidationContext, IDisposable
         ));
     }
 
+    private void BeginLog()
+    {
+        _logWriter = Console.CreateLog(Target);
+    }
+
+    private async ValueTask CloseLogAsync()
+    {
+        Assume.NotNull(_logWriter);
+
+        await _logWriter.FlushAsync();
+        await _logWriter.DisposeAsync();
+
+        _logWriter = null;
+    }
+
     /// <summary>
     ///   Writes the specified text and a line ending to the per-database log
     ///   file.
@@ -496,9 +461,9 @@ internal class MigrationApplicator : IMigrationValidationContext, IDisposable
     ///   The text to write.
     /// </param>
     public void Log(string text)
-        => LogWriter.WriteLine(text);
+    {
+        Assume.NotNull(_logWriter);
 
-    /// <inheritdoc/>
-    public void Dispose()
-        => LogWriter.Dispose();
+        _logWriter.WriteLine(text);
+    }
 }

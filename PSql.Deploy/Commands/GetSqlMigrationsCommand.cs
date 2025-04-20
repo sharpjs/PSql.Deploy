@@ -1,3 +1,4 @@
+#if CONVERTED
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
@@ -81,3 +82,4 @@ public sealed class GetSqlMigrationsCommand : AsyncPSCmdlet
         );
     }
 }
+#endif

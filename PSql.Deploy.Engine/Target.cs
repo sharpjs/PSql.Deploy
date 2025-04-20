@@ -93,4 +93,12 @@ public class Target
     ///   <see cref="DatabaseDisplayName"/>.
     /// </summary>
     public string FullDisplayName { get; }
+
+    /// <summary>
+    ///   Creates a <see cref="TargetConnectionScope"/> for the target.
+    /// </summary>
+    internal TargetConnectionScope CreateConnectionScope(ISqlMessageLogger logger)
+    {
+        return new(this, logger);
+    }
 }

@@ -6,7 +6,6 @@ namespace PSql.Deploy.Migrations;
 using static MigrationPhase;
 
 [TestFixture]
-[FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
 public class MigrationValidatorTests : TestHarnessBase
 {
     private readonly Mock<IMigrationValidationContext> _context;

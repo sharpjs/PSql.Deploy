@@ -35,25 +35,10 @@
     <Nullable>enable</Nullable>
     <InheritDocEnabled>true</InheritDocEnabled>
     <TargetFramework>net6.0</TargetFramework>
-    <PSqlVersion>3.0.0</PSqlVersion>
-    <TaskHostVersion>2.0.0</TaskHostVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
     <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
   </PropertyGroup>
-  <PropertyGroup Condition="$(OS) == 'Windows_NT'">
-    <PowerShellModuleDirectory>$(USERPROFILE)\Documents\PowerShell\Modules</PowerShellModuleDirectory>
-  </PropertyGroup>
-  <PropertyGroup Condition="$(OS) != 'Windows_NT'">
-    <PowerShellModuleDirectory>$(HOME)/.local/share/powershell/Modules</PowerShellModuleDirectory>
-  </PropertyGroup>
-  <PropertyGroup>
-    <PSqlDirectory>$(PowerShellModuleDirectory)\PSql\$(PSqlVersion)\</PSqlDirectory>
-    <TaskHostDirectory>$(PowerShellModuleDirectory)\TaskHost\$(TaskHostVersion)\</TaskHostDirectory>
-  </PropertyGroup>
-  <ItemGroup>
-    <Using Include="System.FormattableString" Static="true" />
-  </ItemGroup>
 
   <!-- Packaging properties -->
   <PropertyGroup>
@@ -66,6 +51,16 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
+  <!-- Default visibility -->
+  <ItemGroup>
+    <Using Remove="System.Net.Http" />
+    <Using Include="System.Collections.Immutable" />
+    <Using Include="System.FormattableString" Static="true" />
+    <Using Include="System.Data" />
+    <Using Include="System.Data.Common" />
+    <Using Include="System.Management.Automation" />
+  </ItemGroup>
+
   <!-- Hide .root project output -->
   <PropertyGroup Condition="'$(MSBuildProjectName)' == '.root'">
     <BaseOutputPath>.vs\.root\bin\</BaseOutputPath>
@@ -77,13 +72,5 @@
     <StampFilePath>$(MSBuildThisFileDirectory)Stamp.props</StampFilePath>
   </PropertyGroup>
   <Import Project="$(StampFilePath)" Condition="Exists('$(StampFilePath)')"/>
-
-  <ItemGroup>
-    <Using Remove="System.Net.Http" />
-    <Using Include="System.Collections.Immutable" />
-    <Using Include="System.Data" />
-    <Using Include="System.Data.Common" />
-    <Using Include="System.Management.Automation" />
-  </ItemGroup>
 
 </Project>

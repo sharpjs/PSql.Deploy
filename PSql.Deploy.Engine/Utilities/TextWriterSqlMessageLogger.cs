@@ -36,4 +36,8 @@ internal sealed class TextWriterSqlMessageLogger : ISqlMessageLogger
     /// <inheritdoc/>
     public void LogError(string message)
         => _writer.WriteLine(string.Concat("WARNING: ", message));
+
+    // TODO
+    public void Log(SqlError message) => throw new NotImplementedException();
+    public void Log(string? procedure, int line, int number, int severity, string message) => throw new NotImplementedException();
 }

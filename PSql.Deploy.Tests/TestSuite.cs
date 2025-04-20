@@ -1,3 +1,4 @@
+#if CONVERTED
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
@@ -28,3 +29,4 @@ public class TestSuite
         new PSql.Deploy.Internal.ModuleLifecycleEvents().OnRemove(null!); // arg unused
     }
 }
+#endif

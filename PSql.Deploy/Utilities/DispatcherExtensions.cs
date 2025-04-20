@@ -1,3 +1,5 @@
+#if CONVERTED
+
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
@@ -171,3 +173,4 @@ internal static class DispatcherExtensions
         return info is null ? null : new TaskScope(info);
     }
 }
+#endif

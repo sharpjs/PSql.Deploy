@@ -13,14 +13,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Management.Automation"
-                      PrivateAssets="all" />
-
-    <Reference Include="PSql" HintPath="$(PSqlDirectory)%(Identity).dll"
-               Private="false" />
-
-    <Reference Include="PSql.Core" HintPath="$(PSqlDirectory)%(Identity).dll"
-               Private="false" />
+    <PackageReference Include="System.Management.Automation" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>

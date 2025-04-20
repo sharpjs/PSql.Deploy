@@ -1,3 +1,4 @@
+#if CONVERTED
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
@@ -33,3 +34,4 @@ public class ModuleLifecycleEvents : IModuleAssemblyInitializer, IModuleAssembly
         PrivateDependency.Unreference();
     }
 }
+#endif

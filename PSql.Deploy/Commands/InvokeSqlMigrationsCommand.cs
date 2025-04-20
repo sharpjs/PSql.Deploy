@@ -1,3 +1,4 @@
+#if CONVERTED
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
@@ -218,3 +219,4 @@ public class InvokeSqlMigrationsCommand : PerSqlContextCommand
         base.Dispose(managed);
     }
 }
+#endif

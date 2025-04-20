@@ -4,7 +4,6 @@
 namespace PSql.Deploy.Migrations;
 
 [TestFixture]
-[FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
 public class MigrationMergerTests : TestHarnessBase
 {
     private readonly Mock<IMigrationSessionInternal> _session;
