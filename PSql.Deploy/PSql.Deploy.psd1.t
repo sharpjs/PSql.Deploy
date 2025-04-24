@@ -27,7 +27,7 @@
             GUID          = 'd75e4bbd-4efd-4bb1-8324-b6d4ae0ed9a9'
         }
     )
-    RequiredAssemblies   = @('PSql.Deploy.Core.dll')
+    RequiredAssemblies   = @('PSql.Deploy.Abstractions.dll')
 
     # Initialization
     #ScriptsToProcess = @(...)
@@ -42,13 +42,13 @@
     DscResourcesToExport = @()
     CmdletsToExport      = @(
         'Get-SqlMigrations'
-        'Invoke-ForEachSqlContext'
-        'Invoke-SqlMigrations'
-        'Invoke-SqlSeed'
-        'New-SqlContextParallelSet'
+        #'Invoke-ForEachSqlContext'
+        #'Invoke-SqlMigrations'
+        #'Invoke-SqlSeed'
+        #'New-SqlContextParallelSet'
     )
     FunctionsToExport    = @(
-        'Install-SqlMigrationSupport'
+        #'Install-SqlMigrationSupport'
     )
 
     # Discoverability and URLs
@@ -61,8 +61,8 @@
             LicenseUri   = 'https://github.com/sharpjs/PSql.Deploy/blob/master/LICENSE.txt'
             IconUri      = 'https://github.com/sharpjs/PSql.Deploy/blob/master/icon.png'
             Tags         = @(
-                "SQL", "Server", "Azure", "Migration", "Schema",
-                "PSEdition_Core", "Windows", "Linux", "MacOS"
+                'SQL', 'Server', 'Azure', 'Migration', 'Schema',
+                'PSEdition_Core', 'Windows', 'Linux', 'MacOS'
             )
         }
     }

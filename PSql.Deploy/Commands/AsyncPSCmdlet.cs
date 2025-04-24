@@ -1,4 +1,3 @@
-#if CONVERTED
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
@@ -418,4 +417,3 @@ public abstract class AsyncPSCmdlet : PSCmdlet, ICmdlet, IDisposable
 
     #endregion
 }
-#endif

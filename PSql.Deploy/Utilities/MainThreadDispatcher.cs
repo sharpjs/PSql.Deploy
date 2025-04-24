@@ -19,11 +19,11 @@ internal sealed class MainThreadDispatcher : IDispatcher, IDisposable
     /// </summary>
     public MainThreadDispatcher()
     {
-        _queue        = new();
+        _queue        = [];
         _mainThreadId = CurrentThreadId;
     }
 
-    private static int CurrentThreadId => Thread.CurrentThread.ManagedThreadId;
+    private static int CurrentThreadId => Environment.CurrentManagedThreadId;
 
     /// <summary>
     ///   Dispatches the specified action to the main thread.

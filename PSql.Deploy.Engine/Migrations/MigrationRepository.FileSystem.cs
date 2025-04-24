@@ -7,7 +7,7 @@ using System.Security.Cryptography;
 
 namespace PSql.Deploy.Migrations;
 
-internal static partial class MigrationRepository
+public static partial class MigrationRepository
 {
     /// <summary>
     ///   Gets migrations defined in the filesystem at the specified path.
@@ -29,7 +29,7 @@ internal static partial class MigrationRepository
     /// <exception cref="ArgumentNullException">
     ///   <paramref name="path"/> is <see langword="null"/>.
     /// </exception>
-    internal static ImmutableArray<Migration> GetAll(string path, string? maxName = null)
+    public static ImmutableArray<Migration> GetAll(string path, string? maxName = null)
     {
         if (path is null)
             throw new ArgumentNullException(nameof(path));

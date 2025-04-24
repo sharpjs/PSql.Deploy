@@ -42,6 +42,7 @@ public class Target
             throw new ArgumentNullException(nameof(connectionString));
 
         ConnectionString = connectionString;
+        Credential       = ConvertCredential(credential);
 
         var builder = new SqlConnectionStringBuilder(connectionString);
 
@@ -61,6 +62,22 @@ public class Target
         );
     }
 
+    private static SqlCredential? ConvertCredential(NetworkCredential? credential)
+    {
+        if (credential is null)
+            return null;
+
+        var password = credential.SecurePassword;
+
+        if (!password.IsReadOnly())
+        {
+            password = password.Copy();
+            password.MakeReadOnly();
+        }
+
+        return new(credential.UserName, password);
+    }
+
     /// <summary>
     ///   Gets the SqlClient connection string for the target database.
     /// </summary>
@@ -71,7 +88,7 @@ public class Target
     ///   if a credential is required and not present in the
     ///   <see cref="ConnectionString"/>.
     /// </summary>
-    public NetworkCredential? Credential { get; }
+    public SqlCredential? Credential { get; }
 
     /// <summary>
     ///   Gets a display name for the database server.  This name might be a

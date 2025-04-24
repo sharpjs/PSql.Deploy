@@ -24,7 +24,7 @@ internal sealed class AsyncCmdletScope : IDisposable
     /// </param>
     public AsyncCmdletScope(CancellationToken cancellation = default)
     {
-        _tasks           = new();
+        _tasks           = [];
         _dispatcher      = new MainThreadDispatcher();
         _cancellation    = cancellation;
         _previousContext = SynchronizationContext.Current;

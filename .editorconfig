@@ -55,6 +55,7 @@ csharp_style_var_when_type_is_apparent         = true                   # was fa
 
 dotnet_sort_system_directives_first                  = true          # was false
 dotnet_style_allow_multiple_blank_lines_experimental = false:warning # was true
+dotnet_style_namespace_match_folder                  = true:none     # was true
 
 # C# Naming Conventions
 # Dcocumentation Here

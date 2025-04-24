@@ -1,4 +1,3 @@
-#if CONVERTED
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
@@ -13,7 +12,7 @@ namespace PSql.Deploy.Commands;
 ///   Lists database schema migrations.
 /// </remarks>
 [Cmdlet(VerbsCommon.Get, "SqlMigrations", DefaultParameterSetName = "Path")]
-[OutputType(typeof(Migration))]
+[OutputType(typeof(IMigration))]
 public sealed class GetSqlMigrationsCommand : AsyncPSCmdlet
 {
     /// <summary>
@@ -37,13 +36,16 @@ public sealed class GetSqlMigrationsCommand : AsyncPSCmdlet
     /// <summary>
     ///   <b>-Target:</b> TODO
     /// </summary>
+    /// <remarks>
+    ///   PSql.SqlContext | string | IDictionary | PSObject | object
+    /// </remarks>
     [Parameter(
         ParameterSetName = "Target", ValueFromPipeline               = true,
         Mandatory        = true,     ValueFromPipelineByPropertyName = true,
         Position         = 0
     )]
     [ValidateNotNullOrEmpty]
-    public SqlContext? Target { get; set; }
+    public object? Target { get; set; }
 
     protected override void ProcessRecord()
     {
@@ -55,31 +57,30 @@ public sealed class GetSqlMigrationsCommand : AsyncPSCmdlet
     {
         var migrations
             = Path   is { } path   ? GetMigrations(path)
-            : Target is { } target ? await GetMigrationsAsync(target)
+            : Target is { } target ? await GetMigrationsAsync(TargetFactory.CreateFrom(target))
             : throw new InvalidOperationException(
                 "Either the Path or the Target parameter must be given."
             );
 
-        if (IncludeContent.IsPresent)
-            Parallel.ForEach(migrations, MigrationLoader.LoadContent);
+        //if (IncludeContent.IsPresent)
+        //    Parallel.ForEach(migrations, MigrationLoader.LoadContent);
 
         foreach (var migration in migrations)
             WriteObject(migration);
     }
 
-    private static IReadOnlyList<Migration> GetMigrations(string path)
+    private static IReadOnlyList<IMigration> GetMigrations(string path)
     {
         return MigrationRepository.GetAll(path);
     }
 
-    private Task<IReadOnlyList<Migration>> GetMigrationsAsync(SqlContext target)
+    private Task<IReadOnlyList<IMigration>> GetMigrationsAsync(Target target)
     {
         return MigrationRepository.GetAllAsync(
             target,
             minimumName: "",
-            new CmdletSqlMessageLogger(this),
+            cmdlet: this,
             CancellationToken
         );
     }
 }
-#endif

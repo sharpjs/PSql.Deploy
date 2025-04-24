@@ -9,7 +9,7 @@ using static MigrationPhase;
 using static MigrationState;
 using static TargetDisposition;
 
-internal static class FormattingExtensions
+public static class FormattingExtensions
 {
     internal static string GetFixedWidthStatusString(this Migration migration)
     {
@@ -46,7 +46,7 @@ internal static class FormattingExtensions
         };
     }
 
-    internal static string? ToMarker(this TargetDisposition disposition)
+    public static string? ToMarker(this TargetDisposition disposition)
     {
         return disposition switch
         {

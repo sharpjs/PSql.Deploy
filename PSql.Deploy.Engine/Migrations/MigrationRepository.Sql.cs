@@ -5,9 +5,18 @@ namespace PSql.Deploy.Migrations;
 
 using static CommandBehavior;
 
-internal static partial class MigrationRepository
+public static partial class MigrationRepository
 {
-    internal static async Task<IReadOnlyList<Migration>> GetAllAsync(
+    /// <summary>
+    ///   TODO
+    /// </summary>
+    /// <param name="target"></param>
+    /// <param name="minimumName"></param>
+    /// <param name="logger"></param>
+    /// <param name="cancellation"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static async Task<IReadOnlyList<Migration>> GetAllAsync(
         Target            target,
         string            minimumName,
         ISqlMessageLogger logger,
@@ -45,9 +54,7 @@ internal static partial class MigrationRepository
         await using var reader = await command
             .ExecuteReaderAsync(SequentialAccess | SingleResult, cancellation);
 
-        ImmutableArray.CreateBuilder<Migration>().MoveToImmutable();
-
-        var migrations = new List<Migration>();
+        var migrations = new List<Migration>(); // TODO: ImmutableArray?
 
         while (await reader.ReadAsync(cancellation))
             migrations.Add(MapToMigration(reader));

@@ -17,22 +17,14 @@
   <!-- Public dependencies (loaded in default AssemblyLoadContext) -->
   <ItemGroup>
     <PackageReference Include="System.Management.Automation" IncludeAssets="compile" PrivateAssets="all" />
-    <ProjectReference Include="..\PSql.Deploy.Core\PSql.Deploy.Core.csproj" Private="false" />
-  </ItemGroup>
-
-  <!-- Private dependencies shipped by PSql (loaded in private AssemblyLoadContext) -->
-  <ItemGroup>
-    <!--<PackageReference Include="Prequel"
-                      IncludeAssets="compile" PrivateAssets="all" />
-
-    <PackageReference Include="Microsoft.Data.SqlClient"
-                      IncludeAssets="compile" PrivateAssets="all" />-->
+    <ProjectReference Include="..\PSql.Deploy.Abstractions\PSql.Deploy.Abstractions.csproj" Private="false" />
   </ItemGroup>
 
   <!-- Private dependencies (loaded in private AssemblyLoadContext) -->
   <ItemGroup>
-    <!--<PackageReference Include="DependencyQueue"
-                      PrivateAssets="all" />-->
+    <ProjectReference
+      Include="..\PSql.Deploy.Engine\PSql.Deploy.Engine.csproj"
+      Aliases="Engine" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>

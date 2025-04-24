@@ -14,25 +14,30 @@
   <ItemGroup>
     <PackageReference Include="Subatomix.Build.Packaging.PowerShellModule" PrivateAssets="all" />
     <PackageReference Include="System.Management.Automation"               PrivateAssets="all" />
-
-    <ProjectReference Include="..\PSql.Deploy.Core\PSql.Deploy.Core.csproj" />
-
-    <ProjectReference Include="..\PSql.Deploy.private\PSql.Deploy.private.csproj"
-                      Private="false" PrivateAssets="all" />
-                      <!-- Copied to deps\ directory as None items below -->
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="$(PowerShellItemIncludes)"
-             Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder)" />
+    <ProjectReference Include="..\PSql.Deploy.Abstractions\PSql.Deploy.Abstractions.csproj" />
+    <ProjectReference
+      Include="..\PSql.Deploy.private\PSql.Deploy.private.csproj"
+      Private="false" PrivateAssets="all" /> <!-- copied to deps\ as None items below -->
+  </ItemGroup>
 
-    <!--
-      Isolate private dependencies into a subdirectory for consumption by a
-      private AssemblyLoadContext, preventing conflicts with other modules.
-      See: https://learn.microsoft.com/en-us/powershell/scripting/dev-cross-plat/resolving-dependency-conflicts
-    -->
-    <None Include="..\PSql.Deploy.private\bin\$(Configuration)\$(TargetFramework)\**"
-          LinkBase="deps\" CopyToOutputDirectory="PreserveNewest" Visible="true" />
+  <ItemGroup>
+    <Content
+      Include="$(PowerShellItemIncludes)"
+      Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder)" />
+  </ItemGroup>
+
+  <!--
+    Isolate private dependencies into a subdirectory for consumption by a
+    private AssemblyLoadContext, preventing conflicts with other modules.
+    See: https://learn.microsoft.com/en-us/powershell/scripting/dev-cross-plat/resolving-dependency-conflicts
+  -->
+  <ItemGroup>
+    <None
+      Include="..\PSql.Deploy.private\bin\$(Configuration)\$(TargetFramework)\**"
+      LinkBase="deps\" CopyToOutputDirectory="PreserveNewest" Visible="true" />
   </ItemGroup>
 
 </Project>

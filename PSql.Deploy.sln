@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = ".root", ".root.targets", "{
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PSql.Deploy", "PSql.Deploy\PSql.Deploy.csproj", "{34A9A3B3-B4AD-465C-9689-A2C6DFD102AE}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PSql.Deploy.Core", "PSql.Deploy.Core\PSql.Deploy.Core.csproj", "{8C735835-4A0F-431C-B32A-6BB5157064CD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PSql.Deploy.Abstractions", "PSql.Deploy.Abstractions\PSql.Deploy.Abstractions.csproj", "{8C735835-4A0F-431C-B32A-6BB5157064CD}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PSql.Deploy.Engine", "PSql.Deploy.Engine\PSql.Deploy.Engine.csproj", "{5DC9D594-AB83-48F7-B07A-3A5416D9969A}"
 EndProject

@@ -1,9 +1,5 @@
-#if CONVERTED
-
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
-
-using Subatomix.PowerShell.TaskHost;
 
 namespace PSql.Deploy.Utilities;
 
@@ -35,12 +31,10 @@ internal static class DispatcherExtensions
         if (action is null)
             throw new ArgumentNullException(nameof(action));
 
-        var info = TaskInfo.Current;
         var task = new TaskCompletionSource<Void>();
 
         void Invoke()
         {
-            using var _ = info.Use();
             action();
             task.SetResult(default);
         }
@@ -74,12 +68,10 @@ internal static class DispatcherExtensions
         if (action is null)
             throw new ArgumentNullException(nameof(action));
 
-        var info = TaskInfo.Current;
         var task = new TaskCompletionSource<Void>();
 
         void Invoke()
         {
-            using var _ = info.Use();
             action(arg);
             task.SetResult(default);
         }
@@ -113,12 +105,10 @@ internal static class DispatcherExtensions
         if (action is null)
             throw new ArgumentNullException(nameof(action));
 
-        var info = TaskInfo.Current;
         var task = new TaskCompletionSource<TResult>();
 
         void Invoke()
         {
-            using var _ = info.Use();
             task.SetResult(action());
         }
 
@@ -154,12 +144,10 @@ internal static class DispatcherExtensions
         if (action is null)
             throw new ArgumentNullException(nameof(action));
 
-        var info = TaskInfo.Current;
         var task = new TaskCompletionSource<TResult>();
 
         void Invoke()
         {
-            using var _ = info.Use();
             task.SetResult(action(arg));
         }
 
@@ -167,10 +155,4 @@ internal static class DispatcherExtensions
 
         return task.Task.GetAwaiter().GetResult();
     }
-
-    private static TaskScope? Use(this TaskInfo? info)
-    {
-        return info is null ? null : new TaskScope(info);
-    }
 }
-#endif

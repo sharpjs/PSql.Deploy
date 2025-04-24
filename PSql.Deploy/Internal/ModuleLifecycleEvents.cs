@@ -1,26 +1,23 @@
-#if CONVERTED
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
-using PSql.Internal;
+using System.Runtime.Loader;
 
 namespace PSql.Deploy.Internal;
+
+using static PrivateAssemblyLoadContext;
 
 /// <summary>
 ///   Handlers for module lifecycle events.
 /// </summary>
-public class ModuleLifecycleEvents : IModuleAssemblyInitializer, IModuleAssemblyCleanup
+public sealed class ModuleLifecycleEvents : IModuleAssemblyInitializer, IModuleAssemblyCleanup
 {
-    // PSql.Deploy.private.dll
-    private static readonly PrivateDependencyRegistration
-        PrivateDependency = new();
-
     /// <summary>
     ///   Invoked by PowerShell when the module is imported into a runspace.
     /// </summary>
     public void OnImport()
     {
-        PrivateDependency.Reference();
+        AssemblyLoadContext.Default.Resolving += HandleResolvingInDefaultLoadContext;
     }
 
     /// <summary>
@@ -31,7 +28,6 @@ public class ModuleLifecycleEvents : IModuleAssemblyInitializer, IModuleAssembly
     /// </param>
     public void OnRemove(PSModuleInfo module)
     {
-        PrivateDependency.Unreference();
+        AssemblyLoadContext.Default.Resolving -= HandleResolvingInDefaultLoadContext;
     }
 }
-#endif

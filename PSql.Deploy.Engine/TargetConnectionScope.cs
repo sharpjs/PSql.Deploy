@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 using System.Diagnostics.CodeAnalysis;
+using System.Net;
 
 namespace PSql.Deploy;
 
@@ -17,8 +18,8 @@ internal class TargetConnectionScope : IDisposable, IAsyncDisposable
         Target = target;
         Logger = logger;
 
-        Connection = target.Credential is { } c
-            ? new SqlConnection(target.ConnectionString, new(c.UserName, c.SecurePassword))
+        Connection = target.Credential is { } credential
+            ? new SqlConnection(target.ConnectionString, credential)
             : new SqlConnection(target.ConnectionString);
 
         Connection.RetryLogicProvider                = RetryLogicProvider;
@@ -70,7 +71,8 @@ internal class TargetConnectionScope : IDisposable, IAsyncDisposable
 
     private void HandleMessage(object sender, SqlInfoMessageEventArgs e)
     {
-        const int MaxInformationalSeverity = 10;
+        const int    MaxInformationalSeverity = 10;
+        const string NonProcedureLocationName = "(batch)";
 
         foreach (SqlError? error in e.Errors)
         {
@@ -80,38 +82,26 @@ internal class TargetConnectionScope : IDisposable, IAsyncDisposable
             // Mark current command if failed
             HasErrors |= error.Class <= MaxInformationalSeverity;
 
-            Logger.Log(error);
-
-            //if (error.Class <= MaxInformationalSeverity)
-            //    LogInformation(error);
-            //else
-            //    LogWarning(error);
+            Logger.Log(
+                error.Procedure.NullIfEmpty() ?? NonProcedureLocationName,
+                error.LineNumber,
+                error.Number,
+                error.Class,
+                error.Message
+            );
         }
     }
 
-    //private void LogInformation(SqlError error)
+    //private static string Format(SqlError error)
     //{
-    //    Logger.LogInformation(error.Message);
+    //    const string NonProcedureLocationName = "(batch)";
+
+    //    var procedure
+    //        =  error.Procedure.NullIfEmpty()
+    //        ?? NonProcedureLocationName;
+
+    //    return $"{procedure}:{error.LineNumber}: E{error.Class}: {error.Message}";
     //}
-
-    //private void LogWarning(SqlError error)
-    //{
-    //    Logger.LogError(Format(error));
-
-    //    // Mark current command as failed
-    //    HasErrors = true;
-    //}
-
-    private static string Format(SqlError error)
-    {
-        const string NonProcedureLocationName = "(batch)";
-
-        var procedure
-            =  error.Procedure.NullIfEmpty()
-            ?? NonProcedureLocationName;
-
-        return $"{procedure}:{error.LineNumber}: E{error.Class}: {error.Message}";
-    }
 
     [DoesNotReturn]
     private static void HandleUnexpectedDisposal(object? sender, EventArgs e)
