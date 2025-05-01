@@ -1,4 +1,3 @@
-#if CONVERTED
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
@@ -15,26 +14,27 @@ namespace PSql.Deploy.Commands;
 /// <remarks>
 ///   Invokes database content seeds against sets of target databases.
 /// </remarks>
-[Cmdlet(
-    VerbsLifecycle.Invoke, "SqlSeed",
-    DefaultParameterSetName = ContextParameterSetName,
-    SupportsShouldProcess   = true, // -Confirm and -WhatIf
-    ConfirmImpact           = ConfirmImpact.High
+[Cmdlet(VerbsLifecycle.Invoke, "SqlSeed",
+    SupportsShouldProcess = true, // -Confirm and -WhatIf
+    ConfirmImpact         = ConfirmImpact.High
 )]
-public class InvokeSqlSeedCommand : PerSqlContextCommand
+public class InvokeSqlSeedCommand : AsyncPSCmdlet
 {
+    /// <summary>
+    ///   <b>-Target:</b>
+    ///   Objects specifying how to connect to the databases in the target set.
+    /// </summary>
+    [Parameter(Position = 0, Mandatory = true, ValueFromPipeline = true)]
+    [ValidateNotNullOrEmpty]
+    public object[]? Target { get; set; }
+
     /// <summary>
     ///   <b>-Seed:</b>
     ///   Names of seeds to apply.
     /// </summary>
     [Parameter]
     [ValidateNotNullOrEmpty]
-    public string[] Seed
-    {
-        get => _seed ??= Array.Empty<string>();
-        set => _seed   = value.Sanitize();
-    }
-    private string[]? _seed;
+    public string[]? Seed { get; set; }
 
     /// <summary>
     ///   <b>-Define:</b>
@@ -45,6 +45,64 @@ public class InvokeSqlSeedCommand : PerSqlContextCommand
     [AllowEmptyCollection]
     public Hashtable? Define { get; set; }
 
+    /// <summary>
+    ///   <b>-MaxErrorCount:</b>
+    ///   Maximum count of errors to allow.  If the count of errors exceeds
+    ///   this value, the command attempts to cancel in-progress operations and
+    ///   terminates early.
+    /// </summary>
+    [Parameter()]
+    [ValidateRange(0, int.MaxValue)]
+    public int MaxErrorCount { get; set; }
+
+    private SeedSession? _session;
+
+    protected override void BeginProcessing()
+    {
+        base.BeginProcessing();
+
+        _session = new SeedSession();
+    }
+
+    protected override void ProcessRecord()
+    {
+        AssumeBeginProcessingInvoked();
+
+        if (Target is not null)
+            foreach (var obj in Target)
+                if (obj is not null)
+                    _session.BeginApplying(Coerce.ToTargetSetRequired(obj));
+    }
+
+    protected override void EndProcessing()
+    {
+        AssumeBeginProcessingInvoked();
+
+        Run(() => _session.CompleteApplyingAsync(CancellationToken));
+
+        base.EndProcessing();
+    }
+
+    protected override void Dispose(bool managed)
+    {
+        if (managed)
+        {
+            _session?.Dispose();
+            _session = null;
+        }
+
+        base.Dispose(managed);
+    }
+
+    [Conditional("DEBUG")]
+    [MemberNotNull(nameof(_session))]
+    private void AssumeBeginProcessingInvoked()
+    {
+        if (_session is null)
+            throw new InvalidCastException("BeginProcessing not invoked.");
+    }
+
+#if CONVERTED
     internal SeedSession.Factory
         SeedSessionFactory { get; set; } = SeedSession.DefaultFactory;
 
@@ -85,5 +143,5 @@ public class InvokeSqlSeedCommand : PerSqlContextCommand
     {
         Debug.Assert(_session != null);
     }
-}
 #endif
+}

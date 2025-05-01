@@ -4,94 +4,81 @@
 namespace PSql.Deploy;
 
 /// <summary>
-///   A set of <see cref="Target"/> objects to be processed in parallel.
+///   Represents a set of target databases with specified parallelism limits.
 /// </summary>
 public class TargetSet
 {
-    private IReadOnlyList<Target>? _targets;
-    private int                    _maxParallelism;
-    private int                    _maxParallelismPerDatabase;
-
     /// <summary>
-    ///   Gets or sets a descriptive name for the set.  The default value is
-    ///   <see langword="null"/>.
+    ///   Initializes a new <see cref="TargetSet"/> instance.
     /// </summary>
-    public string? Name { get; set; }
-
-    /// <summary>
-    ///   Gets or sets the contexts in the set.  The default value is an empty
-    ///   collection.
-    /// </summary>
+    /// <param name="targets">
+    ///   The targets in the set.
+    /// </param>
+    /// <param name="name">
+    ///   An optional name for the set.  If provided, PSql.Deploy uses the name
+    ///   in command output and logs.
+    /// </param>
+    /// <param name="maxParallelism">
+    ///   The maximum degree of parallelism across all targets in the set.
+    ///   The special value <c>0</c> indicates parallelism equal to the count
+    ///   of logical processors on the current machine.  Cannot be negative.
+    /// </param>
+    /// <param name="maxParallelismPerTarget">
+    ///   The maximum degree of parallelism per target.  The special value
+    ///   <c>0</c> indicates parallelism equal to the count of logical
+    ///   processors on the current machine.  Cannot be negative.
+    /// </param>
     /// <exception cref="ArgumentNullException">
-    ///   Attempted to set the property to <see langword="null"/>.
+    ///   <paramref name="targets"/> is <see langword="null"/>.
     /// </exception>
-    /// <exception cref="ArgumentNullException">
-    ///   Attempted to set the property to a collection with a
-    ///   <see langword="null"/> element.
+    /// <exception cref="ArgumentException">
+    ///   <paramref name="targets"/> contains a <see langword="null"/> element.
     /// </exception>
-    public IReadOnlyList<Target> Targets
-    {
-        get => _targets ??= Array.Empty<Target>();
-        set
-        {
-            if (value is null)
-                throw new ArgumentNullException(nameof(value));
-            if (value.Contains(null!))
-                throw new ArgumentException("Cannot contain a null element.", nameof(value));
-
-            _targets = value;
-        }
-    }
-
-    /// <summary>
-    ///   Gets or sets the maximum degree of parallelism.  Must be a positive
-    ///   integer.  The default value is the count of logical processors on the
-    ///   current machine.
-    /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">
-    ///   Attempted to set the property to zero or to a negative integer.
+    ///   <paramref name="maxParallelism"/> and/or
+    ///   <paramref name="maxParallelismPerTarget"/> is negative.
     /// </exception>
-    public int MaxParallelism
+    public TargetSet(
+        IReadOnlyList<Target> targets,
+        string?               name                    = null,
+        int                   maxParallelism          = 0,
+        int                   maxParallelismPerTarget = 0)
     {
-        get => GetMaxParallelism(ref _maxParallelism);
-        set => SetMaxParallelism(ref _maxParallelism, value);
+        if (targets is null)
+            throw new ArgumentNullException(nameof(targets));
+        if (targets.Contains(null!))
+            throw new ArgumentException("Cannot contain a null element.", nameof(targets));
+        if (maxParallelism < 0)
+            throw new ArgumentOutOfRangeException(nameof(maxParallelism));
+        if (maxParallelismPerTarget < 0)
+            throw new ArgumentOutOfRangeException(nameof(maxParallelismPerTarget));
+
+        Targets                   = targets;
+        Name                      = name;
+        MaxParallelism            = InterpretParallelism(maxParallelism);
+        MaxParallelismPerDatabase = InterpretParallelism(maxParallelismPerTarget);
     }
 
     /// <summary>
-    ///   Gets or sets the maximum degree of parallelism per database.  Must be
-    ///   a positive integer.  The default value is the count of logical
-    ///   processors on the current machine.
+    ///   Gets the targets in the set.
     /// </summary>
-    /// <exception cref="ArgumentOutOfRangeException">
-    ///   Attempted to set the property to zero or to a negative integer.
-    /// </exception>
-    public int MaxParallelismPerDatabase
-    {
-        get => GetMaxParallelism(ref _maxParallelismPerDatabase);
-        set => SetMaxParallelism(ref _maxParallelismPerDatabase, value);
-    }
+    public IReadOnlyList<Target> Targets { get; }
 
     /// <summary>
-    ///   TODO
+    ///   Gets the descriptive name for the set, if any.
     /// </summary>
-    /// <param name="location"></param>
-    /// <returns></returns>
-    public static int GetMaxParallelism(ref int location)
-    {
-        return location > 0 ? location : Environment.ProcessorCount;
-    }
+    public string? Name { get; }
 
     /// <summary>
-    ///  TODO
+    ///   Gets the maximum degree of parallelism across all targets in the set.
     /// </summary>
-    /// <param name="location"></param>
-    /// <param name="value"></param>
-    /// <exception cref="ArgumentOutOfRangeException"></exception>
-    public static void SetMaxParallelism(ref int location, int value)
-    {
-        if (value < 1)
-            throw new ArgumentOutOfRangeException(nameof(value));
+    public int MaxParallelism { get; }
 
-        location = value;
-    }
+    /// <summary>
+    ///   Gets the maximum degree of parallelism per target.
+    /// </summary>
+    public int MaxParallelismPerDatabase { get; }
+
+    private static int InterpretParallelism(int value)
+        => value > 0 ? value : Environment.ProcessorCount;
 }

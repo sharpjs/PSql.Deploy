@@ -8,6 +8,7 @@
   <PropertyGroup>
     <Description>PSql Deployment Engine</Description>
     <RootNamespace>PSql.Deploy</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>

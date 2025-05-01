@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 using PSql.Deploy.Migrations;
+using PSql.Deploy.Utilities;
 
 namespace PSql.Deploy.Commands;
 
@@ -27,11 +28,11 @@ public sealed class GetSqlMigrationsCommand : AsyncPSCmdlet
     [ValidateNotNullOrEmpty]
     public string? Path { get; set; }
 
-    /// <summary>
-    ///   <b>-IncludeContent:</b> TODO
-    /// </summary>
-    [Parameter(ParameterSetName = "Path")]
-    public SwitchParameter IncludeContent { get; set; }
+    // /// <summary>
+    // ///   <b>-IncludeContent:</b> TODO
+    // /// </summary>
+    // [Parameter(ParameterSetName = "Path")]
+    // public SwitchParameter IncludeContent { get; set; }
 
     /// <summary>
     ///   <b>-Target:</b> TODO
@@ -45,7 +46,8 @@ public sealed class GetSqlMigrationsCommand : AsyncPSCmdlet
         Position         = 0
     )]
     [ValidateNotNullOrEmpty]
-    public object? Target { get; set; }
+    [TransformToTarget]
+    public Target? Target { get; set; }
 
     protected override void ProcessRecord()
     {
@@ -57,7 +59,7 @@ public sealed class GetSqlMigrationsCommand : AsyncPSCmdlet
     {
         var migrations
             = Path   is { } path   ? GetMigrations(path)
-            : Target is { } target ? await GetMigrationsAsync(TargetFactory.CreateFrom(target))
+            : Target is { } target ? await GetMigrationsAsync(target)
             : throw new InvalidOperationException(
                 "Either the Path or the Target parameter must be given."
             );
@@ -69,12 +71,12 @@ public sealed class GetSqlMigrationsCommand : AsyncPSCmdlet
             WriteObject(migration);
     }
 
-    private static IReadOnlyList<IMigration> GetMigrations(string path)
+    private static IReadOnlyList<Migration> GetMigrations(string path)
     {
         return MigrationRepository.GetAll(path);
     }
 
-    private Task<IReadOnlyList<IMigration>> GetMigrationsAsync(Target target)
+    private Task<IReadOnlyList<Migration>> GetMigrationsAsync(Target target)
     {
         return MigrationRepository.GetAllAsync(
             target,

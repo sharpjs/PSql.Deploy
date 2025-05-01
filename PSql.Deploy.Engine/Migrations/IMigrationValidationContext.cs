@@ -8,18 +8,18 @@ namespace PSql.Deploy.Migrations;
 /// </summary>
 internal interface IMigrationValidationContext
 {
-    /// <inheritdoc cref="IMigrationSession.Phase"/>
+    /// <inheritdoc cref="IMigrationSession.CurrentPhase"/>
     MigrationPhase Phase { get; }
 
-    /// <inheritdoc cref="SqlContextWork.ServerDisplayName"/>
+    /// <inheritdoc cref="Target.ServerDisplayName"/>
     string ServerName { get; }
 
-    /// <inheritdoc cref="SqlContextWork.DatabaseDisplayName"/>
+    /// <inheritdoc cref="Target.DatabaseDisplayName"/>
     string DatabaseName { get; }
 
     /// <inheritdoc cref="IMigrationSession.EarliestDefinedMigrationName"/>
     string EarliestDefinedMigrationName { get; }
 
-    /// <inheritdoc cref="IMigrationSession.AllowCorePhase"/>
+    /// <inheritdoc cref="IMigrationSession.AllowContentInCorePhase"/>
     public bool AllowCorePhase { get; }
 }

@@ -37,9 +37,4 @@ public interface IMigration
     ///   Gets the application state of the migration.
     /// </summary>
     public MigrationState State { get; }
-
-    /// <summary>
-    ///   Gets whether the migration has changed after it was deployed.
-    /// </summary>
-    public bool HasChanged { get; }
 }

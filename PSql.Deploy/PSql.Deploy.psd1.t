@@ -43,9 +43,9 @@
     CmdletsToExport      = @(
         'Get-SqlMigrations'
         #'Invoke-ForEachSqlContext'
-        #'Invoke-SqlMigrations'
-        #'Invoke-SqlSeed'
-        #'New-SqlContextParallelSet'
+        'Invoke-SqlMigrations'
+        'Invoke-SqlSeed'
+        'New-SqlTargetSet'
     )
     FunctionsToExport    = @(
         #'Install-SqlMigrationSupport'

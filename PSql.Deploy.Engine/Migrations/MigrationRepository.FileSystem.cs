@@ -7,6 +7,9 @@ using System.Security.Cryptography;
 
 namespace PSql.Deploy.Migrations;
 
+/// <summary>
+///   Methods to discover migrations.
+/// </summary>
 public static partial class MigrationRepository
 {
     /// <summary>

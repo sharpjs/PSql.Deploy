@@ -1,10 +1,6 @@
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
-extern alias Engine;
-
-using M = Engine::PSql.Deploy.Migrations;
-
 namespace PSql.Deploy.Migrations;
 
 using Super = M.MigrationSessionOptions;

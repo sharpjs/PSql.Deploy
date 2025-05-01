@@ -1,28 +1,28 @@
-#if CONVERTED
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
+
+using PSql.Deploy.Utilities;
 
 namespace PSql.Deploy.Commands;
 
 /// <summary>
-///   The <c>New-SqlContextParallelSet</c> cmdlet.
+///   The <c>New-SqlTargetSet</c> cmdlet.
 /// </summary>
-[Cmdlet(VerbsCommon.New, "SqlContextParallelSet")]
-[OutputType(typeof(SqlContextParallelSet))]
-public class NewSqlContextParallelSetCommand : PSCmdlet
+[Cmdlet(VerbsCommon.New, "SqlTargetSet")]
+[OutputType(typeof(TargetSet))]
+public class NewSqlTargetSetCommand : PSCmdlet
 {
     /// <summary>
-    ///   <b>-Context:</b>
-    ///   Objects specifying how to connect to the databases in the set.
-    ///   Obtain via the <c>New-SqlContext</c> cmdlet.
+    ///   <b>-Target:</b>
+    ///   Objects specifying how to connect to the databases in the target set.
     /// </summary>
     [Parameter(Position = 0, Mandatory = true, ValueFromPipeline = true)]
     [ValidateNotNullOrEmpty]
-    public SqlContext[]? Context { get; set; }
+    public object[]? Target { get; set; }
 
     /// <summary>
     ///   <b>-Name:</b>
-    ///   Informational name of the set.
+    ///   Informational name of the target set.
     /// </summary>
     [Parameter(Position = 1)]
     [ValidateNotNullOrEmpty]
@@ -47,38 +47,33 @@ public class NewSqlContextParallelSetCommand : PSCmdlet
     [ValidateRange(1, int.MaxValue)]
     public int MaxParallelismPerDatabase { get; set; }
 
-    // Collected contexts from all ProcessRecord invocations
-    private IReadOnlyList<SqlContext>? _contexts;
+    // Collected targets from all ProcessRecord invocations
+    private IReadOnlyList<Target>? _targets;
 
     /// <inheritdoc/>
     protected override void ProcessRecord()
     {
-        var contexts = Context.Sanitize();
-        if (contexts.Length == 0)
+        var targets = Target.Sanitize();
+        if (targets.Length is 0)
             return;
 
-        if (_contexts is null)
-            _contexts = contexts;
+        var realTargets = Array.ConvertAll(targets, Coerce.ToTarget);
+
+        if (_targets is null)
+            _targets = realTargets!;
         else
-            PromoteToList(ref _contexts).AddRange(contexts);
+            PromoteToList(ref _targets).AddRange(realTargets!);
     }
 
     /// <inheritdoc/>
     protected override void EndProcessing()
     {
-        var set = new SqlContextParallelSet();
-
-        if (Name is { Length: > 0 })
-            set.Name = Name;
-
-        if (_contexts is not null)
-            set.Contexts = _contexts;
-
-        if (MaxParallelism > 0)
-            set.MaxParallelism = MaxParallelism;
-
-        if (MaxParallelismPerDatabase > 0)
-            set.MaxParallelismPerDatabase = MaxParallelismPerDatabase;
+        var set = new TargetSet(
+            _targets ?? [],
+            Name.NullIfEmpty(),
+            MaxParallelism,
+            MaxParallelismPerDatabase
+        );
 
         WriteObject(set);
     }
@@ -92,4 +87,3 @@ public class NewSqlContextParallelSetCommand : PSCmdlet
         return list;
     }
 }
-#endif

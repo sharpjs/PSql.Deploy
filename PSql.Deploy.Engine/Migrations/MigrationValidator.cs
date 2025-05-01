@@ -27,9 +27,9 @@ internal ref struct MigrationValidator
         _diagnostics = new List<MigrationDiagnostic>();
     }
 
-    /// <param name="context">
+    /// <summary>
     ///   Gets contextual information for validation.
-    /// </param>
+    /// </summary>
     public IMigrationValidationContext Context { get; }
 
     // Whether all migrations are valid

@@ -1,12 +1,9 @@
-#if CONVERTED
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using PSql.Deploy.Migrations;
-using PSql.Deploy.Utilities;
-using Subatomix.PowerShell.TaskHost;
 
 namespace PSql.Deploy.Commands;
 
@@ -18,14 +15,21 @@ using static MigrationPhase;
 /// <remarks>
 ///   Invokes database schema migrations against sets of target databases.
 /// </remarks>
-[Cmdlet(
-    VerbsLifecycle.Invoke, "SqlMigrations",
-    DefaultParameterSetName = ContextParameterSetName,
-    SupportsShouldProcess   = true, // -Confirm and -WhatIf
-    ConfirmImpact           = ConfirmImpact.High
+[Cmdlet(VerbsLifecycle.Invoke, "SqlMigrations",
+    SupportsShouldProcess = true, // -Confirm and -WhatIf
+    ConfirmImpact         = ConfirmImpact.High
 )]
-public class InvokeSqlMigrationsCommand : PerSqlContextCommand
+public class InvokeSqlMigrationsCommand : AsyncPSCmdlet
 {
+    /// <summary>
+    ///   <b>-Target:</b>
+    ///   Objects specifying target databases and parallelism for deployment.
+    /// </summary>
+    [Parameter(Position = 0, Mandatory = true, ValueFromPipeline = true)]
+    [ValidateNotNullOrEmpty]
+    [TransformToTargetSet]
+    public TargetSet[]? Target { get; set; }
+
     /// <summary>
     ///   <b>-Path:</b>
     ///   Path to a directory containing migrations.
@@ -37,7 +41,7 @@ public class InvokeSqlMigrationsCommand : PerSqlContextCommand
 
     /// <summary>
     ///   <b>-Phase:</b>
-    ///   Deployment phases in which to run migrations.
+    ///   Deployment phases for which to run migrations.
     /// </summary>
     [Parameter()]
     [ValidateSet(nameof(Pre), nameof(Core), nameof(Post))]
@@ -56,8 +60,84 @@ public class InvokeSqlMigrationsCommand : PerSqlContextCommand
     ///   Allow migration content in the <c>Core</c> phase.
     /// </summary>
     [Parameter()]
-    public SwitchParameter AllowCorePhase { get; set; }
+    public SwitchParameter AllowContentInCorePhase { get; set; }
 
+    /// <summary>
+    ///   <b>-MaxErrorCount:</b>
+    ///   Maximum count of errors to allow.  If the count of errors exceeds
+    ///   this value, the command attempts to cancel in-progress operations and
+    ///   terminates early.
+    /// </summary>
+    [Parameter()]
+    [ValidateRange(0, int.MaxValue)]
+    public int MaxErrorCount { get; set; }
+
+    private MigrationSession? _session;
+
+    /// <inheritdoc/>
+    protected override void BeginProcessing()
+    {
+        base.ProcessRecord();
+
+        var options = default(MigrationSessionOptions);
+
+        if (Phase is null)
+            options |= MigrationSessionOptions.AllPhases;
+        else
+            foreach (var phase in Phase)
+                options |= (MigrationSessionOptions) (1 << (int) phase);
+
+        if (AllowContentInCorePhase)
+            options |= MigrationSessionOptions.AllowContentInCorePhase;
+
+        if (this.IsWhatIf())
+            options |= MigrationSessionOptions.IsWhatIfMode;
+
+        _session = new MigrationSession(options, this, this.GetCurrentPath());
+    }
+
+    /// <inheritdoc/>
+    protected override void ProcessRecord()
+    {
+        AssumeBeginProcessingInvoked();
+
+        if (Target is not null)
+            foreach (var obj in Target)
+                if (obj is not null)
+                    _session.BeginApplying(Coerce.ToTargetSetRequired(obj));
+    }
+
+    /// <inheritdoc/>
+    protected override void EndProcessing()
+    {
+        AssumeBeginProcessingInvoked();
+
+        Run(() => _session.CompleteApplyingAsync(CancellationToken));
+
+        base.EndProcessing();
+    }
+
+    /// <inheritdoc/>
+    protected override void Dispose(bool managed)
+    {
+        if (managed)
+        {
+            _session?.Dispose();
+            _session = null;
+        }
+
+        base.Dispose(managed);
+    }
+
+    [Conditional("DEBUG")]
+    [MemberNotNull(nameof(_session))]
+    private void AssumeBeginProcessingInvoked()
+    {
+        if (_session is null)
+            throw new InvalidCastException("BeginProcessing not invoked.");
+    }
+
+#if PREVOUS
     private IMigrationSessionControl?           _session;
     private ICollection<SqlContextParallelSet>? _contextSets;
     private TaskScope?                          _taskScope;
@@ -218,5 +298,5 @@ public class InvokeSqlMigrationsCommand : PerSqlContextCommand
 
         base.Dispose(managed);
     }
-}
 #endif
+}

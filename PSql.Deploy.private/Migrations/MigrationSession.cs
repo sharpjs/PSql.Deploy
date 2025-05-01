@@ -1,12 +1,7 @@
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
-extern alias Engine;
-
 namespace PSql.Deploy.Migrations;
-
-using D = Engine::PSql.Deploy;
-using M = Engine::PSql.Deploy.Migrations;
 
 /// <inheritdoc cref="M.MigrationSession"/>
 public class MigrationSession : IDisposable
@@ -35,7 +30,7 @@ public class MigrationSession : IDisposable
     {
         _inner = new(
             (M.MigrationSessionOptions) options,
-            new PSMigrationConsole(cmdlet, logPath)
+            new CmdletMigrationConsole(cmdlet, logPath)
         );
     }
 

@@ -22,9 +22,7 @@
 
   <!-- Private dependencies (loaded in private AssemblyLoadContext) -->
   <ItemGroup>
-    <ProjectReference
-      Include="..\PSql.Deploy.Engine\PSql.Deploy.Engine.csproj"
-      Aliases="Engine" PrivateAssets="all" />
+    <ProjectReference Include="..\PSql.Deploy.Engine\PSql.Deploy.Engine.csproj" Aliases="Engine" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>

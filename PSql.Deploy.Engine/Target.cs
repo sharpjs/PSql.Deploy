@@ -17,11 +17,13 @@ public class Target
     ///   The SqlClient connection string for the target database.
     /// </param>
     /// <param name="credential">
-    ///   The credential to use to authenticate with the target database.
+    ///   The credential to use to authenticate with the target database, or
+    ///   <see langword="null"/> if a credential is not required or is present
+    ///   present in <paramref name="connectionString"/>.
     /// </param>
     /// <param name="serverDisplayName">
     ///   A display name for the database server.  If this paraneter is
-    ///   <see langword="null"/>, the value is inferred from the
+    ///   <see langword="null"/>, the display name is inferred from the
     ///   <paramref name="connectionString"/>.
     /// </param>
     /// <param name="databaseDisplayName">

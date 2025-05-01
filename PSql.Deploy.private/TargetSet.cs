@@ -1,23 +1,65 @@
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
-extern alias Engine;
-
 namespace PSql.Deploy;
 
-using M = Engine::PSql.Deploy;
+using System;
 
+/// <summary>
+///   Represents a set of target databases with specified parallelism limits.
+/// </summary>
 public class TargetSet
 {
-    private readonly M.TargetSet _inner;
+    private readonly E.TargetSet _inner;
 
-    public TargetSet()
+    internal TargetSet(
+        IReadOnlyList<Target> targets,
+        string?               name                    = null,
+        int                   maxParallelism          = 0,
+        int                   maxParallelismPerTarget = 0)
     {
-        _inner = new();
+        var innerTargets = Unwrap(targets);
+
+        _inner = new(innerTargets, name, maxParallelism, maxParallelismPerTarget);
+
+        Targets = targets;
     }
 
     /// <summary>
-    ///   Gets the inner <see cref="M.TargetSet"/> wrapped by this object.
+    ///   Gets the inner target set wrapped by this object.
     /// </summary>
-    internal M.TargetSet InnerTargetSet => _inner;
+    internal E.TargetSet InnerTargetSet => _inner;
+
+    /// <summary>
+    ///   Gets the targets in the set.
+    /// </summary>
+    public IReadOnlyList<Target> Targets { get; }
+
+    /// <summary>
+    ///   Gets the descriptive name for the set, if any.
+    /// </summary>
+    public string? Name => _inner.Name;
+
+    /// <summary>
+    ///   Gets the maximum degree of parallelism across the entire set.
+    /// </summary>
+    public int MaxParallelism => _inner.MaxParallelism;
+
+    /// <summary>
+    ///   Gets the maximum degree of parallelism per database.
+    /// </summary>
+    public int MaxParallelismPerDatabase => _inner.MaxParallelismPerDatabase;
+
+    private static IReadOnlyList<E.Target> Unwrap(IReadOnlyList<Target> targets)
+    {
+        if (targets is null)
+            throw new ArgumentNullException(nameof(targets));
+
+        var array = ImmutableArray.CreateBuilder<E.Target>(targets.Count);
+
+        foreach (var target in targets)
+            array.Add(target.InnerTarget);
+
+        return array.MoveToImmutable();
+    }
 }

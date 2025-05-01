@@ -25,7 +25,7 @@ internal class MigrationApplicator : IMigrationValidationContext
     /// </summary>
     public IMigrationSessionInternal Session { get; }
 
-    internal DbProviderFactory DbProviderFactory { get; } = DbProviderFactories.GetFactory("SqlClient");
+    internal DbProviderFactory DbProviderFactory { get; } = SqlClientFactory.Instance;
 
     /// <inheritdoc cref="IMigrationSession.Console"/>
     public IMigrationConsole Console => Session.Console;

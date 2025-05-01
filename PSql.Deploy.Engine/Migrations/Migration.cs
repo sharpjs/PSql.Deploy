@@ -31,7 +31,7 @@ public class Migration : IMigration
     /// <exception cref="ArgumentException">
     ///   <paramref name="name"/> is the empty string.
     /// </exception>
-    public Migration(string name)
+    internal Migration(string name)
     {
         if (name is null)
             throw new ArgumentNullException(nameof(name));
@@ -54,29 +54,26 @@ public class Migration : IMigration
     public bool IsPseudo { get; }
 
     /// <summary>
-    ///   Gets or sets the full path <c>_Main.sql</c> file of the migration, or
-    ///   <see langword="null"/> if no path is known.  The default value is
-    ///   <see langword="null"/>.
+    ///   Gets the full path <c>_Main.sql</c> file of the migration, or
+    ///   <see langword="null"/> if no path is known.
     /// </summary>
-    public string? Path { get; set; }
+    public string? Path { get; internal set; }
 
     /// <summary>
-    ///   Gets or sets the hash computed from the SQL content of the migration.
-    ///   The default value is the empty string.
+    ///   Gets the hash computed from the SQL content of the migration, or an
+    ///   empty string if no hash is known.
     /// </summary>
-    public string Hash { get; set; } = "";
+    public string Hash { get; internal set; } = "";
 
     /// <summary>
-    ///   Gets or sets the application state of the migration.  The default
-    ///   value is <see cref="MigrationState.NotApplied"/>.
+    ///   Gets the application state of the migration.
     /// </summary>
-    public MigrationState State { get; set; }
+    public MigrationState State { get; internal set; }
 
     /// <summary>
-    ///   Gets or sets whether the migration has changed after it was deployed.
-    ///   The default value is <see langword="false"/>.
+    ///   Gets whether the migration has changed after it was deployed.
     /// </summary>
-    public bool HasChanged { get; set; }
+    public bool HasChanged { get; internal set; }
 
     /// <summary>
     ///   Gets or sets whether the migration's SQL scripts and dependency names
@@ -112,7 +109,7 @@ public class Migration : IMigration
     ///   The default value is an empty list.
     /// </summary>
     internal IReadOnlyList<MigrationDiagnostic> Diagnostics { get; set; }
-        = Array.Empty<MigrationDiagnostic>();
+        = [];
 
     /// <summary>
     ///   Gets the content for the specified phase.

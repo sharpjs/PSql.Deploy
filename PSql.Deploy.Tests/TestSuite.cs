@@ -1,10 +1,10 @@
-#if CONVERTED
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
-#pragma warning disable IDE0001 // Simplify Names // Full names desired for disambiguation.
+using PSql.Deploy.Internal;
 
 [assembly: Parallelizable(ParallelScope.All)]
+[assembly: FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
 [assembly: SetCulture("en-US")]
 
 namespace PSql.Deploy;
@@ -15,18 +15,14 @@ public class TestSuite
     [OneTimeSetUp]
     public static void SetUp()
     {
-        // Ensure that PSql.private.dll and its dependencies load correctly
-        new PSql.Internal.ModuleLifecycleEvents().OnImport();
-
         // Ensure that PSql.Deploy.private.dll and its dependencies load correctly
-        new PSql.Deploy.Internal.ModuleLifecycleEvents().OnImport();
+        new ModuleLifecycleEvents().OnImport();
     }
 
     [OneTimeTearDown]
     public static void TearDown()
     {
         // Cover removal method
-        new PSql.Deploy.Internal.ModuleLifecycleEvents().OnRemove(null!); // arg unused
+        new ModuleLifecycleEvents().OnRemove(null!); // arg unused
     }
 }
-#endif

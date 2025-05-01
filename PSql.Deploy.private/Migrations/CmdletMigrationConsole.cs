@@ -1,22 +1,17 @@
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
-extern alias Engine;
-
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace PSql.Deploy.Migrations;
 
-using E = Engine::PSql.Deploy;
-using M = Engine::PSql.Deploy.Migrations;
-
-internal class PSMigrationConsole : M.IMigrationConsole
+internal class CmdletMigrationConsole : M.IMigrationConsole
 {
     private readonly ICmdlet _cmdlet;
     private readonly string  _logPath;
 
-    public PSMigrationConsole(ICmdlet cmdlet, string logPath)
+    public CmdletMigrationConsole(ICmdlet cmdlet, string logPath)
     {
         if (cmdlet is null)
             throw new ArgumentNullException(nameof(cmdlet));

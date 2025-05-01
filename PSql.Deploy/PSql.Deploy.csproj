@@ -40,4 +40,8 @@
       LinkBase="deps\" CopyToOutputDirectory="PreserveNewest" Visible="true" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\PSql.Deploy.Engine\Utilities\Assume.cs" LinkBase="Utilities" />
+  </ItemGroup>
+
 </Project>

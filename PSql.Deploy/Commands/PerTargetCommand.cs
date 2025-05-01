@@ -2,38 +2,35 @@
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
-using System.Collections.Concurrent;
-using Subatomix.PowerShell.TaskHost;
-
 namespace PSql.Deploy.Commands;
 
 /// <summary>
 ///   Base class for cmdlets that operate on multiple databases in parallel.
 /// </summary>
-public abstract class PerSqlContextCommand : AsyncPSCmdlet
+public abstract class PerTargetCommand : AsyncPSCmdlet
 {
     internal const string
-        ContextSetParameterSetName = nameof(ContextSet),
-        ContextParameterSetName    = nameof(Context);
+        TargetSetParameterSetName = nameof(TargetSet),
+        TargetParameterSetName    = nameof(Target);
 
     /// <summary>
-    ///   <b>-ContextSet:</b>
+    ///   <b>-TargetSet:</b>
     ///   Objects specifying sets of databases on which to operate with limited
-    ///   parallelism.  Obtain via the <c>New-SqlContextParallelSet</c> cmdlet.
+    ///   parallelism.  Obtain via the <c>New-SqlTargetSet</c> cmdlet.
     /// </summary>
     [Parameter(
         Position          = 0,
         Mandatory         = true,
         ValueFromPipeline = true,
-        ParameterSetName  = ContextSetParameterSetName
+        ParameterSetName  = TargetSetParameterSetName
     )]
     [ValidateNotNullOrEmpty]
-    public SqlContextParallelSet[] ContextSet
+    public TargetSet[] TargetSet
     {
         get => _targets ??= [];
         set => _targets   = value.Sanitize();
     }
-    private SqlContextParallelSet[]? _targets;
+    private TargetSet[]? _targets;
 
     /// <summary>
     ///   <b>-Context:</b>
@@ -46,12 +43,12 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
         ParameterSetName  = ContextParameterSetName
     )]
     [ValidateNotNullOrEmpty]
-    public SqlContext[] Context
+    public Target[] Context
     {
         get => _contexts ??= [];
         set => _contexts   = value.Sanitize();
     }
-    private SqlContext[]? _contexts;
+    private Target[]? _contexts;
 
     /// <summary>
     ///   <b>-MaxParallelism:</b>
@@ -62,8 +59,8 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
     [ValidateRange(1, int.MaxValue)]
     public int MaxParallelism
     {
-        get => SqlContextParallelSet.GetMaxParallelism(ref _maxParallelism);
-        set => SqlContextParallelSet.SetMaxParallelism(ref _maxParallelism, value);
+        get => TargetSet.GetMaxParallelism(ref _maxParallelism);
+        set => TargetSet.SetMaxParallelism(ref _maxParallelism, value);
     }
     private int _maxParallelism;
 
@@ -157,8 +154,8 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
     ///   Performs execution of the command.
     /// </summary>
     /// <remarks>
-    ///   This implementation invokes <see cref="ProcessContextSet"/> with each
-    ///   <see cref="SqlContextParallelSet"/> specified by the current
+    ///   This implementation invokes <see cref="ProcessTargetSet"/> with each
+    ///   <see cref="TargetSet"/> specified by the current
     ///   parameter values.
     /// </remarks>
     protected virtual void ProcessRecordCore()
@@ -166,10 +163,10 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
         InvokePendingMainThreadActions();
 
         if (ParameterSetName is ContextParameterSetName)
-            ProcessContextSet(MakeContextSet());
+            ProcessTargetSet(MakeTargetSet());
         else
-            foreach (var contextSet in ContextSet)
-                ProcessContextSet(contextSet);
+            foreach (var targetSet in TargetSet)
+                ProcessTargetSet(targetSet);
     }
 
     /// <inheritdoc cref="AsyncPSCmdlet.EndProcessing"/>
@@ -180,7 +177,7 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
         ThrowAccumulatedErrors();
     }
 
-    private SqlContextParallelSet MakeContextSet()
+    private TargetSet MakeTargetSet()
     {
         return new()
         {
@@ -193,45 +190,45 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
     /// <summary>
     ///   Performs execution of the command for the specified set of databases.
     /// </summary>
-    /// <param name="contextSet">
+    /// <param name="targetSet">
     ///   An object specifying a set of databases on which to operate with
     ///   limited parallelism.
     /// </param>
     /// <remarks>
-    ///   This method queues processing of <paramref name="contextSet"/> on the
+    ///   This method queues processing of <paramref name="targetSet"/> on the
     ///   thread pool and returns immediately.
     /// </remarks>
-    protected virtual void ProcessContextSet(SqlContextParallelSet contextSet)
+    protected virtual void ProcessTargetSet(TargetSet targetSet)
     {
-        if (contextSet.Contexts.Count == 0)
+        if (targetSet.Contexts.Count == 0)
             return;
 
         Task ProcessAsync()
-            => ProcessContextSetAsync(contextSet);
+            => ProcessTargetSetAsync(targetSet);
 
         Run(ProcessAsync);
     }
 
-    private async Task ProcessContextSetAsync(SqlContextParallelSet contextSet)
+    private async Task ProcessTargetSetAsync(TargetSet targetSet)
     {
         using var limiter = new SemaphoreSlim(
-            initialCount: contextSet.MaxParallelism,
-            maxCount:     contextSet.MaxParallelism
+            initialCount: targetSet.MaxParallelism,
+            maxCount:     targetSet.MaxParallelism
         );
 
-        Task ProcessAsync(SqlContext context)
+        Task ProcessAsync(Target context)
             => ProcessContextAsync(context, limiter);
 
-        await Task.WhenAll(contextSet.Contexts.Select(ProcessAsync));
+        await Task.WhenAll(targetSet.Contexts.Select(ProcessAsync));
     }
 
-    private async Task ProcessContextAsync(SqlContext context, SemaphoreSlim limiter)
+    private async Task ProcessContextAsync(Target context, SemaphoreSlim limiter)
     {
         // Move to another thread so that caller's context iterator continues
         await Task.Yield();
 
         var limited = false;
-        var work    = null as SqlContextWork;
+        var work    = null as TargetWork;
 
         try
         {
@@ -271,12 +268,12 @@ public abstract class PerSqlContextCommand : AsyncPSCmdlet
     /// <returns>
     ///   A <see cref="Task"/> representing the asynchronous operation.
     /// </returns>
-    protected abstract Task ProcessWorkAsync(SqlContextWork work);
+    protected abstract Task ProcessWorkAsync(TargetWork work);
 
-    private void HandleError(Exception e, SqlContextWork? work)
+    private void HandleError(Exception e, TargetWork? work)
     {
         if (e.Data is { IsReadOnly: false } data && work is { })
-            data[nameof(SqlContextWork)] = work;
+            data[nameof(TargetWork)] = work;
 
         _exceptions.Enqueue(e);
 

@@ -82,7 +82,7 @@ internal static class Space
     ///   The length of the spacing string to get.
     /// </param>
     /// <returns>
-    ///   A string of <see cref="n"/> spaces.  If <c>n</c> is less than
+    ///   A string of <paramref name="n"/> spaces.  If <c>n</c> is less than
     ///   <c>1</c>, this method returns an empty string.
     /// </returns>
     internal static string Get(int n)

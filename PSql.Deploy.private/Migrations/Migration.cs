@@ -1,13 +1,15 @@
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
-extern alias Engine;
-
-using M = Engine::PSql.Deploy.Migrations;
+using System.Diagnostics;
 
 namespace PSql.Deploy.Migrations;
 
-internal class Migration : IMigration
+/// <summary>
+///   A database schema migration.
+/// </summary>
+[DebuggerDisplay(@"\{{Name}, {State}\}")]
+internal class Migration
 {
     private readonly M.Migration _inner;
 
@@ -19,21 +21,31 @@ internal class Migration : IMigration
         _inner = inner;
     }
 
-    /// <inheritdoc/>
+    /// <summary>
+    ///   Gets the name of the migration.
+    /// </summary>
     public string Name => _inner.Name;
 
-    /// <inheritdoc/>
+    /// <summary>
+    ///   Gets whether the migration is a <c>_Begin</c> or <c>_End</c>
+    ///   pseudo-migration.
+    /// </summary>
     public bool IsPseudo => _inner.IsPseudo;
 
-    /// <inheritdoc/>
+    /// <summary>
+    ///   Gets the full path <c>_Main.sql</c> file of the migration, or
+    ///   <see langword="null"/> if no path is known.
+    /// </summary>
     public string? Path => _inner.Path;
 
-    /// <inheritdoc/>
+    /// <summary>
+    ///   Gets the hash computed from the SQL content of the migration, or an
+    ///   empty string if no hash is known.
+    /// </summary>
     public string Hash => _inner.Hash;
 
-    /// <inheritdoc/>
+    /// <summary>
+    ///   Gets the application state of the migration.
+    /// </summary>
     public MigrationState State => (MigrationState) _inner.State;
-
-    /// <inheritdoc/>
-    public bool HasChanged => _inner.HasChanged;
 }
