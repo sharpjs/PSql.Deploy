@@ -81,6 +81,46 @@ internal static class Coerce
 
     #endregion
 
+    #region -> TargetArray
+
+    internal static Target[] ToTargetArrayRequired(object? obj)
+    {
+        return ToTargetArray(obj) ?? throw OnFailure(obj, "one or more target databases");
+    }
+
+    private static Target[]? ToTargetArray(object? obj)
+    {
+        if (obj is null)
+            return null;
+
+        if (obj is PSObject pSObject)
+            obj = pSObject.BaseObject;
+
+        if (obj is Target[] array)
+            return array;
+
+        if (obj is ICollection collection)
+            return ToTargetArrayFromCollection(collection);
+
+        if (ToTarget(obj) is { } target)
+            return [target];
+
+        return null;
+    }
+
+    private static Target[] ToTargetArrayFromCollection(ICollection collection)
+    {
+        var array = new Target[collection.Count];
+        var index = 0;
+
+        foreach (var item in collection)
+            array[index++] = ToTargetRequired(item);
+
+        return array;
+    }
+
+    #endregion
+
     #region -> TargetList
 
     internal static IReadOnlyList<Target> ToTargetListRequired(object? obj)
@@ -108,7 +148,7 @@ internal static class Coerce
         return null;
     }
 
-    private static IReadOnlyList<Target>? ToTargetListFromCollection(ICollection collection)
+    private static IReadOnlyList<Target> ToTargetListFromCollection(ICollection collection)
     {
         var array = ImmutableArray.CreateBuilder<Target>(collection.Count);
 
@@ -117,6 +157,7 @@ internal static class Coerce
 
         return array.MoveToImmutable();
     }
+
     #endregion
 
     #region -> Target
@@ -151,9 +192,9 @@ internal static class Coerce
     private static Target? ToTargetFromSqlContext(ObjectTypePair source)
     {
         return IsSqlContextType(source.Type)
-            && source.TryGetConnectionString  (out var connectionString)
-            && source.TryGetCredential        (out var credential)
-            && source.TryGetServerResourceName(out var serverDisplayName)
+            && source.TryGetConnectionString  (out var connectionString)  // string
+            && source.TryGetCredential        (out var credential)        // NetworkCredential?
+            && source.TryGetServerResourceName(out var serverDisplayName) // string?
             ?  new(connectionString, credential, serverDisplayName)
             :  null;
     }
@@ -176,10 +217,10 @@ internal static class Coerce
         value = default;
 
         if (source.Type.Assembly.GetType(VersionTypeName) is not { IsEnum: true } versionType)
-            return false;
+            return false; // version enum not found
 
         if (Enum.TryParse(versionType, VersionValueName, out var version))
-            return false;
+            return false; // version enum value not found
 
         var method = source.Type.GetMethod(
             name:                  MethodName,
@@ -195,50 +236,58 @@ internal static class Coerce
         );
 
         if (method?.ReturnType != typeof(string))
-            return false;
+            return false; // method not found or returns wrong type
 
-        if (method.Invoke(source.Object, [null, version, true]) is not string s)
-            return false;
+        if (method.Invoke(source.Object, [null, version, true]) is not string connectionString)
+            return false; // method returned null
 
-        value = s;
+        value = connectionString;
         return true;
     }
 
     private static bool TryGetCredential(this ObjectTypePair source, out NetworkCredential? value)
     {
-        return source.GetPropertyValue("Credential").TryCast(out value);
+        return source.TryGetPropertyValue("Credential", out value);
     }
 
     private static bool TryGetServerResourceName(this ObjectTypePair source, out string? value)
     {
-        return source.GetPropertyValue("ServerResourceName").TryCast(out value);
+        return source.TryGetPropertyValue("ServerResourceName", out value);
     }
 
     #endregion
 
-    #region Other
+    #region Helpers
+
+    // FUTURE: In PS 7.4 / .NET 8, this can be replaced with a tuple alias.
+    //         In PS 7.2 / .NET 6, the tuple alias crahes a source generator.
+    //
+    // Example:
+    // using ObjectTypePair = (object Object, Type Type);
+    //
+    private readonly record struct ObjectTypePair(object Object, Type Type);
 
     private static ObjectTypePair WithType(this object obj)
     {
         return new(obj, obj.GetType());
     }
 
-    private static object? GetPropertyValue(this ObjectTypePair source, string name)
-    {
-        return source.Type.GetProperty(name) is { CanRead: true } property
-            ? property.GetValue(source.Object)
-            : null;
-    }
-
-    private static bool TryCast<T>(this object? obj, out T? value)
+    private static bool TryGetPropertyValue<T>(this ObjectTypePair source, string name, out T? value)
         where T : class
     {
-        switch (obj)
-        {
-            case null: value = null; return true;
-            case T v:  value = v;    return true;
-            default:   value = null; return false;
-        }
+        value = default;
+
+        if (source.Type.GetProperty(name) is not { CanRead: true } property)
+            return false; // property does not exist or is not readable
+
+        if (property.GetValue(source.Object) is not { } untypedValue)
+            return true; // property value is null
+
+        if (untypedValue is not T typedValue)
+            return false; // property value is of wrong type
+
+        value = typedValue;
+        return true;
     }
 
     private static ArgumentException OnFailure(object? obj, string objective)
@@ -249,14 +298,6 @@ internal static class Coerce
             objective
         ));
     }
-
-    // FUTURE: In PS 7.4 / .NET 8, this can be replaced with a tuple alias.
-    //         In PS 7.2 / .NET 6, the tuple alias crahes a source generator.
-    //
-    // Example:
-    // using ObjectTypePair = (object Object, Type Type);
-    //
-    private readonly record struct ObjectTypePair(object Object, Type Type);
 
     #endregion
 }

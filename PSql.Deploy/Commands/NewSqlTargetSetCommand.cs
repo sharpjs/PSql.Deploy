@@ -1,8 +1,6 @@
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
-using PSql.Deploy.Utilities;
-
 namespace PSql.Deploy.Commands;
 
 /// <summary>
@@ -14,11 +12,12 @@ public class NewSqlTargetSetCommand : PSCmdlet
 {
     /// <summary>
     ///   <b>-Target:</b>
-    ///   Objects specifying how to connect to the databases in the target set.
+    ///   Objects specifying the databases in the target set.
     /// </summary>
     [Parameter(Position = 0, Mandatory = true, ValueFromPipeline = true)]
     [ValidateNotNullOrEmpty]
-    public object[]? Target { get; set; }
+    [TransformToTargetArray]
+    public Target[]? Target { get; set; }
 
     /// <summary>
     ///   <b>-Name:</b>
@@ -53,23 +52,24 @@ public class NewSqlTargetSetCommand : PSCmdlet
     /// <inheritdoc/>
     protected override void ProcessRecord()
     {
-        //var targets = Target.Sanitize();
-        //if (targets.Length is 0)
-        //    return;
+        // Assume that validation has occurred
+        Assume.NotNull(Target);
 
-        //var realTargets = Array.ConvertAll(targets, Coerce.ToTarget);
-
-        //if (_targets is null)
-        //    _targets = realTargets!;
-        //else
-        //    PromoteToList(ref _targets).AddRange(realTargets!);
+        if (_targets is null)
+            _targets = Target;
+        else
+            PromoteToList(ref _targets).AddRange(Target);
     }
 
     /// <inheritdoc/>
     protected override void EndProcessing()
     {
+        // Assume that validation has occurred
+        // Assume that ProcessRecord has been invoked
+        Assume.NotNull(_targets);
+
         var set = new TargetSet(
-            _targets ?? [],
+            _targets,
             Name.NullIfEmpty(),
             MaxParallelism,
             MaxParallelismPerDatabase
