@@ -9,6 +9,9 @@ namespace PSql.Deploy;
 public class TransformToTargetAttribute : ArgumentTransformationAttribute
 {
     /// <inheritdoc/>
+    public override bool TransformNullOptionalParameters => false;
+
+    /// <inheritdoc/>
     public override object Transform(EngineIntrinsics engineIntrinsics, object inputData)
     {
         return Coerce.ToTargetRequired(inputData);

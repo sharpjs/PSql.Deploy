@@ -7,16 +7,14 @@ internal class SeedSession
 {
     internal void BeginApplying(TargetSet targetSet)
     {
-        throw new NotImplementedException();
     }
 
     internal Task CompleteApplyingAsync(CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        return Task.CompletedTask;
     }
 
     internal void Dispose()
     {
-        throw new NotImplementedException();
     }
 }

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: MIT
 
 using PSql.Deploy.Migrations;
-using PSql.Deploy.Utilities;
 
 namespace PSql.Deploy.Commands;
 

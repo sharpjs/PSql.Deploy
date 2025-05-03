@@ -53,16 +53,16 @@ public class NewSqlTargetSetCommand : PSCmdlet
     /// <inheritdoc/>
     protected override void ProcessRecord()
     {
-        var targets = Target.Sanitize();
-        if (targets.Length is 0)
-            return;
+        //var targets = Target.Sanitize();
+        //if (targets.Length is 0)
+        //    return;
 
-        var realTargets = Array.ConvertAll(targets, Coerce.ToTarget);
+        //var realTargets = Array.ConvertAll(targets, Coerce.ToTarget);
 
-        if (_targets is null)
-            _targets = realTargets!;
-        else
-            PromoteToList(ref _targets).AddRange(realTargets!);
+        //if (_targets is null)
+        //    _targets = realTargets!;
+        //else
+        //    PromoteToList(ref _targets).AddRange(realTargets!);
     }
 
     /// <inheritdoc/>

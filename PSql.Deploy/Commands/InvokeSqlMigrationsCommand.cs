@@ -102,9 +102,9 @@ public class InvokeSqlMigrationsCommand : AsyncPSCmdlet
         AssumeBeginProcessingInvoked();
 
         if (Target is not null)
-            foreach (var obj in Target)
-                if (obj is not null)
-                    _session.BeginApplying(Coerce.ToTargetSetRequired(obj));
+            foreach (var targetSet in Target)
+                if (targetSet is not null)
+                    _session.BeginApplying(targetSet);
     }
 
     /// <inheritdoc/>

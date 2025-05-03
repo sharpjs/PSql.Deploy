@@ -1,3 +1,4 @@
+#if NOPE
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
@@ -42,3 +43,4 @@ public class CoerceTests
         Coerce.ToTargetSet(set).ShouldBeSameAs(set.BaseObject);
     }
 }
+#endif

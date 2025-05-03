@@ -26,7 +26,8 @@ public class InvokeSqlSeedCommand : AsyncPSCmdlet
     /// </summary>
     [Parameter(Position = 0, Mandatory = true, ValueFromPipeline = true)]
     [ValidateNotNullOrEmpty]
-    public object[]? Target { get; set; }
+    [TransformToTargetSet]
+    public TargetSet[]? Target { get; set; }
 
     /// <summary>
     ///   <b>-Seed:</b>
@@ -69,9 +70,9 @@ public class InvokeSqlSeedCommand : AsyncPSCmdlet
         AssumeBeginProcessingInvoked();
 
         if (Target is not null)
-            foreach (var obj in Target)
-                if (obj is not null)
-                    _session.BeginApplying(Coerce.ToTargetSetRequired(obj));
+            foreach (var target in Target)
+                if (target is not null)
+                    _session.BeginApplying(target);
     }
 
     protected override void EndProcessing()
