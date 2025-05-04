@@ -1,9 +1,7 @@
-#if NOPE
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using PSql.Deploy.Migrations;
 
 namespace PSql.Deploy.Commands;
@@ -28,7 +26,6 @@ public class InvokeSqlMigrationsCommand : AsyncPSCmdlet
     /// </summary>
     [Parameter(Position = 0, Mandatory = true, ValueFromPipeline = true)]
     [ValidateNotNullOrEmpty]
-    [TransformToTargetSet]
     public TargetSet[]? Target { get; set; }
 
     /// <summary>
@@ -73,28 +70,17 @@ public class InvokeSqlMigrationsCommand : AsyncPSCmdlet
     [ValidateRange(0, int.MaxValue)]
     public int MaxErrorCount { get; set; }
 
-    private MigrationSession? _session;
+    private M.MigrationSession? _session;
 
     /// <inheritdoc/>
     protected override void BeginProcessing()
     {
         base.ProcessRecord();
 
-        var options = default(MigrationSessionOptions);
-
-        if (Phase is null)
-            options |= MigrationSessionOptions.AllPhases;
-        else
-            foreach (var phase in Phase)
-                options |= (MigrationSessionOptions) (1 << (int) phase);
-
-        if (AllowContentInCorePhase)
-            options |= MigrationSessionOptions.AllowContentInCorePhase;
-
-        if (this.IsWhatIf())
-            options |= MigrationSessionOptions.IsWhatIfMode;
-
-        _session = new MigrationSession(options, this, this.GetCurrentPath());
+        _session = new(
+            GetOptions(),
+            new CmdletMigrationConsole(this, this.GetCurrentPath())
+        );
     }
 
     /// <inheritdoc/>
@@ -105,7 +91,7 @@ public class InvokeSqlMigrationsCommand : AsyncPSCmdlet
         if (Target is not null)
             foreach (var targetSet in Target)
                 if (targetSet is not null)
-                    _session.BeginApplying(targetSet);
+                    _session.BeginApplying(targetSet.InnerTargetSet);
     }
 
     /// <inheritdoc/>
@@ -128,6 +114,25 @@ public class InvokeSqlMigrationsCommand : AsyncPSCmdlet
         }
 
         base.Dispose(managed);
+    }
+
+    private M.MigrationSessionOptions GetOptions()
+    {
+        var options = default(M.MigrationSessionOptions);
+
+        if (Phase is null)
+            options |= M.MigrationSessionOptions.AllPhases;
+        else
+            foreach (var phase in Phase)
+                options |= (M.MigrationSessionOptions) (1 << (int) phase);
+
+        if (AllowContentInCorePhase)
+            options |= M.MigrationSessionOptions.AllowContentInCorePhase;
+
+        if (this.IsWhatIf())
+            options |= M.MigrationSessionOptions.IsWhatIfMode;
+
+        return options;
     }
 
     [Conditional("DEBUG")]
@@ -301,4 +306,3 @@ public class InvokeSqlMigrationsCommand : AsyncPSCmdlet
     }
 #endif
 }
-#endif

@@ -54,10 +54,11 @@
   <!-- Default visibility -->
   <ItemGroup>
     <Using Remove="System.Net.Http" />
+    <Using Include="System.Collections" />
     <Using Include="System.Collections.Immutable" />
-    <Using Include="System.FormattableString" Static="true" />
     <Using Include="System.Data" />
     <Using Include="System.Data.Common" />
+    <Using Include="System.Diagnostics.CodeAnalysis"/>
     <Using Include="System.Management.Automation" />
   </ItemGroup>
 

@@ -30,7 +30,7 @@ internal class CmdletMigrationConsole : M.IMigrationConsole
 
         var server   = target.ServerDisplayName;
         var database = target.DatabaseDisplayName;
-        var fileName = SanitizeFileName($"{server}.{database}.{(int) phase}_{phase}.log");
+        var fileName = $"{server}.{database}.{(int) phase}_{phase}.log".SanitizeFileName();
 
         return new StreamWriter(Path.Combine(_logPath, fileName));
     }
@@ -76,31 +76,5 @@ internal class CmdletMigrationConsole : M.IMigrationConsole
     private void WriteHeader(E.Target target, ConsoleColor color = ConsoleColor.Blue)
     {
         _cmdlet.WriteHost($"[{target.DatabaseDisplayName}] ", newLine: false, color);
-    }
-
-    [return: NotNullIfNotNull(nameof(value))]
-    internal static string? SanitizeFileName(string? value)
-    {
-        if (value is null)
-            return null;
-
-        var invalid = Path.GetInvalidFileNameChars();
-        var index   = value.IndexOfAny(invalid);
-        if (index < 0)
-            return value;
-
-        var start  = 0;
-        var result = new StringBuilder(value.Length);
-
-        do
-        {
-            result.Append(value, start, index - start).Append('_');
-
-            start = index + 1;
-            index = value.IndexOfAny(invalid, start);
-        }
-        while (index >= 0);
-
-        return result.Append(value, start, value.Length - start).ToString();
     }
 }

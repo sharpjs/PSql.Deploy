@@ -1,4 +1,3 @@
-#if NOPE
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
@@ -17,7 +16,6 @@ public class NewSqlTargetSetCommand : PSCmdlet
     /// </summary>
     [Parameter(Position = 0, Mandatory = true, ValueFromPipeline = true)]
     [ValidateNotNullOrEmpty]
-    [TransformToTargetArray]
     public Target[]? Target { get; set; }
 
     /// <summary>
@@ -65,18 +63,10 @@ public class NewSqlTargetSetCommand : PSCmdlet
     /// <inheritdoc/>
     protected override void EndProcessing()
     {
-        // Assume that validation has occurred
         // Assume that ProcessRecord has been invoked
         Assume.NotNull(_targets);
 
-        var set = new TargetSet(
-            _targets,
-            Name.NullIfEmpty(),
-            MaxParallelism,
-            MaxParallelismPerDatabase
-        );
-
-        WriteObject(set);
+        WriteObject(new TargetSet(_targets, Name, MaxParallelism, MaxParallelismPerDatabase));
     }
 
     private static List<T> PromoteToList<T>(ref IReadOnlyList<T> collection)
@@ -88,4 +78,3 @@ public class NewSqlTargetSetCommand : PSCmdlet
         return list;
     }
 }
-#endif

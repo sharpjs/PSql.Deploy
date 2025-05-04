@@ -1,10 +1,7 @@
-#if NOPE
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
-using System.Collections;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using PSql.Deploy.Seeding;
 
 namespace PSql.Deploy.Commands;
@@ -27,7 +24,6 @@ public class InvokeSqlSeedCommand : AsyncPSCmdlet
     /// </summary>
     [Parameter(Position = 0, Mandatory = true, ValueFromPipeline = true)]
     [ValidateNotNullOrEmpty]
-    [TransformToTargetSet]
     public TargetSet[]? Target { get; set; }
 
     /// <summary>
@@ -57,13 +53,16 @@ public class InvokeSqlSeedCommand : AsyncPSCmdlet
     [ValidateRange(0, int.MaxValue)]
     public int MaxErrorCount { get; set; }
 
-    private SeedSession? _session;
+    private S.SeedSession? _session;
 
     protected override void BeginProcessing()
     {
         base.BeginProcessing();
 
-        _session = new SeedSession();
+        _session = new(
+            GetOptions(),
+            new CmdletSeedConsole(this, this.GetCurrentPath())
+        );
     }
 
     protected override void ProcessRecord()
@@ -73,7 +72,7 @@ public class InvokeSqlSeedCommand : AsyncPSCmdlet
         if (Target is not null)
             foreach (var target in Target)
                 if (target is not null)
-                    _session.BeginApplying(target);
+                    _session.BeginApplying(target.InnerTargetSet);
     }
 
     protected override void EndProcessing()
@@ -96,6 +95,16 @@ public class InvokeSqlSeedCommand : AsyncPSCmdlet
         base.Dispose(managed);
     }
 
+    private S.SeedSessionOptions GetOptions()
+    {
+        var options = default(S.SeedSessionOptions);
+
+        if (this.IsWhatIf())
+            options |= S.SeedSessionOptions.IsWhatIfMode;
+
+        return options;
+    }
+
     [Conditional("DEBUG")]
     [MemberNotNull(nameof(_session))]
     private void AssumeBeginProcessingInvoked()
@@ -103,48 +112,4 @@ public class InvokeSqlSeedCommand : AsyncPSCmdlet
         if (_session is null)
             throw new InvalidCastException("BeginProcessing not invoked.");
     }
-
-#if CONVERTED
-    internal SeedSession.Factory
-        SeedSessionFactory { get; set; } = SeedSession.DefaultFactory;
-
-    private ISeedSessionControl? _session;
-
-    /// <inheritdoc/>
-    protected override void BeginProcessingCore()
-    {
-        var path    = this.GetCurrentPath();
-        var console = new SeedConsole(this);
-
-        _session                = SeedSessionFactory.Invoke(console, path, CancellationToken);
-        _session.IsWhatIfMode   = this.IsWhatIf();
-        _session.MaxParallelism = MaxParallelism; // PerDatabase
-        _session.DiscoverSeeds(path, Seed);
-
-        base.BeginProcessingCore();
-    }
-
-    /// <inheritdoc/>
-    protected override Task ProcessWorkAsync(SqlContextWork work)
-    {
-        AssertInitialized();
-
-        return _session.ApplyAsync(work);
-    }
-
-    /// <inheritdoc/>
-    protected override Exception Transform(Exception exception)
-    {
-        return exception as SeedException
-            ?? new SeedException(null, exception);
-    }
-
-    [Conditional("DEBUG")]
-    [MemberNotNull(nameof(_session))]
-    private void AssertInitialized()
-    {
-        Debug.Assert(_session != null);
-    }
-#endif
 }
-#endif
