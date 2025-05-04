@@ -12,7 +12,10 @@ public class TargetSet
 {
     private readonly E.TargetSet _inner;
 
-    internal TargetSet(
+    public TargetSet(object? obj)
+        : this([]) { } // TODO
+
+    public TargetSet(
         IReadOnlyList<Target> targets,
         string?               name                    = null,
         int                   maxParallelism          = 0,
@@ -31,7 +34,7 @@ public class TargetSet
     internal E.TargetSet InnerTargetSet => _inner;
 
     /// <summary>
-    ///   Gets the targets in the set.
+    ///   Gets the target databases in the group.
     /// </summary>
     public IReadOnlyList<Target> Targets { get; }
 

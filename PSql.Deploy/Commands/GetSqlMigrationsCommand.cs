@@ -12,7 +12,7 @@ namespace PSql.Deploy.Commands;
 ///   Lists database schema migrations.
 /// </remarks>
 [Cmdlet(VerbsCommon.Get, "SqlMigrations", DefaultParameterSetName = "Path")]
-[OutputType(typeof(IMigration))]
+[OutputType(typeof(Migration))]
 public sealed class GetSqlMigrationsCommand : AsyncPSCmdlet
 {
     /// <summary>
@@ -27,17 +27,19 @@ public sealed class GetSqlMigrationsCommand : AsyncPSCmdlet
     [ValidateNotNullOrEmpty]
     public string? Path { get; set; }
 
-    // /// <summary>
-    // ///   <b>-IncludeContent:</b> TODO
-    // /// </summary>
-    // [Parameter(ParameterSetName = "Path")]
-    // public SwitchParameter IncludeContent { get; set; }
+#if INCLUDE_CONTENT
+    /// <summary>
+    ///   <b>-IncludeContent:</b>
+    /// </summary>
+    [Parameter(ParameterSetName = "Path")]
+    public SwitchParameter IncludeContent { get; set; }
+#endif
 
     /// <summary>
     ///   <b>-Target:</b> TODO
     /// </summary>
     /// <remarks>
-    ///   PSql.SqlContext | string | IDictionary | PSObject | object
+    ///   Target | SqlContext | string
     /// </remarks>
     [Parameter(
         ParameterSetName = "Target", ValueFromPipeline               = true,
@@ -45,7 +47,6 @@ public sealed class GetSqlMigrationsCommand : AsyncPSCmdlet
         Position         = 0
     )]
     [ValidateNotNullOrEmpty]
-    [TransformToTarget]
     public Target? Target { get; set; }
 
     protected override void ProcessRecord()
@@ -57,14 +58,16 @@ public sealed class GetSqlMigrationsCommand : AsyncPSCmdlet
     private async Task ProcessRecordAsync()
     {
         var migrations
-            = Path   is { } path   ? GetMigrations(path)
+            = Path   is { } path   ?       GetMigrations     (path)
             : Target is { } target ? await GetMigrationsAsync(target)
             : throw new InvalidOperationException(
                 "Either the Path or the Target parameter must be given."
             );
 
-        //if (IncludeContent.IsPresent)
-        //    Parallel.ForEach(migrations, MigrationLoader.LoadContent);
+#if INCLUDE_CONTENT
+        if (IncludeContent.IsPresent)
+            Parallel.ForEach(migrations, MigrationLoader.LoadContent);
+#endif
 
         foreach (var migration in migrations)
             WriteObject(migration);
@@ -78,10 +81,7 @@ public sealed class GetSqlMigrationsCommand : AsyncPSCmdlet
     private Task<IReadOnlyList<Migration>> GetMigrationsAsync(Target target)
     {
         return MigrationRepository.GetAllAsync(
-            target,
-            minimumName: "",
-            cmdlet: this,
-            CancellationToken
+            target, minimumName: "", cmdlet: this, CancellationToken
         );
     }
 }

@@ -1,3 +1,4 @@
+#if NOPE
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
@@ -146,3 +147,4 @@ public class InvokeSqlSeedCommand : AsyncPSCmdlet
     }
 #endif
 }
+#endif

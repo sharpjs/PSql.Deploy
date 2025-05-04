@@ -23,7 +23,7 @@ internal sealed class PrivateAssemblyLoadContext : AssemblyLoadContext
     private const string
         PrivateSubdirectoryName = "deps",
         PrivateLoadContextName  = "PSql.Deploy",
-        PrivateAssemblyName     = PrivateLoadContextName + ".private",
+        PrivateAssemblyName     = PrivateLoadContextName + ".Engine", // was .private
         PrivateAssemblyFileName = PrivateAssemblyName    + ".dll";
 
     /// <summary>

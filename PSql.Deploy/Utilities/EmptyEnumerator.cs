@@ -3,7 +3,7 @@
 
 using System.Collections;
 
-namespace PSql.Deploy.Utilities;
+namespace PSql.Deploy;
 
 /// <summary>
 ///   An enumerator that is always empty.

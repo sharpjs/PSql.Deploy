@@ -1,3 +1,4 @@
+#if NOPE
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
@@ -301,3 +302,4 @@ internal static class Coerce
 
     #endregion
 }
+#endif

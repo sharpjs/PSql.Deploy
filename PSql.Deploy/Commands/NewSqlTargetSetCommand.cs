@@ -1,3 +1,4 @@
+#if NOPE
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
@@ -87,3 +88,4 @@ public class NewSqlTargetSetCommand : PSCmdlet
         return list;
     }
 }
+#endif

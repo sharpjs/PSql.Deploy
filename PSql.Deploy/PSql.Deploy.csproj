@@ -17,10 +17,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PSql.Deploy.Abstractions\PSql.Deploy.Abstractions.csproj" />
+    <!-- copied to deps\ as None items below -->
     <ProjectReference
-      Include="..\PSql.Deploy.private\PSql.Deploy.private.csproj"
-      Private="false" PrivateAssets="all" /> <!-- copied to deps\ as None items below -->
+      Include="..\PSql.Deploy.Engine\PSql.Deploy.Engine.csproj"
+      Private="false" PrivateAssets="all" Aliases="Engine" />
   </ItemGroup>
 
   <ItemGroup>
@@ -36,12 +36,13 @@
   -->
   <ItemGroup>
     <None
-      Include="..\PSql.Deploy.private\bin\$(Configuration)\$(TargetFramework)\**"
-      LinkBase="deps\" CopyToOutputDirectory="PreserveNewest" Visible="true" />
+      Include="..\PSql.Deploy.Engine\bin\$(Configuration)\$(TargetFramework)\**"
+      LinkBase="deps\" CopyToOutputDirectory="PreserveNewest" Visible="false" />
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\PSql.Deploy.Engine\Utilities\Assume.cs" LinkBase="Utilities" />
+    <Compile Include="..\PSql.Deploy.Engine\Migrations\MigrationState.cs" LinkBase="Migrations" />
+    <Compile Include="..\PSql.Deploy.Engine\Utilities\Assume.cs"          LinkBase="Utilities" />
   </ItemGroup>
 
 </Project>

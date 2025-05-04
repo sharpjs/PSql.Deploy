@@ -3,7 +3,7 @@
 
 using System.Collections.Concurrent;
 
-namespace PSql.Deploy.Utilities;
+namespace PSql.Deploy;
 
 /// <summary>
 ///   A scope in which a cmdlet can invoke asynchronous code.

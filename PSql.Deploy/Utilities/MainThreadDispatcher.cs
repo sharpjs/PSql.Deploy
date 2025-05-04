@@ -3,7 +3,7 @@
 
 using System.Collections.Concurrent;
 
-namespace PSql.Deploy.Utilities;
+namespace PSql.Deploy;
 
 /// <summary>
 ///   A dispatcher that executes dispatched actions on the main thread.

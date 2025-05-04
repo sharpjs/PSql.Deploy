@@ -1,3 +1,4 @@
+#if NOPE
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
@@ -17,3 +18,4 @@ public class TransformToTargetSetAttribute : ArgumentTransformationAttribute
         return Coerce.ToTargetSetArrayRequired(inputData);
     }
 }
+#endif

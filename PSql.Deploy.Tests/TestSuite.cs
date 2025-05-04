@@ -15,7 +15,7 @@ public class TestSuite
     [OneTimeSetUp]
     public static void SetUp()
     {
-        // Ensure that PSql.Deploy.private.dll and its dependencies load correctly
+        // Ensure that PSql.Deploy.Engine.dll and its dependencies load correctly
         new ModuleLifecycleEvents().OnImport();
     }
 

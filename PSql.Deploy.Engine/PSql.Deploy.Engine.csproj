@@ -9,6 +9,7 @@
     <Description>PSql Deployment Engine</Description>
     <RootNamespace>PSql.Deploy</RootNamespace>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
   <ItemGroup>

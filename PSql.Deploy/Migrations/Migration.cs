@@ -9,11 +9,11 @@ namespace PSql.Deploy.Migrations;
 ///   A database schema migration.
 /// </summary>
 [DebuggerDisplay(@"\{{Name}, {State}\}")]
-internal class Migration
+public class Migration
 {
     private readonly M.Migration _inner;
 
-    public Migration(M.Migration inner)
+    internal Migration(M.Migration inner)
     {
         if (inner is null)
             throw new ArgumentNullException(nameof(inner));
