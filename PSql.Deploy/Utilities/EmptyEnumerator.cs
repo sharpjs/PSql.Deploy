@@ -1,3 +1,4 @@
+#if CONVERTED
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
@@ -35,3 +36,4 @@ internal class EmptyEnumerator<T> : IEnumerator<T>
     /// <inheritdoc/>
     public void Dispose() { }
 }
+#endif

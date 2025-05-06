@@ -31,7 +31,7 @@
 
     # Initialization
     #ScriptsToProcess = @(...)
-    #TypesToProcess   = @(...)
+    TypesToProcess   = @('PSql.Deploy.types.ps1xml')
     #FormatsToProcess = @(...)
     NestedModules     = @('PSql.Deploy.psm1')
 

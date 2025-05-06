@@ -1,3 +1,4 @@
+#if CONVERTED
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
@@ -56,3 +57,4 @@ internal class EmptyCollection<T> : ICollection<T>, IReadOnlyCollection<T>
     /// <inheritdoc/>
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }
+#endif

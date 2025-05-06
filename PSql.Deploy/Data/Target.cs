@@ -1,7 +1,8 @@
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
-using System.Diagnostics.CodeAnalysis;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Net;
 
 using static System.Reflection.BindingFlags;
@@ -11,6 +12,7 @@ namespace PSql.Deploy;
 /// <summary>
 ///   Represents a target database.
 /// </summary>
+[DebuggerDisplay(@"\{{FullDisplayName}\}")]
 public class Target
 {
     private readonly E.Target _target;
@@ -26,8 +28,7 @@ public class Target
     ///   <see langword="object"/> is <see langword="null"/>.
     /// </exception>
     /// <exception cref="ArgumentException">
-    ///   <see langword="object"/> is of a type that is not convertible to
-    ///   <see cref="Target"/>.
+    ///   <see langword="object"/> is not convertible to <see cref="Target"/>.
     /// </exception>
     public Target(object obj)
     {
@@ -85,6 +86,8 @@ public class Target
         string?            serverDisplayName   = null,
         string?            databaseDisplayName = null)
     {
+        // Null checked by inner Target constructor
+
         _target = new(connectionString, credential, serverDisplayName, databaseDisplayName);
 
         Credential = credential;
