@@ -115,7 +115,7 @@ internal class MigrationApplicator : IMigrationValidationContext
         return pendingMigrations;
     }
 
-    private MigrationPlan ComputeMigrationPlan(ImmutableArray<Migration> pendingMigrations)
+    private static MigrationPlan ComputeMigrationPlan(ImmutableArray<Migration> pendingMigrations)
     {
         return new MigrationPlanner(pendingMigrations).CreatePlan();
     }

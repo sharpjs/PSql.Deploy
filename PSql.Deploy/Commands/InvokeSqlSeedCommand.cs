@@ -24,7 +24,7 @@ public class InvokeSqlSeedCommand : AsyncPSCmdlet
     /// </summary>
     [Parameter(Position = 0, Mandatory = true, ValueFromPipeline = true)]
     [ValidateNotNullOrEmpty]
-    public TargetSet[]? Target { get; set; }
+    public SqlTargetDatabaseGroup[]? Target { get; set; }
 
     /// <summary>
     ///   <b>-Seed:</b>
@@ -72,7 +72,7 @@ public class InvokeSqlSeedCommand : AsyncPSCmdlet
         if (Target is not null)
             foreach (var target in Target)
                 if (target is not null)
-                    _session.BeginApplying(target.InnerTargetSet);
+                    _session.BeginApplying(target.InnerGroup);
     }
 
     protected override void EndProcessing()

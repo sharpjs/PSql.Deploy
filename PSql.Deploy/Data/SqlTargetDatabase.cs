@@ -1,7 +1,6 @@
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Net;
 
@@ -13,24 +12,24 @@ namespace PSql.Deploy;
 ///   Represents a target database.
 /// </summary>
 [DebuggerDisplay(@"\{{FullDisplayName}\}")]
-public class Target
+public class SqlTargetDatabase
 {
     private readonly E.Target _target;
 
     /// <summary>
-    ///   Initializes a new <see cref="Target"/> instance by converting from
+    ///   Initializes a new <see cref="SqlTargetDatabase"/> instance by converting from
     ///   the specified object.
     /// </summary>
     /// <param name="obj">
-    ///   The object to convert into a <see cref="Target"/>.
+    ///   The object to convert into a <see cref="SqlTargetDatabase"/>.
     /// </param>
     /// <exception cref="ArgumentNullException">
     ///   <see langword="object"/> is <see langword="null"/>.
     /// </exception>
     /// <exception cref="ArgumentException">
-    ///   <see langword="object"/> is not convertible to <see cref="Target"/>.
+    ///   <see langword="object"/> is not convertible to <see cref="SqlTargetDatabase"/>.
     /// </exception>
-    public Target(object obj)
+    public SqlTargetDatabase(object obj)
     {
         if (obj == null)
             throw new ArgumentNullException(nameof(obj));
@@ -38,7 +37,7 @@ public class Target
         if (obj is PSObject pSObject)
             obj = pSObject.BaseObject;
 
-        if (obj is Target target)
+        if (obj is SqlTargetDatabase target)
             (_target, Credential) = (target.InnerTarget, target.Credential);
 
         else if (obj is string connectionString)
@@ -56,7 +55,7 @@ public class Target
     }
 
     /// <summary>
-    ///   Initializes a new <see cref="Target"/> instance with the specified
+    ///   Initializes a new <see cref="SqlTargetDatabase"/> instance with the specified
     ///   values.
     /// </summary>
     /// <param name="connectionString">
@@ -80,7 +79,7 @@ public class Target
     /// <exception cref="ArgumentNullException">
     ///   <paramref name="connectionString"/> is <see langword="null"/>.
     /// </exception>
-    public Target(
+    public SqlTargetDatabase(
         string             connectionString,
         NetworkCredential? credential          = null,
         string?            serverDisplayName   = null,

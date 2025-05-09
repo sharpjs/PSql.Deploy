@@ -26,7 +26,7 @@ public class InvokeSqlMigrationsCommand : AsyncPSCmdlet
     /// </summary>
     [Parameter(Position = 0, Mandatory = true, ValueFromPipeline = true)]
     [ValidateNotNullOrEmpty]
-    public TargetSet[]? Target { get; set; }
+    public SqlTargetDatabaseGroup[]? Target { get; set; }
 
     /// <summary>
     ///   <b>-Path:</b>
@@ -89,9 +89,9 @@ public class InvokeSqlMigrationsCommand : AsyncPSCmdlet
         AssumeBeginProcessingInvoked();
 
         if (Target is not null)
-            foreach (var targetSet in Target)
-                if (targetSet is not null)
-                    _session.BeginApplying(targetSet.InnerTargetSet);
+            foreach (var group in Target)
+                if (group is not null)
+                    _session.BeginApplying(group.InnerGroup);
     }
 
     /// <inheritdoc/>

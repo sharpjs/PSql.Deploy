@@ -61,7 +61,7 @@ internal class CmdletMigrationConsole : M.IMigrationConsole
             "Applied {0} migration(s) in {1:N3} second(s){2}",
             count,
             duration.TotalSeconds,
-            E.FormattingExtensions.ToMarker(disposition) // disposition.ToMarker()
+            disposition.ToMarker()
         ));
     }
 

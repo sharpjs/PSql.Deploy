@@ -9,7 +9,7 @@ namespace PSql.Deploy.Migrations;
 ///   A database schema migration.
 /// </summary>
 [DebuggerDisplay(@"\{{Name}, {State}\}")]
-public class Migration : IMigration
+public class Migration
 {
     /// <summary>
     ///   The name of a pseudo-migration that runs before any others.

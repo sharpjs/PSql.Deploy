@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <Types>
   <Type>
-    <Name>PSql.Deploy.Target</Name>
+    <Name>PSql.Deploy.SqlTargetDatabase</Name>
     <Members>
       <MemberSet>
         <Name>PSStandardMembers</Name>
@@ -15,7 +15,7 @@
     </Members>
   </Type>
   <Type>
-    <Name>PSql.Deploy.TargetSet</Name>
+    <Name>PSql.Deploy.SqlTargetDatabaseGroup</Name>
     <Members>
       <MemberSet>
         <Name>PSStandardMembers</Name>

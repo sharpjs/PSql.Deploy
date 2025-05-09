@@ -10,24 +10,24 @@ using System.Diagnostics;
 ///   Represents a set of target databases with specified parallelism limits.
 /// </summary>
 [DebuggerDisplay(@"\{{Name}, Count = {Targets.Count}\}")]
-public class TargetSet
+public class SqlTargetDatabaseGroup
 {
-    private readonly E.TargetSet _inner;
+    private readonly E.TargetGroup _inner;
 
     /// <summary>
-    ///   Initializes a new <see cref="TargetSet"/> instance by converting from
+    ///   Initializes a new <see cref="SqlTargetDatabaseGroup"/> instance by converting from
     ///   the specified object.
     /// </summary>
     /// <param name="obj">
-    ///   The object to convert into a <see cref="TargetSet"/>.
+    ///   The object to convert into a <see cref="SqlTargetDatabaseGroup"/>.
     /// </param>
     /// <exception cref="ArgumentNullException">
     ///   <see langword="object"/> is <see langword="null"/>.
     /// </exception>
     /// <exception cref="ArgumentException">
-    ///   <see langword="object"/> is not convertible to <see cref="TargetSet"/>.
+    ///   <see langword="object"/> is not convertible to <see cref="SqlTargetDatabaseGroup"/>.
     /// </exception>
-    public TargetSet(object obj)
+    public SqlTargetDatabaseGroup(object obj)
     {
         if (obj is null)
             throw new ArgumentNullException(nameof(obj));
@@ -36,7 +36,7 @@ public class TargetSet
     }
 
     /// <summary>
-    ///   Initializes a new <see cref="TargetSet"/> instance with the specified
+    ///   Initializes a new <see cref="SqlTargetDatabaseGroup"/> instance with the specified
     ///   values.
     /// </summary>
     /// <param name="targets">
@@ -66,8 +66,8 @@ public class TargetSet
     ///   <paramref name="maxParallelism"/> and/or
     ///   <paramref name="maxParallelismPerTarget"/> is negative.
     /// </exception>
-    public TargetSet(
-        IReadOnlyList<Target> targets,
+    public SqlTargetDatabaseGroup(
+        IReadOnlyList<SqlTargetDatabase> targets,
         string?               name                    = null,
         int                   maxParallelism          = 0,
         int                   maxParallelismPerTarget = 0)
@@ -84,12 +84,12 @@ public class TargetSet
     /// <summary>
     ///   Gets the inner target set wrapped by this object.
     /// </summary>
-    internal E.TargetSet InnerTargetSet => _inner;
+    internal E.TargetGroup InnerGroup => _inner;
 
     /// <summary>
     ///   Gets the target databases in the group.
     /// </summary>
-    public IReadOnlyList<Target> Targets { get; }
+    public IReadOnlyList<SqlTargetDatabase> Targets { get; }
 
     /// <summary>
     ///   Gets the descriptive name for the set, if any.
@@ -106,16 +106,16 @@ public class TargetSet
     /// </summary>
     public int MaxParallelismPerDatabase => _inner.MaxParallelismPerDatabase;
 
-    private static (E.TargetSet, IReadOnlyList<Target>)
+    private static (E.TargetGroup, IReadOnlyList<SqlTargetDatabase>)
         InitializeFrom(object obj)
     {
         if (obj is PSObject pSObject)
             obj = pSObject.BaseObject;
 
-        if (obj is TargetSet targetSet)
-            return (targetSet.InnerTargetSet, targetSet.Targets);
+        if (obj is SqlTargetDatabaseGroup group)
+            return (group.InnerGroup, group.Targets);
 
-        if (obj is IReadOnlyList<Target> targetList)
+        if (obj is IReadOnlyList<SqlTargetDatabase> targetList)
             return InitializeFromTargetList(targetList);
 
         if (obj is ICollection collection)
@@ -124,19 +124,19 @@ public class TargetSet
         return InitializeFromOther(obj);
     }
 
-    private static (E.TargetSet, IReadOnlyList<Target>)
-        InitializeFromTargetList(IReadOnlyList<Target> targetList)
+    private static (E.TargetGroup, IReadOnlyList<SqlTargetDatabase>)
+        InitializeFromTargetList(IReadOnlyList<SqlTargetDatabase> targetList)
     {
         return (new(ToInner(targetList)), targetList);
     }
 
-    private static (E.TargetSet, IReadOnlyList<Target>)
+    private static (E.TargetGroup, IReadOnlyList<SqlTargetDatabase>)
         InitializeFromCollection(ICollection collection)
     {
         return InitializeFromTargetList(ToTargetList(collection));
     }
 
-    private static (E.TargetSet, IReadOnlyList<Target>)
+    private static (E.TargetGroup, IReadOnlyList<SqlTargetDatabase>)
         InitializeFromOther(object obj)
     {
         var target       = ToTarget(obj);
@@ -146,14 +146,14 @@ public class TargetSet
         return (new(innerTargets), outerTargets);
     }
 
-    private static Target ToTarget(object obj)
+    private static SqlTargetDatabase ToTarget(object obj)
     {
-        return obj as Target ?? new(obj);
+        return obj as SqlTargetDatabase ?? new(obj);
     }
 
-    private static IReadOnlyList<Target> ToTargetList(ICollection collection)
+    private static IReadOnlyList<SqlTargetDatabase> ToTargetList(ICollection collection)
     {
-        var array = ImmutableArray.CreateBuilder<Target>(collection.Count);
+        var array = ImmutableArray.CreateBuilder<SqlTargetDatabase>(collection.Count);
 
         foreach (var item in collection)
             array.Add(ToTarget(item));
@@ -161,7 +161,7 @@ public class TargetSet
         return array.MoveToImmutable();
     }
 
-    private static IReadOnlyList<E.Target> ToInner(IReadOnlyList<Target> targets)
+    private static IReadOnlyList<E.Target> ToInner(IReadOnlyList<SqlTargetDatabase> targets)
     {
         var array = ImmutableArray.CreateBuilder<E.Target>(targets.Count);
 

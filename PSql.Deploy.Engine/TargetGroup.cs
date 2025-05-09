@@ -6,10 +6,10 @@ namespace PSql.Deploy;
 /// <summary>
 ///   Represents a set of target databases with specified parallelism limits.
 /// </summary>
-public class TargetSet
+public class TargetGroup
 {
     /// <summary>
-    ///   Initializes a new <see cref="TargetSet"/> instance.
+    ///   Initializes a new <see cref="TargetGroup"/> instance.
     /// </summary>
     /// <param name="targets">
     ///   The targets in the set.
@@ -38,7 +38,7 @@ public class TargetSet
     ///   <paramref name="maxParallelism"/> and/or
     ///   <paramref name="maxParallelismPerTarget"/> is negative.
     /// </exception>
-    public TargetSet(
+    public TargetGroup(
         IReadOnlyList<Target> targets,
         string?               name                    = null,
         int                   maxParallelism          = 0,
@@ -80,5 +80,5 @@ public class TargetSet
     public int MaxParallelismPerDatabase { get; }
 
     private static int InterpretParallelism(int value)
-        => value > 0 ? value : Environment.ProcessorCount;
+        => value > 0 ? value : ProcessInfo.Instance.ProcessorCount;
 }

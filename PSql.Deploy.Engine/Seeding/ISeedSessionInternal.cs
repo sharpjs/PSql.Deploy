@@ -7,10 +7,7 @@ namespace PSql.Deploy.Seeding;
 ///   Internal surface of a session in which content seeds are applied to
 ///   target databases.
 /// </summary>
-internal interface ISeedSessionInternal : ISeedSession
+internal interface ISeedSessionInternal : ISeedSession, IDeploymentSessionInternal
 {
-    /// <summary>
-    ///   Gets the token to monitor for cancellation requests.
-    /// </summary>
-    CancellationToken CancellationToken { get; }
+    // Empty
 }

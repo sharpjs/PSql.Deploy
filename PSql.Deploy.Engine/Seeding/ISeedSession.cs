@@ -4,28 +4,10 @@
 namespace PSql.Deploy.Seeding;
 
 /// <summary>
-///   Information about a session in which content seeds are applied to target
-///   databases.
+///   A session in which content seeds are applied to target databases.
 /// </summary>
-/// <remarks>
-///   This interface provides a read-only view of session information.  Code
-///   that controls operation of the session should use the
-///   <see cref="ISeedSessionControl"/> interface instead.
-/// </remarks>
-public interface ISeedSession
+public interface ISeedSession : IDeploymentSession
 {
-    /// <summary>
-    ///   Gets whether the session operates in what-if mode.  In this mode, the
-    ///   session reports what actions it would perform against a target
-    ///   database but does not perform the actions.
-    /// </summary>
-    bool IsWhatIfMode { get; }
-
-    /// <summary>
-    ///   Gets whether the session has encountered an error.
-    /// </summary>
-    bool HasErrors { get; }
-
     /// <summary>
     ///   Gets the user interface via which the session reports progress.
     /// </summary>
@@ -36,8 +18,23 @@ public interface ISeedSession
     /// </summary>
     /// <remarks>
     ///   The default value is <see cref="ImmutableArray{T}.Empty"/>.  Invoke
-    ///   <see cref="ISeedSessionControl.DiscoverSeeds"/> to populate this
+    ///   <see cref="DiscoverSeeds"/> to populate this
     ///   property.
     /// </remarks>
     ImmutableArray<Seed> Seeds { get; }
+
+    /// <summary>
+    ///   Discovers seeds in the specified directory path.
+    /// </summary>
+    /// <param name="path">
+    ///   The path of a directory in which to discover seeds.
+    /// </param>
+    /// <param name="names">
+    ///   The names of seeds to discover.
+    /// </param>
+    /// <exception cref="ArgumentNullException">
+    ///   <paramref name="path"/> or <paramref name="names"/> is
+    ///   <see langword="null"/>.
+    /// </exception>
+    void DiscoverSeeds(string path, string[] names);
 }

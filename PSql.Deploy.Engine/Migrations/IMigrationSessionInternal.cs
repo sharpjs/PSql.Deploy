@@ -7,13 +7,8 @@ namespace PSql.Deploy.Migrations;
 ///   Internal surface of a session in which schema migrations are applied to
 ///   target databases.
 /// </summary>
-internal interface IMigrationSessionInternal : IMigrationSession
+internal interface IMigrationSessionInternal : IMigrationSession, IDeploymentSessionInternal
 {
-    /// <summary>
-    ///   Gets the token to monitor for cancellation requests.
-    /// </summary>
-    CancellationToken CancellationToken { get; }
-
     /// <summary>
     ///   Gets the migrations applied to the specified target asynchronously.
     /// </summary>

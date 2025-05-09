@@ -1,7 +1,6 @@
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
-using System.Collections.Concurrent;
 using System.Numerics;
 
 namespace PSql.Deploy.Migrations;
@@ -11,7 +10,7 @@ using static BitOperations;
 /// <summary>
 ///   A session in which schema migrations are applied to target databases.
 /// </summary>
-public class MigrationSession : IMigrationSessionControl, IMigrationSessionInternal, IDisposable
+public class MigrationSession : DeploymentSession, IMigrationSessionInternal
 {
     /// <summary>
     ///   Initializes a new <see cref="MigrationSession"/> instance with the
@@ -41,10 +40,7 @@ public class MigrationSession : IMigrationSessionControl, IMigrationSessionInter
         CurrentPhase = GetMinPhase(options);
 
         if (phaseCount is not 1)
-            _targetSets = new List<TargetSet>();
-
-        _cancellation = new CancellationTokenSource();
-        _tasks        = new();
+            _targetGroups = [];
     }
 
     /// <summary>
@@ -55,13 +51,7 @@ public class MigrationSession : IMigrationSessionControl, IMigrationSessionInter
     /// <inheritdoc/>
     public IMigrationConsole Console { get; }
 
-    private readonly ICollection<TargetSet>? _targetSets;
-    private readonly CancellationTokenSource _cancellation;
-    private readonly ConcurrentBag<Task>     _tasks;
-
-    /// <inheritdoc/>
-    public CancellationToken CancellationToken
-        => _cancellation.Token;
+    private readonly ICollection<TargetGroup>? _targetGroups;
 
     /// <inheritdoc/>
     public bool IsEnabled(MigrationPhase phase)
@@ -72,18 +62,14 @@ public class MigrationSession : IMigrationSessionControl, IMigrationSessionInter
         => (Options & MigrationSessionOptions.AllowContentInCorePhase) is not 0;
 
     /// <inheritdoc/>
-    public bool IsWhatIfMode
+    public override bool IsWhatIfMode
         => (Options & MigrationSessionOptions.IsWhatIfMode) is not 0;
 
     /// <inheritdoc/>
     public MigrationPhase CurrentPhase { get; private set; }
 
     /// <inheritdoc/>
-    public ImmutableArray<IMigration> Migrations
-        => MigrationsInternal.CastArray<IMigration>();
-
-    /// <inheritdoc/>
-    internal ImmutableArray<Migration> MigrationsInternal { get; private set; }
+    public ImmutableArray<Migration> Migrations { get; private set; }
 
     /// <inheritdoc/>
     public string EarliestDefinedMigrationName { get; private set; } = "";
@@ -91,7 +77,7 @@ public class MigrationSession : IMigrationSessionControl, IMigrationSessionInter
     /// <inheritdoc/>
     public void DiscoverMigrations(string path, string? latestName = null)
     {
-        MigrationsInternal           = MigrationRepository.GetAll(path, latestName);
+        Migrations                   = MigrationRepository.GetAll(path, latestName);
         EarliestDefinedMigrationName = Migrations.FirstOrDefault(m => !m.IsPseudo)?.Name ?? "";
     }
 
@@ -104,31 +90,14 @@ public class MigrationSession : IMigrationSessionControl, IMigrationSessionInter
     }
 
     /// <inheritdoc/>
+    protected override Task ApplyCoreAsync(Target target, int maxParallelism)
+    {
+        return new MigrationApplicator(this, target).ApplyAsync();
+    }
+
+    /// <inheritdoc/>
     void IMigrationSessionInternal.LoadContent(Migration migration)
         => MigrationLoader.LoadContent(migration);
-
-    public void BeginApplying(TargetSet targetSet)
-    {
-    }
-
-    public void BeginApplying(Target target)
-    {
-        var s = new MigrationApplicator(this, target);
-
-        _tasks.Add(s.ApplyAsync());
-    }
-
-    public async Task CompleteApplyingAsync(CancellationToken cancellation = default)
-    {
-        using var _ = cancellation.Register(_cancellation.Cancel, useSynchronizationContext: false);
-
-        await Task.WhenAll(_tasks).ConfigureAwait(continueOnCapturedContext: false);
-    }
-
-    public virtual void Dispose()
-    {
-        _cancellation.Dispose();
-    }
 
     private static MigrationPhase GetMinPhase(MigrationSessionOptions options)
         => (MigrationPhase) TrailingZeroCount((int) options);

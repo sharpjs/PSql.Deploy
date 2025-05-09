@@ -4,43 +4,69 @@
 namespace PSql.Deploy.Seeding;
 
 /// <summary>
-///   TODO
+///   A deployment session in which one or more content seeds are applied to
+///   target databases.
 /// </summary>
-public class SeedSession
+public class SeedSession : DeploymentSession, ISeedSessionInternal
 {
     /// <summary>
-    ///   TODO
+    ///   Initializes a new <see cref="SeedSession"/> instance.
     /// </summary>
-    public SeedSession(SeedSessionOptions options, ISeedConsole console)
+    /// <param name="options">
+    ///   Options for the session.
+    /// </param>
+    /// <param name="console">
+    ///   The user interface via which to report progress.
+    /// </param>
+    /// <param name="maxErrorCount">
+    ///   The maximum count of exceptions that the session should tolerate
+    ///   before cancelling ongoing operations.  Must be a positive number.
+    /// </param>
+    /// <exception cref="ArgumentNullException">
+    ///   <paramref name="console"/> is <see langword="null"/>.
+    /// </exception>
+    /// <exception cref="ArgumentOutOfRangeException">
+    ///   <paramref name="maxErrorCount"/> is <c>0</c> or negative.
+    /// </exception>
+    public SeedSession(SeedSessionOptions options, ISeedConsole console, int maxErrorCount = 1)
+        : base(maxErrorCount)
     {
+        if (console is null)
+            throw new ArgumentNullException(nameof(console));
+
+        Options = options;
         Console = console;
     }
 
     /// <summary>
-    ///   TODO
+    ///   Gets thie options for the session.
+    /// </summary>
+    public SeedSessionOptions Options { get; }
+
+    /// <summary>
+    ///   Gets the user interface via which to report progress.
     /// </summary>
     public ISeedConsole Console { get; }
 
-    /// <summary>
-    ///   TODO
-    /// </summary>
-    public void BeginApplying(TargetSet targetSet)
+    /// <inheritdoc/>
+    public override bool IsWhatIfMode
+        => (Options & SeedSessionOptions.IsWhatIfMode) is not 0;
+
+    /// <inheritdoc/>
+    public ImmutableArray<Seed> Seeds { get; private set; }
+
+    /// <inheritdoc/>
+    public void DiscoverSeeds(string path, string[] names)
     {
     }
 
-    /// <summary>
-    ///   TODO
-    /// </summary>
-    public Task CompleteApplyingAsync(CancellationToken cancellationToken)
+    /// <inheritdoc/>
+    protected override Task ApplyCoreAsync(Target target, int maxParallelism)
     {
-        Console.ReportProblem(null, "Foo");
         return Task.CompletedTask;
     }
 
-    /// <summary>
-    ///   TODO
-    /// </summary>
-    public void Dispose()
-    {
-    }
+    /// <inheritdoc/>
+    protected override Exception Transform(Exception exception)
+        => new SeedException(message: null, exception);
 }

@@ -6,9 +6,9 @@ namespace PSql.Deploy.Commands;
 /// <summary>
 ///   The <c>New-SqlTargetSet</c> cmdlet.
 /// </summary>
-[Cmdlet(VerbsCommon.New, "SqlTargetSet")]
-[OutputType(typeof(TargetSet))]
-public class NewSqlTargetSetCommand : PSCmdlet
+[Cmdlet(VerbsCommon.New, "SqlTargetDatabaseGroup")]
+[OutputType(typeof(SqlTargetDatabaseGroup))]
+public class NewSqlTargetDatabaseGroupCommand : PSCmdlet
 {
     /// <summary>
     ///   <b>-Target:</b>
@@ -16,7 +16,7 @@ public class NewSqlTargetSetCommand : PSCmdlet
     /// </summary>
     [Parameter(Position = 0, Mandatory = true, ValueFromPipeline = true)]
     [ValidateNotNullOrEmpty]
-    public Target[]? Target { get; set; }
+    public SqlTargetDatabase[]? Target { get; set; }
 
     /// <summary>
     ///   <b>-Name:</b>
@@ -46,7 +46,7 @@ public class NewSqlTargetSetCommand : PSCmdlet
     public int MaxParallelismPerDatabase { get; set; }
 
     // Collected targets from all ProcessRecord invocations
-    private IReadOnlyList<Target>? _targets;
+    private IReadOnlyList<SqlTargetDatabase>? _targets;
 
     /// <inheritdoc/>
     protected override void ProcessRecord()
@@ -66,7 +66,9 @@ public class NewSqlTargetSetCommand : PSCmdlet
         // Assume that ProcessRecord has been invoked
         Assume.NotNull(_targets);
 
-        WriteObject(new TargetSet(_targets, Name, MaxParallelism, MaxParallelismPerDatabase));
+        WriteObject(new SqlTargetDatabaseGroup(
+            _targets, Name, MaxParallelism, MaxParallelismPerDatabase
+        ));
     }
 
     private static List<T> PromoteToList<T>(ref IReadOnlyList<T> collection)

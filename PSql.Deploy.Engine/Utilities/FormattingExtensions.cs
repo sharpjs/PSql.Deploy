@@ -9,7 +9,7 @@ using static MigrationPhase;
 using static MigrationState;
 using static TargetDisposition;
 
-public static class FormattingExtensions
+internal static class FormattingExtensions
 {
     internal static string GetFixedWidthStatusString(this Migration migration)
     {
@@ -43,16 +43,6 @@ public static class FormattingExtensions
             AppliedPre  => "Pre          ",
             AppliedCore => "Pre>Core     ",
             _           => "Pre>Core>Post",
-        };
-    }
-
-    public static string? ToMarker(this TargetDisposition disposition)
-    {
-        return disposition switch
-        {
-            Successful => null,
-            Incomplete => " [INCOMPLETE]",
-            _          => " [EXCEPTION]",
         };
     }
 

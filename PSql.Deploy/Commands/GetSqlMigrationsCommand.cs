@@ -47,7 +47,7 @@ public sealed class GetSqlMigrationsCommand : AsyncPSCmdlet
         Position         = 0
     )]
     [ValidateNotNullOrEmpty]
-    public Target? Target { get; set; }
+    public SqlTargetDatabase? Target { get; set; }
 
     protected override void ProcessRecord()
     {
@@ -70,18 +70,21 @@ public sealed class GetSqlMigrationsCommand : AsyncPSCmdlet
 #endif
 
         foreach (var migration in migrations)
-            WriteObject(migration);
+            WriteObject(new Migration(migration));
     }
 
-    private static IReadOnlyList<Migration> GetMigrations(string path)
+    private static IReadOnlyList<M.Migration> GetMigrations(string path)
     {
-        return MigrationRepository.GetAll(path);
+        return M.MigrationRepository.GetAll(path);
     }
 
-    private Task<IReadOnlyList<Migration>> GetMigrationsAsync(Target target)
+    private Task<IReadOnlyList<M.Migration>> GetMigrationsAsync(SqlTargetDatabase target)
     {
-        return MigrationRepository.GetAllAsync(
-            target, minimumName: "", cmdlet: this, CancellationToken
+        return M.MigrationRepository.GetAllAsync(
+            target.InnerTarget,
+            minimumName: "",
+            new CmdletSqlMessageLogger(this),
+            CancellationToken
         );
     }
 }

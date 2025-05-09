@@ -31,7 +31,7 @@
 
     # Initialization
     #ScriptsToProcess = @(...)
-    TypesToProcess   = @('PSql.Deploy.types.ps1xml')
+    TypesToProcess    = @('PSql.Deploy.types.ps1xml')
     #FormatsToProcess = @(...)
     NestedModules     = @('PSql.Deploy.psm1')
 
@@ -45,7 +45,7 @@
         #'Invoke-ForEachSqlContext'
         'Invoke-SqlMigrations'
         'Invoke-SqlSeed'
-        'New-SqlTargetSet'
+        'New-SqlTargetDatabaseGroup'
     )
     FunctionsToExport    = @(
         #'Install-SqlMigrationSupport'
