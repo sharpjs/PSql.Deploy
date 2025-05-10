@@ -9,14 +9,22 @@ using static MigrationPhase;
 public class MigrationValidatorTests : TestHarnessBase
 {
     private readonly Mock<IMigrationValidationContext> _context;
+    private readonly Mock<IMigrationSessionInternal>   _session;
 
     public MigrationValidatorTests()
     {
-        _context = Mocks.Create<IMigrationValidationContext>();
+        var target = new Target(
+            connectionString:    "Server=example.com",
+            serverDisplayName:   "s",
+            databaseDisplayName: "d"
+        );
 
-        _context.Setup(c => c.Phase)       .Returns(MigrationPhase.Post);
-        _context.Setup(c => c.ServerName)  .Returns("s");
-        _context.Setup(c => c.DatabaseName).Returns("d");
+        _session = Mocks.Create<IMigrationSessionInternal>();
+        _session.Setup(c => c.CurrentPhase).Returns(Post);
+
+        _context = Mocks.Create<IMigrationValidationContext>();
+        _context.Setup(c => c.Session).Returns(_session.Object);
+        _context.Setup(c => c.Target ).Returns(target);
     }
 
     [Test]
@@ -115,7 +123,7 @@ public class MigrationValidatorTests : TestHarnessBase
             DependsOn = ImmutableArray.Create(MakeReference("m2"))
         };
 
-        _context.Setup(c => c.EarliestDefinedMigrationName).Returns("m3");
+        _session.Setup(s => s.EarliestDefinedMigrationName).Returns("m3");
 
         Validate(migration).ShouldBeTrue();
 
@@ -137,7 +145,7 @@ public class MigrationValidatorTests : TestHarnessBase
             DependsOn = ImmutableArray.Create(MakeReference("m3"))
         };
 
-        _context.Setup(c => c.EarliestDefinedMigrationName).Returns("m3");
+        _session.Setup(s => s.EarliestDefinedMigrationName).Returns("m3");
 
         Validate(migration).ShouldBeFalse();
 
@@ -212,7 +220,7 @@ public class MigrationValidatorTests : TestHarnessBase
         MigrationPhase plannedPhase,    // the phase the engine actually scheduled it for
         MigrationPhase validatingPhase) // the phase someone wants to run
     {
-        _context.Setup(c => c.Phase).Returns(validatingPhase);
+        _session.Setup(s => s.CurrentPhase).Returns(validatingPhase);
 
         var migration = new Migration("m") { Path = @"/test/m/_Main.sql", };
 
@@ -238,7 +246,7 @@ public class MigrationValidatorTests : TestHarnessBase
         MigrationPhase plannedPhase,    // the phase the engine actually scheduled it for
         MigrationPhase validatingPhase) // the phase someone wants to run
     {
-        _context.Setup(c => c.Phase).Returns(validatingPhase);
+        _session.Setup(s => s.CurrentPhase).Returns(validatingPhase);
 
         var migration = new Migration("m") { Path = @"/test/m/_Main.sql", };
 

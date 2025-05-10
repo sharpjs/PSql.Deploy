@@ -16,11 +16,11 @@ public sealed class MigrationComparer : IComparer<Migration>
     /// <summary>
     ///   Gets the singleton instance of <see cref="MigrationComparer"/>.
     /// </summary>
-    public static MigrationComparer
-        Instance = new MigrationComparer();
+    public static MigrationComparer Instance { get; }
+        = new MigrationComparer();
 
-    private static StringComparer
-        NameComparer => StringComparer.OrdinalIgnoreCase;
+    private static StringComparer NameComparer
+        => StringComparer.OrdinalIgnoreCase;
 
     /// <inheritdoc/>
     public int Compare(Migration? x, Migration? y)

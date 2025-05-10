@@ -104,4 +104,11 @@ public class MigrationSession : DeploymentSession, IMigrationSessionInternal
 
     private static int GetPhaseCount(MigrationSessionOptions options)
         => PopCount((uint) (options & MigrationSessionOptions.AllPhases));
+
+    /// <inheritdoc/>
+    protected override Exception Transform(Exception exception)
+    {
+        return exception as MigrationException
+            ?? new MigrationException(message: null, exception);
+    }
 }

@@ -24,13 +24,29 @@ internal ref struct MigrationValidator
 
         Context      = context;
         _isValid     = true;
-        _diagnostics = new List<MigrationDiagnostic>();
+        _diagnostics = [];
     }
 
     /// <summary>
     ///   Gets contextual information for validation.
     /// </summary>
     public IMigrationValidationContext Context { get; }
+
+    /// <inheritdoc cref="IMigrationSession.CurrentPhase"/>
+    private readonly MigrationPhase CurrentPhase
+        => Context.Session.CurrentPhase;
+
+    /// <inheritdoc cref="IMigrationSession.EarliestDefinedMigrationName"/>
+    private readonly string EarliestDefinedMigrationName
+        => Context.Session.EarliestDefinedMigrationName;
+
+    /// <inheritdoc cref="Target.ServerDisplayName"/>
+    private readonly string ServerDisplayName
+        => Context.Target.ServerDisplayName;
+
+    /// <inheritdoc cref="Target.DatabaseDisplayName"/>
+    private readonly string DatabaseDisplayName
+        => Context.Target.DatabaseDisplayName;
 
     // Whether all migrations are valid
     private bool _isValid;
@@ -97,7 +113,7 @@ internal ref struct MigrationValidator
             switch (Compare(reference.Name, migration.Name))
             {
                 // Too old to be found
-                case < 0 when Compare(reference.Name, Context.EarliestDefinedMigrationName) < 0:
+                case < 0 when Compare(reference.Name, EarliestDefinedMigrationName) < 0:
                     AddWarning(string.Format(
                         "Ignoring migration '{0}' dependency on migration '{1}', " +
                         "which is older than the earliest migration on disk.",
@@ -158,8 +174,8 @@ internal ref struct MigrationValidator
             "in the _deploy.Migration table to match the hash of the code in "  +
             "the source directory ({4}).",
             /*{0}*/ migration.Name,
-            /*{1}*/ Context.ServerName,
-            /*{2}*/ Context.DatabaseName,
+            /*{1}*/ ServerDisplayName,
+            /*{2}*/ DatabaseDisplayName,
             /*{3}*/ migration.LatestAppliedPhase,
             /*{4}*/ migration.Hash
         ));
@@ -181,9 +197,9 @@ internal ref struct MigrationValidator
             "phase because the migration has code that must be applied in an " +
             "earlier phase first.",
             /*{0}*/ migration.Name,
-            /*{1}*/ Context.ServerName,
-            /*{2}*/ Context.DatabaseName,
-            /*{3}*/ Context.Phase
+            /*{1}*/ ServerDisplayName,
+            /*{2}*/ DatabaseDisplayName,
+            /*{3}*/ CurrentPhase
         ));
     }
 
@@ -194,7 +210,7 @@ internal ref struct MigrationValidator
         Blocked,    // application blocked (by required content in earlier phase)
     }
 
-    private void CheckApplicability(MigrationContent content, ref Applicability applicability)
+    private readonly void CheckApplicability(MigrationContent content, ref Applicability applicability)
     {
         // Unplanned content has no bearing on a migration's applicability
         if (content.PlannedPhase is not { } plannedPhase)
@@ -203,7 +219,7 @@ internal ref struct MigrationValidator
         static int Compare(MigrationPhase lhs, MigrationPhase rhs)
             => ((int) lhs).CompareTo(((int) rhs));
 
-        switch (Compare(plannedPhase, Context.Phase))
+        switch (Compare(plannedPhase, CurrentPhase))
         {
             case > 0:
                 // Content planned for a future phase has no bearing on a
@@ -238,8 +254,8 @@ internal ref struct MigrationValidator
                 "found in the source directory. It is not possible to complete "     +
                 "this migration.",
                 /*{0}*/ migration.Name,
-                /*{1}*/ Context.ServerName,
-                /*{2}*/ Context.DatabaseName,
+                /*{1}*/ ServerDisplayName,
+                /*{2}*/ DatabaseDisplayName,
                 /*{3}*/ phase
             ));
         else
@@ -249,8 +265,8 @@ internal ref struct MigrationValidator
                 "found in the source directory. It is not possible to complete "    +
                 "this migration.",
                 /*{0}*/ migration.Name,
-                /*{1}*/ Context.ServerName,
-                /*{2}*/ Context.DatabaseName
+                /*{1}*/ ServerDisplayName,
+                /*{2}*/ DatabaseDisplayName
             ));
     }
 
@@ -260,12 +276,12 @@ internal ref struct MigrationValidator
         _diagnostics.Add(new(isError: true, message));
     }
 
-    private void AddWarning(string message)
+    private readonly void AddWarning(string message)
     {
         _diagnostics.Add(new(isError: false, message));
     }
 
-    private IReadOnlyList<MigrationDiagnostic> TakeDiagnostics()
+    private readonly IReadOnlyList<MigrationDiagnostic> TakeDiagnostics()
     {
         var diagnotics = _diagnostics.ToArray();
         _diagnostics.Clear();

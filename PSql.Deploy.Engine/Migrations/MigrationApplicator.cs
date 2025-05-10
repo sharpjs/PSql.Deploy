@@ -30,19 +30,10 @@ internal class MigrationApplicator : IMigrationValidationContext
     /// <inheritdoc cref="IMigrationSession.Console"/>
     public IMigrationConsole Console => Session.Console;
 
-    /// <inheritdoc cref="IMigrationSession.CurrentPhase"/>
-    public MigrationPhase Phase => Session.CurrentPhase;
-
     /// <summary>
     ///   Gets an object representing the target database.
     /// </summary>
     public Target Target { get; }
-
-    // TODO: Find a better way maybe?
-    string IMigrationValidationContext.ServerName                   => Target.ServerDisplayName;
-    string IMigrationValidationContext.DatabaseName                 => Target.DatabaseDisplayName;
-    string IMigrationValidationContext.EarliestDefinedMigrationName => Session.EarliestDefinedMigrationName;
-    bool   IMigrationValidationContext.AllowCorePhase               => Session.AllowContentInCorePhase;
 
     // Time elapsed in ApplyAsync
     private readonly Stopwatch _stopwatch;
@@ -62,7 +53,6 @@ internal class MigrationApplicator : IMigrationValidationContext
     {
         BeginLog();
 
-        await Task.Yield();
         try
         {
             ReportStarting();
@@ -106,7 +96,7 @@ internal class MigrationApplicator : IMigrationValidationContext
     private ImmutableArray<Migration> GetPendingMigrations(IReadOnlyList<Migration> appliedMigrations)
     {
         var pendingMigrations = new MigrationMerger(Session).Merge(
-            definedMigrations: Session.Migrations.CastArray<Migration>().AsSpan(),
+            definedMigrations: Session.Migrations.AsSpan(),
             appliedMigrations
         );
 
@@ -139,7 +129,7 @@ internal class MigrationApplicator : IMigrationValidationContext
             return false;
         }
 
-        if (plan.IsEmpty(Phase))
+        if (plan.IsEmpty(Session.CurrentPhase))
         {
             ReportEmptyPlan();
             return false;
@@ -171,7 +161,7 @@ internal class MigrationApplicator : IMigrationValidationContext
         command.CommandTimeout     = 0; // No timeout
         command.RetryLogicProvider = connection.Connection.RetryLogicProvider;
 
-        foreach (var (migration, phase) in plan.GetItems(Phase))
+        foreach (var (migration, phase) in plan.GetItems(Session.CurrentPhase))
         {
             // Prepare to run the item
             ReportApplying(migration, phase);
@@ -199,13 +189,13 @@ internal class MigrationApplicator : IMigrationValidationContext
 
     private void ReportStarting()
     {
-        Console.ReportStarting(Target); // TODO: Phase
+        Console.ReportStarting(Session, Target);
 
         var i = ProcessInfo.Instance;
 
         Log("PSql.Deploy Migration Log");
         Log("");
-        Log($"Migration Phase:    {Phase}");
+        Log($"Migration Phase:    {Session.CurrentPhase}");
         Log($"Target Server:      {Target.ServerDisplayName}");
         Log($"Target Database:    {Target.DatabaseDisplayName}");
         Log($"Start Time:         {DateTime.UtcNow:o}");
@@ -364,7 +354,7 @@ internal class MigrationApplicator : IMigrationValidationContext
 
     private void ReportDiagnostic(MigrationDiagnostic diagnostic)
     {
-        Console.ReportProblem(Target, diagnostic.Message);
+        Console.ReportProblem(Session, Target, diagnostic.Message);
 
         Log(string.Concat(
             diagnostic.IsError ? "Error: " : "Warning: ",
@@ -394,7 +384,7 @@ internal class MigrationApplicator : IMigrationValidationContext
             Target.DatabaseDisplayName
         );
 
-        Console.ReportProblem(Target, message);
+        Console.ReportProblem(Session, Target, message);
 
         Log("");
         Log("Error: " + message);
@@ -409,7 +399,7 @@ internal class MigrationApplicator : IMigrationValidationContext
 
     private void ReportApplying(Migration migration, MigrationPhase phase)
     {
-        Console.ReportApplying(Target, migration.Name, phase);
+        Console.ReportApplying(Session, Target, migration.Name, phase);
 
         Log(string.Concat("[", migration.Name, " ", phase.ToString(), "]"));
 
@@ -418,7 +408,7 @@ internal class MigrationApplicator : IMigrationValidationContext
 
     private void ReportException(Exception exception)
     {
-        Console.ReportProblem(Target, exception.Message);
+        Console.ReportProblem(Session, Target, exception.Message);
 
         Log(exception.ToString());
     }
@@ -427,7 +417,7 @@ internal class MigrationApplicator : IMigrationValidationContext
     {
         var elapsed = _stopwatch.Elapsed;
 
-        Console.ReportApplied(Target, _appliedCount, elapsed, _disposition);
+        Console.ReportApplied(Session, Target, _appliedCount, elapsed, _disposition);
 
         // Footer
         Log("");
@@ -440,7 +430,7 @@ internal class MigrationApplicator : IMigrationValidationContext
 
     private void BeginLog()
     {
-        _logWriter = Console.CreateLog(Target);
+        _logWriter = Console.CreateLog(Session, Target);
     }
 
     private async ValueTask CloseLogAsync()

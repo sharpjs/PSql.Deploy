@@ -84,7 +84,7 @@ internal readonly ref struct MigrationPlanner
     public MigrationPlanner(ImmutableArray<Migration> migrations)
     {
         _plan      = new(migrations);
-        _scheduled = new();
+        _scheduled = [];
     }
 
     /// <summary>

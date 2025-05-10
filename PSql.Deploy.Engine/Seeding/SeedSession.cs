@@ -68,5 +68,8 @@ public class SeedSession : DeploymentSession, ISeedSessionInternal
 
     /// <inheritdoc/>
     protected override Exception Transform(Exception exception)
-        => new SeedException(message: null, exception);
+    {
+        return exception as SeedException
+            ?? new SeedException(message: null, exception);
+    }
 }

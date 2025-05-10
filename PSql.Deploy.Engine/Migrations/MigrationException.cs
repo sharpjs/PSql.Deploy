@@ -5,37 +5,37 @@
 using System.Runtime.Serialization;
 #endif
 
-namespace PSql.Deploy.Seeding;
+namespace PSql.Deploy.Migrations;
 
 /// <summary>
-///   Represents an error that occurred during database seed application.
+///   Represents an error that occurred during database schema migration.
 /// </summary>
 #if !NET8_0_OR_GREATER
 [Serializable]
 #endif
-public class SeedException : Exception
+public class MigrationException : Exception
 {
     private const string
-        DefaultMessage = "One or more errors occurred during seed application.";
+        DefaultMessage = "One or more errors occurred during migration.";
 
     /// <inheritdoc/>
-    public SeedException()
+    public MigrationException()
         : base(DefaultMessage)
     { }
 
     /// <inheritdoc/>
-    public SeedException(string? message)
+    public MigrationException(string? message)
         : base(message ?? DefaultMessage)
     { }
 
     /// <inheritdoc/>
-    public SeedException(string? message, Exception? innerException)
+    public MigrationException(string? message, Exception? innerException)
         : base(message ?? DefaultMessage, innerException)
     { }
 
 #if !NET8_0_OR_GREATER
     /// <inheritdoc/>
-    protected SeedException(SerializationInfo info, StreamingContext context)
+    protected MigrationException(SerializationInfo info, StreamingContext context)
         : base(info, context)
     { }
 #endif

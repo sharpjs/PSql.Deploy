@@ -29,18 +29,18 @@ internal class MigrationPlan
     ///   Gets the migrations whose <c>Pre</c> components actually will run
     ///   during the <c>Pre</c> phase.
     /// </summary>
-    public List<Migration> Pre { get; } = new();
+    public List<Migration> Pre { get; } = [];
 
     /// <summary>
     ///   Gets the migrations to run during the <c>Core</c> phase.
     /// </summary>
-    public List<(Migration Migration, MigrationPhase Phase)> Core { get; } = new();
+    public List<(Migration Migration, MigrationPhase Phase)> Core { get; } = [];
 
     /// <summary>
     ///   Gets the migrations whose <c>Post</c> components actually will run
     ///   during the <c>Post</c> phase.
     /// </summary>
-    public List<Migration> Post { get; } = new();
+    public List<Migration> Post { get; } = [];
 
     /// <summary>
     ///   Gets whether the <c>Core</c> phase is required.

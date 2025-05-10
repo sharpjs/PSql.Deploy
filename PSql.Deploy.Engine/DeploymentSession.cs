@@ -96,6 +96,10 @@ public abstract class DeploymentSession : IDeploymentSessionInternal
 
     private void Run(Func<Task> action)
     {
+        // NOTE: The action runs without a current SynchronizationContext, so
+        // ConfigureAwait(continueOnCapturedContext: false) is unnecessary.
+        // Source: https://learn.microsoft.com/en-us/archive/msdn-magazine/2015/july/async-programming-brownfield-async-development#the-thread-pool-hack
+
         _tasks.Add(Task.Run(action, CancellationToken));
     }
 
@@ -109,9 +113,7 @@ public abstract class DeploymentSession : IDeploymentSessionInternal
         Task ApplyToTargetAsync(Target context)
             => ApplyAsync(context, limiter, group.MaxParallelismPerDatabase);
 
-        await Task
-            .WhenAll(group.Targets.Select(ApplyToTargetAsync))
-            .ConfigureAwait(continueOnCapturedContext: false);
+        await Task.WhenAll(group.Targets.Select(ApplyToTargetAsync));
     }
 
     private async Task ApplyAsync(Target target, SemaphoreSlim limiter, int maxParallelism)
@@ -127,8 +129,7 @@ public abstract class DeploymentSession : IDeploymentSessionInternal
             await limiter.WaitAsync(CancellationToken);
             limited = true;
 
-            await ApplyAsync(target, maxParallelism)
-                .ConfigureAwait(continueOnCapturedContext: false);
+            await ApplyAsync(target, maxParallelism);
         }
         finally
         {
@@ -141,8 +142,7 @@ public abstract class DeploymentSession : IDeploymentSessionInternal
     {
         try
         {
-            await ApplyCoreAsync(target, maxParallelism)
-                .ConfigureAwait(continueOnCapturedContext: false);
+            await ApplyCoreAsync(target, maxParallelism);
         }
         catch (OperationCanceledException)
         {

@@ -8,18 +8,13 @@ namespace PSql.Deploy.Migrations;
 /// </summary>
 internal interface IMigrationValidationContext
 {
-    /// <inheritdoc cref="IMigrationSession.CurrentPhase"/>
-    MigrationPhase Phase { get; }
+    /// <summary>
+    ///   Gets the migration session.
+    /// </summary>
+    IMigrationSessionInternal Session { get; }
 
-    /// <inheritdoc cref="Target.ServerDisplayName"/>
-    string ServerName { get; }
-
-    /// <inheritdoc cref="Target.DatabaseDisplayName"/>
-    string DatabaseName { get; }
-
-    /// <inheritdoc cref="IMigrationSession.EarliestDefinedMigrationName"/>
-    string EarliestDefinedMigrationName { get; }
-
-    /// <inheritdoc cref="IMigrationSession.AllowContentInCorePhase"/>
-    public bool AllowCorePhase { get; }
+    /// <summary>
+    ///   Gets an object representing the target database.
+    /// </summary>
+    Target Target { get; }
 }

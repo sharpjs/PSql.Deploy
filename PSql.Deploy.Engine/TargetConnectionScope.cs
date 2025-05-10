@@ -1,13 +1,21 @@
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
-using System.Diagnostics.CodeAnalysis;
-using System.Net;
-
 namespace PSql.Deploy;
 
 internal class TargetConnectionScope : IDisposable, IAsyncDisposable
 {
+    internal static DbProviderFactory DbProviderFactory { get; set; }
+        = SqlClientFactory.Instance;
+
+    public static SqlRetryLogicBaseProvider RetryLogicProvider { get; }
+        = SqlConfigurableRetryFactory.CreateExponentialRetryProvider(new()
+        {
+            NumberOfTries   = 5,
+            DeltaTime       = TimeSpan.FromSeconds(2),
+            MaxTimeInterval = TimeSpan.FromMinutes(2),
+        });
+
     public TargetConnectionScope(Target target, ISqlMessageLogger logger)
     {
         if (target is null)
@@ -18,6 +26,10 @@ internal class TargetConnectionScope : IDisposable, IAsyncDisposable
         Target = target;
         Logger = logger;
 
+        var con = (SqlConnection) DbProviderFactory.CreateConnection()!;
+
+        con.Credential = target.Credential;
+
         Connection = target.Credential is { } credential
             ? new SqlConnection(target.ConnectionString, credential)
             : new SqlConnection(target.ConnectionString);
@@ -27,14 +39,6 @@ internal class TargetConnectionScope : IDisposable, IAsyncDisposable
         Connection.InfoMessage                      += HandleMessage;
         Connection.Disposed                         += HandleUnexpectedDisposal;
     }
-
-    public static SqlRetryLogicBaseProvider RetryLogicProvider { get; }
-        = SqlConfigurableRetryFactory.CreateExponentialRetryProvider(new()
-        {
-            NumberOfTries   = 5,
-            DeltaTime       = TimeSpan.FromSeconds(2),
-            MaxTimeInterval = TimeSpan.FromMinutes(2),
-        });
 
     public Target Target { get; }
 
