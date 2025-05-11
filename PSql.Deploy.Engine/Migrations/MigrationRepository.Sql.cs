@@ -3,8 +3,6 @@
 
 namespace PSql.Deploy.Migrations;
 
-using static CommandBehavior;
-
 public static partial class MigrationRepository
 {
     /// <summary>
@@ -29,13 +27,7 @@ public static partial class MigrationRepository
         if (logger is null)
             throw new ArgumentNullException(nameof(logger));
 
-        await using var scope   = target.CreateConnectionScope(logger);
-        await using var command = scope.Connection.CreateCommand();
-
-        command.Connection         = scope.Connection;
-        command.RetryLogicProvider = scope.Connection.RetryLogicProvider;
-        command.CommandType        = CommandType.Text;
-        command.CommandText        =
+        var sql = 
             $"""
             IF OBJECT_ID(N'_deploy.Migration', N'U') IS NOT NULL
             EXEC sp_executesql
@@ -45,29 +37,31 @@ public static partial class MigrationRepository
                 WHERE State < 3 OR Name >= @MinimumName
                 ORDER BY Name
             ;',
-            N'@MinimumName nvarchar(MAX)',
+            N'@MinimumName nvarchar(max)',
             N'{minimumName.EscapeForSqlString()}';
             """;
 
-        await scope.Connection.OpenAsync(cancellation);
-
-        await using var reader = await command
-            .ExecuteReaderAsync(SequentialAccess | SingleResult, cancellation);
+        await using var connection = new SqlTargetConnection(target, logger); // TODO: Make testable
 
         var migrations = new List<Migration>(); // TODO: ImmutableArray?
 
-        while (await reader.ReadAsync(cancellation))
-            migrations.Add(MapToMigration(reader));
+        await connection.OpenAsync(cancellation);
+        await connection.ExecuteAsync(sql, AddMigration, migrations, cancellation);
 
         return migrations;
     }
 
-    private static Migration MapToMigration(SqlDataReader reader)
+    private static void AddMigration(IDataRecord record, List<Migration> migrations)
     {
-        return new Migration(reader.GetString(0))
+        migrations.Add(MapToMigration(record));
+    }
+
+    private static Migration MapToMigration(IDataRecord record)
+    {
+        return new Migration(record.GetString(0))
         {
-            Hash  = reader.GetString(1),
-            State = (MigrationState) reader.GetInt32(2),
+            Hash  = record.GetString(1),
+            State = (MigrationState) record.GetInt32(2),
         };
     }
 }

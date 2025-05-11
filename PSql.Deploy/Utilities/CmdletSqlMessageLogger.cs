@@ -22,6 +22,6 @@ internal class CmdletSqlMessageLogger : E.ISqlMessageLogger
         if (severity <= MaxInformationalSeverity)
             _cmdlet.WriteHost(message);
         else
-            _cmdlet.WriteWarning($"{procedure}:{line}: E{number}:L{severity}: {message}");
+            _cmdlet.WriteWarning($"{procedure}:{line}: E{number}:{severity}: {message}");
     }
 }

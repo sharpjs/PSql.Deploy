@@ -66,7 +66,7 @@ public interface IDeploymentSession : IDisposable
     ///   A token to monitor for cancellation requests.
     /// </param>
     /// <returns>
-    ///   A <see cref="Task"/> that represents the asynchronous operation.
+    ///   A <see cref="Task"/> representing the asynchronous operation.
     /// </returns>
     Task CompleteApplyingAsync(CancellationToken cancellation = default);
 }

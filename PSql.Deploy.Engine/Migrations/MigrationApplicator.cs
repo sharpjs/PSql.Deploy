@@ -5,8 +5,25 @@ using System.Diagnostics;
 
 namespace PSql.Deploy.Migrations;
 
+/// <summary>
+///   Core logic for applying schema migrations to a target database.
+/// </summary>
 internal class MigrationApplicator : IMigrationValidationContext
 {
+    /// <summary>
+    ///   Initializes a new <see cref="MigrationApplicator"/> instance for the
+    ///   specified session and target database.
+    /// </summary>
+    /// <param name="session">
+    ///   The migration session.
+    /// </param>
+    /// <param name="target">
+    ///   An object representing the target database.
+    /// </param>
+    /// <exception cref="ArgumentNullException">
+    ///   <paramref name="session"/> and/or
+    ///   <paramref name="target"/> is <see langword="null"/>.
+    /// </exception>
     public MigrationApplicator(IMigrationSessionInternal session, Target target)
     {
         if (session is null)
@@ -25,9 +42,9 @@ internal class MigrationApplicator : IMigrationValidationContext
     /// </summary>
     public IMigrationSessionInternal Session { get; }
 
-    internal DbProviderFactory DbProviderFactory { get; } = SqlClientFactory.Instance;
-
-    /// <inheritdoc cref="IMigrationSession.Console"/>
+    /// <summary>
+    ///   Gets the user interface via which to report progress.
+    /// </summary>
     public IMigrationConsole Console => Session.Console;
 
     /// <summary>
@@ -47,9 +64,16 @@ internal class MigrationApplicator : IMigrationValidationContext
     // Outcome
     private TargetDisposition _disposition;
 
+    // Log
     private TextWriter? _logWriter;
 
-    internal async Task ApplyAsync()
+    /// <summary>
+    ///   Applies migrations to the target database asynchronously.
+    /// </summary>
+    /// <returns>
+    ///   A <see cref="Task"/> representing the asynchronous operation.
+    /// </returns>
+    public async Task ApplyAsync()
     {
         BeginLog();
 
@@ -59,12 +83,10 @@ internal class MigrationApplicator : IMigrationValidationContext
 
             var appliedMigrations = await GetAppliedMigrationsAsync();
             var pendingMigrations = GetPendingMigrations(appliedMigrations);
-            var plan              = ComputeMigrationPlan(pendingMigrations);
+            var migrationPlan     = ComputeMigrationPlan(pendingMigrations);
 
-            if (!Validate(plan))
-                return; // TODO: throw?
-
-            await ExecuteAsync(plan);
+            if (ShouldExecute(migrationPlan))
+                await ExecuteAsync(migrationPlan);
         }
         catch (OperationCanceledException)
         {
@@ -110,12 +132,16 @@ internal class MigrationApplicator : IMigrationValidationContext
         return new MigrationPlanner(pendingMigrations).CreatePlan();
     }
 
-    private bool Validate(MigrationPlan plan)
+    private bool ShouldExecute(MigrationPlan plan)
     {
+        // true  => valid
+        // false => valid, but nothing to do
+        // throw => invalid
+
         if (plan.PendingMigrations.IsEmpty)
         {
             ReportNoPendingMigrations();
-            return false;
+            return false; // nothing to do
         }
 
         var valid = new MigrationValidator(this).Validate(plan);
@@ -123,22 +149,18 @@ internal class MigrationApplicator : IMigrationValidationContext
         ReportPendingMigrations(plan);
         ReportDiagnostics      (plan.PendingMigrations);
 
-        if (!valid)
-        {
-            // Nothing extra to report
-            return false;
-        }
-
+        if (!valid) throw OnInvalid();
+ 
         if (plan.IsEmpty(Session.CurrentPhase))
         {
             ReportEmptyPlan();
-            return false;
+            return false; // nothing to do
         }
 
         if (!Session.AllowContentInCorePhase && plan.IsCoreRequired)
         {
             ReportCoreRequired();
-            return false;
+            throw OnInvalid();
         }
 
         return true;
@@ -146,45 +168,30 @@ internal class MigrationApplicator : IMigrationValidationContext
 
     private async Task ExecuteAsync(MigrationPlan plan)
     {
-        Assume.NotNull(_logWriter);
         ReportApplying();
 
-        if (Session.IsWhatIfMode)
-            return;
+        await using var connection = Connect();
 
-        var logger = new TextWriterSqlMessageLogger(_logWriter);
-
-        using var connection = Target.CreateConnectionScope(logger);
-        using var command    = connection.Connection.CreateCommand();
-
-        command.CommandType        = CommandType.Text;
-        command.CommandTimeout     = 0; // No timeout
-        command.RetryLogicProvider = connection.Connection.RetryLogicProvider;
+        await connection.OpenAsync(Session.CancellationToken);
 
         foreach (var (migration, phase) in plan.GetItems(Session.CurrentPhase))
         {
-            // Prepare to run the item
             ReportApplying(migration, phase);
-            connection.ClearErrors();
 
-            // Run the item
-            await ExecuteAsync(migration, phase, command);
+            if (migration[phase].Sql is { Length: > 0 } sql)
+                await connection.ExecuteAsync(sql, Session.CancellationToken);
 
-            // Report errors or mark applied
-            connection.ThrowIfHasErrors();
             _appliedCount++;
         }
     }
 
-    private Task ExecuteAsync(Migration migration, MigrationPhase phase, SqlCommand command)
+    private ITargetConnection Connect()
     {
-        var sql = migration[phase].Sql;
-        if (sql.IsNullOrEmpty())
-            return Task.CompletedTask;
+        Assume.NotNull(_logWriter);
 
-        command.CommandText = sql;
-
-        return command.ExecuteNonQueryAsync(Session.CancellationToken);
+        return Session.IsWhatIfMode
+            ? new NullTargetConnection(Target)
+            : Session.Connect(Target, new TextWriterSqlMessageLogger(_logWriter));
     }
 
     private void ReportStarting()
@@ -455,5 +462,10 @@ internal class MigrationApplicator : IMigrationValidationContext
         Assume.NotNull(_logWriter);
 
         _logWriter.WriteLine(text);
+    }
+
+    private static MigrationException OnInvalid()
+    {
+        return new MigrationException("Migration validation failed.");
     }
 }

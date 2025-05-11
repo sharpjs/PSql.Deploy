@@ -1,8 +1,6 @@
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
-using Moq.Protected;
-
 namespace PSql.Deploy.Migrations;
 
 [TestFixture]
@@ -11,24 +9,23 @@ public class MigrationApplicatorTests : TestHarnessBase
     private readonly MigrationApplicator             _applicator;
     private readonly Mock<IMigrationSessionInternal> _session;
     private readonly Mock<IMigrationConsole>         _console;
+    private readonly Mock<ITargetConnection>         _connection;
+    private readonly MockSequence                    _sequence;
     private readonly Target                          _target;
     private readonly StringWriter                    _log;
-    private readonly CancellationTokenSource         _cancellation;
 
     public MigrationApplicatorTests()
     {
         _target       = new("Server=db.example.com;Database=test;User ID=test;Password=test");
         _session      = Mocks.Create<IMigrationSessionInternal>();
         _console      = Mocks.Create<IMigrationConsole>();
-        _log          = new StringWriter();
-        _cancellation = new();
+        _connection   = Mocks.Create<ITargetConnection>();
+        _sequence     = new();
+        _log          = new();
 
-        _session
-            .Setup(s => s.AllowContentInCorePhase)
-            .Returns(false);
-        _session
-            .Setup(s => s.IsWhatIfMode)
-            .Returns(false);
+        WithAllowContentInCorePhase(false);
+        WithIsWhatIfMode(false);
+
         _session
             .Setup(s => s.CurrentPhase)
             .Returns(MigrationPhase.Pre);
@@ -37,20 +34,13 @@ public class MigrationApplicatorTests : TestHarnessBase
             .Returns(_console.Object);
         _session
             .Setup(s => s.CancellationToken)
-            .Returns(_cancellation.Token);
+            .Returns(Cancellation.Token);
 
         _console
             .Setup(s => s.CreateLog(_session.Object, _target))
             .Returns(_log);
 
         _applicator = new MigrationApplicator(_session.Object, _target);
-    }
-
-    protected override void CleanUp(bool managed)
-    {
-        _cancellation.Dispose();
-
-        base.CleanUp(managed);
     }
 
     [Test]
@@ -92,78 +82,39 @@ public class MigrationApplicatorTests : TestHarnessBase
     [Test]
     public async Task ApplyAsync_NoPendingMigrations()
     {
-        _console
-            .Setup(c => c.ReportStarting(_session.Object, _target))
-            .Verifiable();
+        WithDefinedMigrations([]);
+        WithAppliedMigrations([]);
 
-        _session
-            .Setup(s => s.Migrations)
-            .Returns(ImmutableArray<Migration>.Empty)
-            .Verifiable();
-
-        _session
-            .Setup(s => s.GetAppliedMigrationsAsync(_target))
-            .ReturnsAsync([])
-            .Verifiable();
-
-        _console
-            .Setup(c => c.ReportApplied(
-                _session.Object, _target,
-                /*count*/ 0, It.Is<TimeSpan>(t => t >= TimeSpan.Zero),
-                TargetDisposition.Successful
-            ))
-            .Verifiable();
+        ExpectReportStarting();
+        ExpectReportApplied(0, TargetDisposition.Successful);
 
         await _applicator.ApplyAsync();
 
-        _log.ToString().ShouldContain("Nothing to do.");
+        LogShouldContainAll("Nothing to do.");
     }
 
     [Test]
     public async Task ApplyAsync_Invalid()
     {
-        var a = new Migration("a")
+        var definedA = new Migration("a")
         {
             Path      = "/test/a",
             DependsOn = ImmutableArray.Create(new MigrationReference("a"))
         };
 
-        _console
-            .Setup(c => c.ReportStarting(_session.Object, _target))
-            .Verifiable();
+        WithDefinedMigrations([definedA]);
+        WithAppliedMigrations([]);
 
-        _session
-            .Setup(s => s.Migrations)
-            .Returns(ImmutableArray.Create(a))
-            .Verifiable();
+        ExpectReportStarting();
+        ExpectLoadContent(definedA);
+        ExpectReportProblem(
+            "Migration 'a' declares a dependency on itself. " +
+            "The dependency cannot be satisfied."
+        );
+        ExpectReportProblem("Migration validation failed.");
+        ExpectReportApplied(0, TargetDisposition.Failed);
 
-        _session
-            .Setup(s => s.GetAppliedMigrationsAsync(_target))
-            .ReturnsAsync([])
-            .Verifiable();
-
-        _session
-            .Setup(i => i.LoadContent(a))
-            .Callback(() => { a.IsContentLoaded = true; })
-            .Verifiable();
-
-        _console
-            .Setup(c => c.ReportProblem(
-                _session.Object, _target,
-                "Migration 'a' declares a dependency on itself. " +
-                "The dependency cannot be satisfied."
-            ))
-            .Verifiable();
-
-        _console
-            .Setup(c => c.ReportApplied(
-                _session.Object, _target,
-                /*count*/ 0, It.Is<TimeSpan>(t => t >= TimeSpan.Zero),
-                TargetDisposition.Successful // TODO: really?
-            ))
-            .Verifiable();
-
-        await _applicator.ApplyAsync();
+        await Should.ThrowAsync<MigrationException>(_applicator.ApplyAsync);
 
         LogShouldContainAll(
             "PSql.Deploy Migration Log",
@@ -177,44 +128,24 @@ public class MigrationApplicatorTests : TestHarnessBase
     [Test]
     public async Task ApplyAsync_EmptyPlan()
     {
-        var aDefined = new Migration("a")
+        var definedA = new Migration("a")
         {
             Path = "/test/a",
             Hash = "abc123",
         };
 
-        var aApplied = new Migration("a")
+        var appliedA = new Migration("a")
         {
             State = MigrationState.AppliedCore,
             Hash  = "abc123",
         };
 
-        _console
-            .Setup(c => c.ReportStarting(_session.Object, _target))
-            .Verifiable();
+        WithDefinedMigrations([definedA]);
+        WithAppliedMigrations([appliedA]);
 
-        _session
-            .Setup(s => s.Migrations)
-            .Returns(ImmutableArray.Create(aDefined))
-            .Verifiable();
-
-        _session
-            .Setup(s => s.GetAppliedMigrationsAsync(_target))
-            .ReturnsAsync([aApplied])
-            .Verifiable();
-
-        _session
-            .Setup(i => i.LoadContent(aDefined))
-            .Callback(() => { aDefined.IsContentLoaded = true; })
-            .Verifiable();
-
-        _console
-            .Setup(c => c.ReportApplied(
-                _session.Object, _target,
-                /*count*/ 0, It.Is<TimeSpan>(t => t >= TimeSpan.Zero),
-                TargetDisposition.Successful
-            ))
-            .Verifiable();
+        ExpectReportStarting();
+        ExpectLoadContent(definedA);
+        ExpectReportApplied(0, TargetDisposition.Successful);
 
         await _applicator.ApplyAsync();
 
@@ -230,59 +161,36 @@ public class MigrationApplicatorTests : TestHarnessBase
     [Test]
     public async Task ApplyAsync_CoreDisallowed()
     {
-        var aDefined = new Migration("a")
+        var definedA = new Migration("a")
         {
             Path = "/test/a",
             Hash = "abc123",
             Core = { IsRequired = true, Sql = "core-sql" },
         };
 
-        var aApplied = new Migration("a")
+        var appliedA = new Migration("a")
         {
             State = MigrationState.NotApplied,
             Hash  = "abc123",
         };
 
-        _console
-            .Setup(c => c.ReportStarting(_session.Object, _target))
-            .Verifiable();
+        WithDefinedMigrations([definedA]);
+        WithAppliedMigrations([appliedA]);
 
-        _session
-            .Setup(s => s.Migrations)
-            .Returns(ImmutableArray.Create(aDefined))
-            .Verifiable();
+        ExpectReportStarting();
+        ExpectLoadContent(definedA);
+        ExpectReportProblem(
+            "One or more migration(s) to be applied to database [db.example.com].[test] "   +
+            "requires the Core (downtime) phase, but the -AllowCorePhase switch was not "   +
+            "present for the Invoke-SqlMigrations command.  To allow the Core phase, pass " +
+            "the switch to the command.  Otherwise, ensure that all migrations begin with " +
+            "a '--# PRE' or '--# POST' directive and that any '--# REQUIRES:' directives "  +
+            "reference only migrations that have been completely applied."
+        );
+        ExpectReportProblem("Migration validation failed.");
+        ExpectReportApplied(0, TargetDisposition.Failed);
 
-        _session
-            .Setup(s => s.GetAppliedMigrationsAsync(_target))
-            .ReturnsAsync([aApplied])
-            .Verifiable();
-
-        _session
-            .Setup(i => i.LoadContent(aDefined))
-            .Callback(() => { aDefined.IsContentLoaded = true; })
-            .Verifiable();
-
-        _console
-            .Setup(c => c.ReportProblem(
-                _session.Object, _target,
-                "One or more migration(s) to be applied to database [db.example.com].[test] "   +
-                "requires the Core (downtime) phase, but the -AllowCorePhase switch was not "   +
-                "present for the Invoke-SqlMigrations command.  To allow the Core phase, pass " +
-                "the switch to the command.  Otherwise, ensure that all migrations begin with " +
-                "a '--# PRE' or '--# POST' directive and that any '--# REQUIRES:' directives "  +
-                "reference only migrations that have been completely applied."
-            ))
-            .Verifiable();
-
-        _console
-            .Setup(c => c.ReportApplied(
-                _session.Object, _target,
-                /*count*/ 0, It.Is<TimeSpan>(t => t >= TimeSpan.Zero),
-                TargetDisposition.Successful // TODO: Really?
-            ))
-            .Verifiable();
-
-        await _applicator.ApplyAsync();
+        await Should.ThrowAsync<MigrationException>(_applicator.ApplyAsync);
 
         LogShouldContainAll(
             "PSql.Deploy Migration Log",
@@ -298,7 +206,7 @@ public class MigrationApplicatorTests : TestHarnessBase
     [Test]
     public async Task ApplyAsync_CoreAllowed()
     {
-        var a = new Migration("a")
+        var definedA = new Migration("a")
         {
             Path = "/test/a",
             Pre  = { IsRequired = true, Sql = "pre-sql"  },
@@ -306,90 +214,16 @@ public class MigrationApplicatorTests : TestHarnessBase
             IsContentLoaded = true,
         };
 
-        _session
-            .Setup(s => s.AllowContentInCorePhase)
-            .Returns(true);
+        WithDefinedMigrations([definedA]);
+        WithAppliedMigrations([]);
+        WithAllowContentInCorePhase();
 
-        _console
-            .Setup(c => c.ReportStarting(_session.Object, _target))
-            .Verifiable();
-
-        _session
-            .Setup(s => s.Migrations)
-            .Returns(ImmutableArray.Create(a))
-            .Verifiable();
-
-        _session
-            .Setup(s => s.GetAppliedMigrationsAsync(_target))
-            .ReturnsAsync([])
-            .Verifiable();
-
-        _session
-            .Setup(i => i.LoadContent(a))
-            .Verifiable();
-
-        // var connection = Mocks.Create<SqlConnection>();
-        // var command    = Mocks.Create<SqlCommand>();
-        // var command2   = Mocks.Create<DbCommand>();
-
-        // //_session
-        // //    .Setup(i => i.Connect(_target.Context, _applicator.SqlMessageLogger))
-        // //    .Returns(connection.Object)
-        // //    .Verifiable();
-
-        // connection
-        //     .Setup(c => c.CreateCommand())
-        //     .Returns(command.Object)
-        //     .Verifiable();
-
-        // command
-        //     .SetupSet(c => c.CommandTimeout = 0)
-        //     .Verifiable();
-
-        _console
-            .Setup(c => c.ReportApplying(_session.Object, _target, "a", MigrationPhase.Pre))
-            .Verifiable();
-
-        //connection
-        //    .Setup(c => c.ClearErrors())
-        //    .Verifiable();
-
-        // command
-        //     .SetupSet(c => c.CommandText = It.IsRegex("pre-sql"))
-        //     .Verifiable();
-
-        //command
-        //    .Setup(c => c.UnderlyingCommand)
-        //    .Returns(command2.Object);
-
-        // command2
-        //     .Setup(c => c.ExecuteNonQueryAsync(_session.Object.CancellationToken))
-        //     .ReturnsAsync(0)
-        //     .Verifiable();
-
-        //connection
-        //    .Setup(c => c.ThrowIfHasErrors())
-        //    .Verifiable();
-
-        // command2
-        //     .Protected().Setup("Dispose", ItExpr.IsAny<bool>());
-        //     // Prevent spurious exception if GC collects command2
-
-        // command
-        //     .Setup(c => c.Dispose())
-        //     .Verifiable();
-
-        // connection
-        //     .Setup(c => c.Dispose())
-        //     .Verifiable();
-
-        // _console
-        //     .Setup(c => c.ReportApplied(
-        //         _session.Object, _target,
-        //         /*count*/ 1, It.Is<TimeSpan>(t => t >= TimeSpan.Zero),
-        //         TargetDisposition.Successful
-        //     ))
-        //     .Verifiable();
+        ExpectReportStarting();
+        ExpectLoadContent(definedA);
+        ExpectConnect();
+        ExpectReportApplying("a", MigrationPhase.Pre);
+        ExpectExecuteAsync("pre-sql");
+        ExpectReportApplied(1, TargetDisposition.Successful);
 
         await _applicator.ApplyAsync();
 
@@ -402,84 +236,23 @@ public class MigrationApplicatorTests : TestHarnessBase
         );
     }
 
-#if CONVERTED
     [Test]
     public async Task ApplyAsync_EmptySql()
     {
-        using var cancellation = new CancellationTokenSource();
-
-        var a = new Migration("a")
+        var definedA = new Migration("a")
         {
             Path = "/test/a",
             Pre  = { IsRequired = true, Sql = "" },
         };
 
-        _session
-            .Setup(s => s.CancellationToken)
-            .Returns(cancellation.Token);
+        WithDefinedMigrations([definedA]);
+        WithAppliedMigrations([]);
 
-        _console
-            .Setup(c => c.ReportStarting(_session.Object, _target))
-            .Verifiable();
-
-        _session
-            .Setup(s => s.Migrations)
-            .Returns(ImmutableArray.Create(a))
-            .Verifiable();
-
-        _session
-            .Setup(s => s.GetAppliedMigrationsAsync(_target))
-            .ReturnsAsync(new Migration[0])
-            .Verifiable();
-
-        _session
-            .Setup(i => i.LoadContent(a))
-            .Verifiable();
-
-        var connection = Mocks.Create<ISqlConnection>();
-        var command    = Mocks.Create<ISqlCommand>();
-
-        _session
-            .Setup(i => i.Connect(_target.Context, _applicator.SqlMessageLogger))
-            .Returns(connection.Object)
-            .Verifiable();
-
-        connection
-            .Setup(c => c.CreateCommand())
-            .Returns(command.Object)
-            .Verifiable();
-
-        command
-            .SetupSet(c => c.CommandTimeout = 0)
-            .Verifiable();
-
-        _console
-            .Setup(c => c.ReportApplying("a", MigrationPhase.Pre))
-            .Verifiable();
-
-        connection
-            .Setup(c => c.ClearErrors())
-            .Verifiable();
-
-        connection
-            .Setup(c => c.ThrowIfHasErrors())
-            .Verifiable();
-
-        command
-            .Setup(c => c.Dispose())
-            .Verifiable();
-
-        connection
-            .Setup(c => c.Dispose())
-            .Verifiable();
-
-        _console
-            .Setup(c => c.ReportApplied(
-                _session.Object, _target,
-                /*count*/ 1, It.Is<TimeSpan>(t => t >= TimeSpan.Zero),
-                TargetDisposition.Successful
-            ))
-            .Verifiable();
+        ExpectReportStarting();
+        ExpectLoadContent(definedA);
+        ExpectConnect();
+        ExpectReportApplying("a", MigrationPhase.Pre);
+        ExpectReportApplied(count: 1, TargetDisposition.Successful);
 
         await _applicator.ApplyAsync();
 
@@ -495,53 +268,21 @@ public class MigrationApplicatorTests : TestHarnessBase
     [Test]
     public async Task ApplyAsync_WhatIf()
     {
-        using var cancellation = new CancellationTokenSource();
-
-        var a = new Migration("a")
+        var definedA = new Migration("a")
         {
             Path = "/test/a",
             Pre  = { IsRequired = true, Sql = "pre-sql" },
             IsContentLoaded = true,
         };
 
-        _session
-            .Setup(s => s.IsWhatIfMode)
-            .Returns(true);
+        WithIsWhatIfMode(true);
+        WithDefinedMigrations([definedA]);
+        WithAppliedMigrations([]);
 
-        _session
-            .Setup(s => s.CancellationToken)
-            .Returns(cancellation.Token);
-
-        _console
-            .Setup(c => c.ReportStarting(_session.Object, _target))
-            .Verifiable();
-
-        _session
-            .Setup(s => s.Migrations)
-            .Returns(ImmutableArray.Create(a))
-            .Verifiable();
-
-        _session
-            .Setup(s => s.GetAppliedMigrationsAsync(_target))
-            .ReturnsAsync(new Migration[0])
-            .Verifiable();
-
-        _session
-            .Setup(i => i.LoadContent(a))
-            .Verifiable();
-
-        // TODO: Should this have happened?
-        //_console
-        //    .Setup(c => c.ReportApplying(MigrationPhase.Pre))
-        //    .Verifiable();
-
-        _console
-            .Setup(c => c.ReportApplied(
-                _session.Object, _target,
-                /*count*/ 0, It.Is<TimeSpan>(t => t >= TimeSpan.Zero),
-                TargetDisposition.Successful
-            ))
-            .Verifiable();
+        ExpectReportStarting();
+        ExpectLoadContent(definedA);
+        ExpectReportApplying("a", MigrationPhase.Pre);
+        ExpectReportApplied(1, TargetDisposition.Successful);
 
         await _applicator.ApplyAsync();
 
@@ -550,63 +291,31 @@ public class MigrationApplicatorTests : TestHarnessBase
             "Migration Phase:    Pre",
             "Pending Migrations: 1",
             "All pending migrations are valid for the current phase.",
-            "Applied 0 migration(s)"
-            //       ^ TODO: Instead say what would have been done
+            "Applied 1 migration(s)"
         );
     }
 
     [Test]
     public async Task ApplyAsync_Exception()
     {
-        using var cancellation = new CancellationTokenSource();
-
-        var a = new Migration("a")
+        var definedA = new Migration("a")
         {
             Path = "/test/a",
             Pre  = { IsRequired = true, Sql = "pre-sql" },
             IsContentLoaded = true,
         };
 
-        _session
-            .Setup(s => s.CancellationToken)
-            .Returns(cancellation.Token);
+        WithDefinedMigrations([definedA]);
+        WithAppliedMigrations([]);
 
-        _console
-            .Setup(c => c.ReportStarting(_session.Object, _target))
-            .Verifiable();
+        ExpectReportStarting();
+        ExpectLoadContent(definedA);
+        ExpectConnectThrows("Oops!");
+        ExpectReportProblem("Oops!");
+        ExpectReportApplied(count: 0, TargetDisposition.Failed);
 
-        _session
-            .Setup(s => s.Migrations)
-            .Returns(ImmutableArray.Create(a))
-            .Verifiable();
-
-        _session
-            .Setup(s => s.GetAppliedMigrationsAsync(_target))
-            .ReturnsAsync(new Migration[0])
-            .Verifiable();
-
-        _session
-            .Setup(i => i.LoadContent(a))
-            .Verifiable();
-
-        _session
-            .Setup(i => i.Connect(_target.Context, _applicator.SqlMessageLogger))
-            .Throws(new Exception("Oops!"));
-
-        _console
-            .Setup(r => r.ReportProblem(_session.Object, null, "Oops!"))
-            .Verifiable();
-
-        _console
-            .Setup(c => c.ReportApplied(
-                _session.Object, _target,
-                /*count*/ 0, It.Is<TimeSpan>(t => t >= TimeSpan.Zero),
-                TargetDisposition.Failed
-            ))
-            .Verifiable();
-
-        await _applicator.Awaiting(t => t.ApplyAsync())
-            .ShouldThrowAsync<Exception>().WithMessage("Oops!");
+        var exception = await Should.ThrowAsync<Exception>(_applicator.ApplyAsync);
+        exception.Message.ShouldBe("Oops!");
 
         LogShouldContainAll(
             "PSql.Deploy Migration Log",
@@ -620,51 +329,22 @@ public class MigrationApplicatorTests : TestHarnessBase
     [Test]
     public async Task ApplyAsync_Canceled()
     {
-        using var cancellation = new CancellationTokenSource();
-
-        var a = new Migration("a")
+        var definedA = new Migration("a")
         {
             Path = "/test/a",
             Pre  = { IsRequired = true, Sql = "pre-sql" },
             IsContentLoaded = true,
         };
 
-        _session
-            .Setup(s => s.CancellationToken)
-            .Returns(cancellation.Token);
+        WithDefinedMigrations([definedA]);
+        WithAppliedMigrations([]);
 
-        _console
-            .Setup(c => c.ReportStarting(_session.Object, _target))
-            .Verifiable();
+        ExpectReportStarting();
+        ExpectLoadContent(definedA);
+        ExpectConnectCanceled();
+        ExpectReportApplied(count: 0, TargetDisposition.Incomplete);
 
-        _session
-            .Setup(s => s.Migrations)
-            .Returns(ImmutableArray.Create(a))
-            .Verifiable();
-
-        _session
-            .Setup(s => s.GetAppliedMigrationsAsync(_target))
-            .ReturnsAsync(new Migration[0])
-            .Verifiable();
-
-        _session
-            .Setup(i => i.LoadContent(a))
-            .Verifiable();
-
-        _session
-            .Setup(i => i.Connect(_target.Context, _applicator.SqlMessageLogger))
-            .Throws(new OperationCanceledException());
-
-        _console
-            .Setup(c => c.ReportApplied(
-                _session.Object, _target,
-                /*count*/ 0, It.Is<TimeSpan>(t => t >= TimeSpan.Zero),
-                TargetDisposition.Incomplete
-            ))
-            .Verifiable();
-
-        await _applicator.Awaiting(t => t.ApplyAsync())
-            .ShouldThrowAsync<OperationCanceledException>();
+        await Should.ThrowAsync<OperationCanceledException>(_applicator.ApplyAsync);
 
         LogShouldContainAll(
             "PSql.Deploy Migration Log",
@@ -674,7 +354,132 @@ public class MigrationApplicatorTests : TestHarnessBase
             "Applied 0 migration(s)"
         );
     }
-#endif // CONVERTED
+
+    private void WithDefinedMigrations(Migration[] migrations)
+    {
+        _session
+            .Setup(s => s.Migrations)
+            .Returns(ImmutableArray.Create(migrations))
+            .Verifiable();
+    }
+
+    private void WithAppliedMigrations(Migration[] migrations)
+    {
+        _session
+            .Setup(s => s.GetAppliedMigrationsAsync(_target))
+            .ReturnsAsync(migrations)
+            .Verifiable();
+    }
+
+    private void WithAllowContentInCorePhase(bool value = true)
+    {
+        _session
+            .Setup(s => s.AllowContentInCorePhase)
+            .Returns(value);
+    }
+
+    private void WithIsWhatIfMode(bool value = false)
+    {
+        _session
+            .Setup(s => s.IsWhatIfMode)
+            .Returns(value);
+    }
+
+    private void ExpectReportStarting()
+    {
+        _console
+            .InSequence(_sequence)
+            .Setup(c => c.ReportStarting(_session.Object, _target))
+            .Verifiable();
+    }
+
+    private void ExpectLoadContent(Migration migration)
+    {
+        _session
+            .InSequence(_sequence)
+            .Setup(i => i.LoadContent(migration))
+            .Callback(() => { migration.IsContentLoaded = true; })
+            .Verifiable();
+    }
+
+    private void ExpectConnect()
+    {
+        _session
+            .InSequence(_sequence)
+            .Setup(s => s.Connect(_target, It.IsNotNull<ISqlMessageLogger>()))
+            .Returns(_connection.Object)
+            .Verifiable();
+
+        _connection
+            .InSequence(_sequence)
+            .Setup(c => c.OpenAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask)
+            .Verifiable();
+
+        // Require eventual disposal
+        _connection
+            .Setup(c => c.DisposeAsync())
+            .Returns(ValueTask.CompletedTask)
+            .Verifiable();
+    }
+
+    private void ExpectConnectThrows(string error)
+    {
+        _session
+            .InSequence(_sequence)
+            .Setup(s => s.Connect(_target, It.IsNotNull<ISqlMessageLogger>()))
+            .Throws(new Exception(error))
+            .Verifiable();
+    }
+
+    private void ExpectConnectCanceled()
+    {
+        void Cancel(Target target, ISqlMessageLogger logger)
+            => Cancellation.Cancel();
+
+        _session
+            .InSequence(_sequence)
+            .Setup(s => s.Connect(_target, It.IsNotNull<ISqlMessageLogger>()))
+            .Callback(Cancel)
+            .Throws(new OperationCanceledException())
+            .Verifiable();
+    }
+
+    private void ExpectReportApplying(string migrationName, MigrationPhase phase)
+    {
+        _console
+            .InSequence(_sequence)
+            .Setup(c => c.ReportApplying(_session.Object, _target, migrationName, phase))
+            .Verifiable();
+    }
+
+    private void ExpectExecuteAsync(string sqlRegex)
+    {
+        _connection
+            .InSequence(_sequence)
+            .Setup(c => c.ExecuteAsync(It.IsRegex(sqlRegex), Cancellation.Token))
+            .Returns(Task.CompletedTask)
+            .Verifiable();
+    }
+
+    private void ExpectReportProblem(string problem)
+    {
+        _console
+            .InSequence(_sequence)
+            .Setup(c => c.ReportProblem(_session.Object, _target, problem))
+            .Verifiable();
+    }
+
+    private void ExpectReportApplied(int count, TargetDisposition disposition)
+    {
+        _console
+            .InSequence(_sequence)
+            .Setup(c => c.ReportApplied(
+                _session.Object, _target,
+                count, It.Is<TimeSpan>(t => t >= TimeSpan.Zero), disposition
+            ))
+            .Verifiable();
+    }
 
     private void LogShouldContainAll(params string[] items)
     {

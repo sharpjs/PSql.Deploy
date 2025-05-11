@@ -34,7 +34,6 @@ public abstract class DeploymentSession : IDeploymentSessionInternal
         _tasks        = [];
         _exceptions   = [];
         _cancellation = new();
-
         MaxErrorCount = maxErrorCount;
     }
 
@@ -54,6 +53,18 @@ public abstract class DeploymentSession : IDeploymentSessionInternal
 
     /// <inheritdoc/>
     public bool HasErrors => !_exceptions.IsEmpty;
+
+    /// <summary>
+    ///   Gets or sets the factory for connections to target databases.
+    /// </summary>
+    /// <remarks>
+    ///   This property enables tests to inject a mock connection factory.
+    /// </remarks>
+    internal TargetConnectionFactory TargetConnectionFactory { get; set; }
+        = DefaultTargetConnectionFactory;
+
+    private static readonly TargetConnectionFactory DefaultTargetConnectionFactory
+        = (target, logger) => new SqlTargetConnection(target, logger);
 
     /// <inheritdoc/>
     public void BeginApplying(TargetGroup group)
@@ -168,6 +179,14 @@ public abstract class DeploymentSession : IDeploymentSessionInternal
     ///   A <see cref="Task"/> representing the asynchronous operation.
     /// </returns>
     protected abstract Task ApplyCoreAsync(Target target, int maxParallelism);
+
+    /// <inheritdoc/>
+    ITargetConnection IDeploymentSessionInternal.Connect(Target target, ISqlMessageLogger logger)
+    {
+        return IsWhatIfMode
+            ? new NullTargetConnection(target)
+            : TargetConnectionFactory(target, logger);
+    }
 
     private void HandleError(Exception e, Target? target)
     {
