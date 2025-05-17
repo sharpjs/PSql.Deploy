@@ -34,6 +34,9 @@ public class Target
     /// <exception cref="ArgumentNullException">
     ///   <paramref name="connectionString"/> is <see langword="null"/>.
     /// </exception>
+    /// <exception cref="ArgumentException">
+    ///   <paramref name="connectionString"/> is not a valid connection string.
+    /// </exception>
     public Target(
         string             connectionString,
         NetworkCredential? credential          = null,
@@ -44,7 +47,8 @@ public class Target
             throw new ArgumentNullException(nameof(connectionString));
 
         ConnectionString = connectionString;
-        Credential       = ConvertCredential(credential);
+        Credential       = credential;
+        SqlCredential    = ConvertCredential(credential);
 
         var builder = new SqlConnectionStringBuilder(connectionString);
 
@@ -55,7 +59,7 @@ public class Target
 
         DatabaseDisplayName
             =  databaseDisplayName
-            ?? builder.InitialCatalog
+            ?? builder.InitialCatalog.NullIfEmpty()
             ?? "default";
 
         FullDisplayName = string.Concat(
@@ -90,7 +94,10 @@ public class Target
     ///   if a credential is required and not present in the
     ///   <see cref="ConnectionString"/>.
     /// </summary>
-    public SqlCredential? Credential { get; }
+    public NetworkCredential? Credential { get; }
+
+    /// <inheritdoc cref="Credential"/>
+    internal SqlCredential? SqlCredential { get; }
 
     /// <summary>
     ///   Gets a display name for the database server.  This name might be a

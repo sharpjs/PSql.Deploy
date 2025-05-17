@@ -101,7 +101,7 @@ public static partial class MigrationRepository
 
         // Hash the hashes
         hashes.Position = 0;
-        return ConvertToHexString(GetHash(hashes));
+        return Convert.ToHexString(GetHash(hashes));
     }
 
     private static FileInfo[] FindSqlFiles(DirectoryInfo directory)
@@ -150,24 +150,6 @@ public static partial class MigrationRepository
     private static MemoryMappedViewStream GetStream(FileInfo file, MemoryMappedFile memory)
     {
         return memory.CreateViewStream(0, file.Length, MemoryMappedFileAccess.Read);
-    }
-
-    private static string ConvertToHexString(ReadOnlySpan<byte> bytes)
-    {
-        // FUTURE: For PowerShell 7.1+ / .NET 5+, use Convert.ToHexString().  
-        // For now, the best balance between hassle and performance is from
-        // this SO answer: https://stackoverflow.com/a/14333437/142138
-
-        Span<char> chars = stackalloc char[bytes.Length * 2];
-        int b;
-
-        for (var i = 0; i < bytes.Length; i++)
-        {
-            b = bytes[i] >>  4; chars[i * 2    ] = (char) (55 + b + (((b - 10) >> 31) & -7));
-            b = bytes[i] & 0xF; chars[i * 2 + 1] = (char) (55 + b + (((b - 10) >> 31) & -7));
-        }
-
-        return new string(chars);
     }
 
     private static ImmutableArray<Migration> Sort(ConcurrentBag<Migration> bag)

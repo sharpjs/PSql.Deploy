@@ -3,14 +3,9 @@
 
 namespace PSql.Deploy;
 
-using static CommandBehavior;
-
 /// <inheritdoc cref="ITargetConnection"/>
-internal class SqlTargetConnection : ITargetConnection
+internal abstract class SqlTargetConnection : ITargetConnection
 {
-    private readonly SqlConnection _connection;
-    private readonly SqlCommand    _command;
-
     /// <summary>
     ///   Initializes a new <see cref="SqlTargetConnection"/> instance.
     /// </summary>
@@ -24,7 +19,7 @@ internal class SqlTargetConnection : ITargetConnection
     ///   <paramref name="target"/> and/or
     ///   <paramref name="logger"/> is <see langword="null"/>.
     /// </exception>
-    public SqlTargetConnection(Target target, ISqlMessageLogger logger)
+    protected SqlTargetConnection(Target target, ISqlMessageLogger logger)
     {
         if (target is null)
             throw new ArgumentNullException(nameof(target));
@@ -34,22 +29,24 @@ internal class SqlTargetConnection : ITargetConnection
         Target = target;
         Logger = logger;
 
-        _connection = target.Credential is { } credential
+        Connection = target.SqlCredential is { } credential
             ? new SqlConnection(target.ConnectionString, credential)
             : new SqlConnection(target.ConnectionString);
 
-        _connection.RetryLogicProvider                = RetryLogicProvider;
-        _connection.FireInfoMessageEventOnUserErrors  = true;
-        _connection.InfoMessage                      += HandleMessage;
-        _connection.Disposed                         += HandleUnexpectedDisposal;
+        Connection.RetryLogicProvider                = RetryLogicProvider;
+        Connection.FireInfoMessageEventOnUserErrors  = true;
+        Connection.InfoMessage                      += HandleMessage;
+        Connection.Disposed                         += HandleUnexpectedDisposal;
 
-        _command                    = _connection.CreateCommand();
-        _command.CommandType        = CommandType.Text;
-        _command.CommandTimeout     = 0; // No timeout
-        _command.RetryLogicProvider = RetryLogicProvider;
+        Command                    = Connection.CreateCommand();
+        Command.CommandType        = CommandType.Text;
+        Command.RetryLogicProvider = RetryLogicProvider;
     }
 
-    public static SqlRetryLogicBaseProvider RetryLogicProvider { get; }
+    /// <summary>
+    ///   Gets the retry logic for the connection.
+    /// </summary>
+    protected static SqlRetryLogicBaseProvider RetryLogicProvider { get; }
         = SqlConfigurableRetryFactory.CreateExponentialRetryProvider(new()
         {
             NumberOfTries   = 5,
@@ -57,22 +54,28 @@ internal class SqlTargetConnection : ITargetConnection
             MaxTimeInterval = TimeSpan.FromMinutes(2),
         });
 
-    /// <summary>
-    ///   Gets an object representing the target database.
-    /// </summary>
+    /// <inheritdoc/>
     public Target Target { get; }
 
-    /// <summary>
-    ///   Gets the logger for server messages received over the connection.
-    /// </summary>
+    /// <inheritdoc/>
     public ISqlMessageLogger Logger { get; }
+
+    /// <summary>
+    ///   Gets the underlying SqlClient connection.
+    /// </summary>
+    protected SqlConnection Connection { get; }
+
+    /// <summary>
+    ///   Gets the underlying SqlClient command.
+    /// </summary>
+    protected SqlCommand Command { get; }
 
     /// <summary>
     ///   Gets whether one or more error messages have been received over the
     ///   connection since the most recent invocation of
     ///   <see cref="ClearErrors"/>.
     /// </summary>
-    public bool HasErrors { get; private set; }
+    protected bool HasErrors { get; private set; }
 
     /// <summary>
     ///   Throws an exception if one or more error messages have been received
@@ -83,7 +86,7 @@ internal class SqlTargetConnection : ITargetConnection
     ///   One or more error messages have been received over the connection
     ///   since the most recent invocation of <see cref="ClearErrors"/>.
     /// </exception>
-    public void ThrowIfHasErrors()
+    protected void ThrowIfHasErrors()
     {
         if (HasErrors)
             throw new DataException("An error occurred while executing the SQL batch.");
@@ -93,70 +96,86 @@ internal class SqlTargetConnection : ITargetConnection
     ///   Resets error-handling state, forgetting any error messages that have
     ///   been received over the connection.
     /// </summary>
-    public void ClearErrors()
+    protected void ClearErrors()
     {
         HasErrors = false;
+    }
+
+    /// <summary>
+    ///   Configures the <see cref="Command"/> object.
+    /// </summary>
+    /// <param name="sql">
+    ///   The command text to execute.
+    /// </param>
+    /// <param name="timeout">
+    ///   The command timeout, in seconds, or <c>0</c> for no timeout.
+    /// </param>
+    /// <param name="parameters">
+    ///   The parameters for the command, specified as name-value pairs.
+    ///   This method interprets <see langword="null"/> as <c>DBNull.Value</c>.
+    /// </param>
+    /// <returns>
+    ///   The value of the <see cref="Command"/> property, configured with the
+    ///   specified <paramref name="sql"/>, <paramref name="timeout"/>, and
+    ///   <paramref name="parameters"/>.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    ///   <paramref name="sql"/> is <see langword="null"/>.
+    /// </exception>
+    /// <exception cref="ArgumentOutOfRangeException">
+    ///   <paramref name="timeout"/> is less than <c>0</c>.
+    /// </exception>
+    protected SqlCommand SetUpCommand(
+        string                     sql,
+        int                        timeout = 0,
+        params (string, object?)[] parameters)
+    {
+        ArgumentNullException.ThrowIfNull(sql);
+
+        if (timeout < 0)
+            throw new ArgumentOutOfRangeException(nameof(timeout));
+
+        ClearErrors();
+
+        Command.CommandText    = sql;
+        Command.CommandTimeout = timeout;
+
+        Command.Parameters.Clear();
+
+        foreach (var (name, value) in parameters)
+            Command.Parameters.AddWithValue(name, value ?? DBNull.Value);
+
+        return Command;
     }
 
     /// <inheritdoc/>
     public Task OpenAsync(CancellationToken cancellation)
     {
-        return _connection.OpenAsync(cancellation);
-    }
-
-    /// <inheritdoc/>
-    public async Task ExecuteAsync(
-        string            sql,
-        CancellationToken cancellation)
-    {
-        ClearErrors();
-
-        _command.CommandText = sql;
-
-        await _command.ExecuteNonQueryAsync(cancellation);
-
-        ThrowIfHasErrors();
-    }
-
-    /// <inheritdoc/>
-    public async Task ExecuteAsync<T>(
-        string                 sql,
-        Action<IDataRecord, T> consumer,
-        T                      state,
-        CancellationToken      cancellation)
-    {
-        ClearErrors();
-
-        _command.CommandText = sql;
-
-        await using var reader = await _command.ExecuteReaderAsync(
-            SequentialAccess | SingleResult, cancellation
-        );
-
-        while (await reader.ReadAsync(cancellation))
-            consumer(reader, state);
-
-        ThrowIfHasErrors();
+        return Connection.OpenAsync(cancellation);
     }
 
     /// <inheritdoc/>
     public virtual void Dispose()
     {
         // Disposal is now expected
-        _connection.Disposed -= HandleUnexpectedDisposal;
+        Connection.Disposed -= HandleUnexpectedDisposal;
 
-        _command   .Dispose();
-        _connection.Dispose();
+        Command   .Dispose();
+        Connection.Dispose();
+
+        GC.SuppressFinalize(this);
     }
 
     /// <inheritdoc/>
     public virtual async ValueTask DisposeAsync()
     {
         // Disposal is now expected
-        _connection.Disposed -= HandleUnexpectedDisposal;
+        Connection.Disposed -= HandleUnexpectedDisposal;
 
-        await _command   .DisposeAsync();
-        await _connection.DisposeAsync();
+        await Command   .DisposeAsync();
+        await Connection.DisposeAsync();
+
+        GC.SuppressFinalize(this);
     }
 
     private void HandleMessage(object sender, SqlInfoMessageEventArgs e)

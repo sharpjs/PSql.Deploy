@@ -41,6 +41,9 @@ public class MigrationSession : DeploymentSession, IMigrationSessionInternal
 
         if (phaseCount is not 1)
             _targetGroups = [];
+
+        if (IsWhatIfMode)
+            _whatIfState = new();
     }
 
     /// <summary>
@@ -51,8 +54,6 @@ public class MigrationSession : DeploymentSession, IMigrationSessionInternal
     /// <inheritdoc/>
     public IMigrationConsole Console { get; }
 
-    private readonly ICollection<TargetGroup>? _targetGroups;
-
     /// <inheritdoc/>
     public bool IsEnabled(MigrationPhase phase)
         => ((int) Options & 1 << (int) phase) is not 0;
@@ -62,6 +63,7 @@ public class MigrationSession : DeploymentSession, IMigrationSessionInternal
         => (Options & MigrationSessionOptions.AllowContentInCorePhase) is not 0;
 
     /// <inheritdoc/>
+    [MemberNotNullWhen(true, nameof(_whatIfState))]
     public override bool IsWhatIfMode
         => (Options & MigrationSessionOptions.IsWhatIfMode) is not 0;
 
@@ -74,6 +76,21 @@ public class MigrationSession : DeploymentSession, IMigrationSessionInternal
     /// <inheritdoc/>
     public string EarliestDefinedMigrationName { get; private set; } = "";
 
+    /// <summary>
+    ///   Gets or sets the factory for connections to target databases.
+    /// </summary>
+    /// <remarks>
+    ///   This property enables tests to inject a mock connection factory.
+    /// </remarks>
+    internal MigrationTargetConnectionFactory ConnectionFactory { get; set; }
+        = (target, logger) => new SqlMigrationTargetConnection(target, logger);
+
+    // Keep track of what has been simulated in what-if mode
+    private readonly WhatIfMigrationState? _whatIfState;
+
+    // Keep track of targets/groups to repeat in multi-phase sessions
+    private readonly ICollection<TargetGroup>? _targetGroups;
+
     /// <inheritdoc/>
     public void DiscoverMigrations(string path, string? latestName = null)
     {
@@ -81,12 +98,15 @@ public class MigrationSession : DeploymentSession, IMigrationSessionInternal
         EarliestDefinedMigrationName = Migrations.FirstOrDefault(m => !m.IsPseudo)?.Name ?? "";
     }
 
-    Task<IReadOnlyList<Migration>> IMigrationSessionInternal.GetAppliedMigrationsAsync(Target target)
+    /// <inheritdoc/>
+    public async Task<IReadOnlyList<Migration>> GetRegisteredMigrationsAsync(
+        Target target, string? earliestName = null, ISqlMessageLogger? logger = null)
     {
-        return MigrationRepository.GetAllAsync(
-            target, EarliestDefinedMigrationName,
-            logger: null!/*TODO*/, CancellationToken
-        );
+        await using var connection = Connect(target, logger ?? NullSqlMessageLogger.Instance);
+
+        await connection.OpenAsync(CancellationToken);
+
+        return await connection.GetAppliedMigrationsAsync(earliestName, CancellationToken);
     }
 
     /// <inheritdoc/>
@@ -94,6 +114,21 @@ public class MigrationSession : DeploymentSession, IMigrationSessionInternal
     {
         return new MigrationApplicator(this, target).ApplyAsync();
     }
+
+    private IMigrationTargetConnection Connect(Target target, ISqlMessageLogger logger)
+    {
+        var connection = ConnectionFactory.Invoke(target, logger);
+
+        if (IsWhatIfMode)
+            connection = new WhatIfMigrationTargetConnection(connection, _whatIfState);
+
+        return connection;
+    }
+
+    /// <inheritdoc/>
+    IMigrationTargetConnection IMigrationSessionInternal
+        .Connect(Target target, ISqlMessageLogger logger)
+        => Connect(target, logger);
 
     /// <inheritdoc/>
     void IMigrationSessionInternal.LoadContent(Migration migration)
@@ -107,8 +142,6 @@ public class MigrationSession : DeploymentSession, IMigrationSessionInternal
 
     /// <inheritdoc/>
     protected override Exception Transform(Exception exception)
-    {
-        return exception as MigrationException
-            ?? new MigrationException(message: null, exception);
-    }
+        => exception as MigrationException
+        ?? new MigrationException(message: null, exception);
 }

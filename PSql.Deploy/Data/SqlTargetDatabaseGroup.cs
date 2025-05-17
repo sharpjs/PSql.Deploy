@@ -104,7 +104,7 @@ public class SqlTargetDatabaseGroup
     /// <summary>
     ///   Gets the maximum degree of parallelism per database.
     /// </summary>
-    public int MaxParallelismPerDatabase => _inner.MaxParallelismPerDatabase;
+    public int MaxParallelismPerDatabase => _inner.MaxParallelismPerTarget;
 
     private static (E.TargetGroup, IReadOnlyList<SqlTargetDatabase>)
         InitializeFrom(object obj)

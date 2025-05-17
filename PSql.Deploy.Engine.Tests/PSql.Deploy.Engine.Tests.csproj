@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="DotStuff" />
     <PackageReference Include="Subatomix.Testing" />
   </ItemGroup>
 
@@ -17,7 +18,6 @@
     <Using Remove="FluentAssertions" />
     <Using Remove="System.Management.Automation" />
     <Using Include="Microsoft.Data.SqlClient" />
-    <Using Include="Microsoft.Data.SqlClient" Alias="Mds" />
   </ItemGroup>
 
   <ItemGroup>

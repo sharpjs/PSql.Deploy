@@ -33,22 +33,20 @@
     #ScriptsToProcess = @(...)
     TypesToProcess    = @('PSql.Deploy.types.ps1xml')
     #FormatsToProcess = @(...)
-    NestedModules     = @('PSql.Deploy.psm1')
+    #NestedModules    = @(...)
 
     # Exports
     # NOTE: Use empty arrays to indicate no exports.
     VariablesToExport    = @()
     AliasesToExport      = @()
     DscResourcesToExport = @()
+    FunctionsToExport    = @()
     CmdletsToExport      = @(
         'Get-SqlMigrations'
         #'Invoke-ForEachSqlContext'
         'Invoke-SqlMigrations'
         'Invoke-SqlSeed'
         'New-SqlTargetDatabaseGroup'
-    )
-    FunctionsToExport    = @(
-        #'Install-SqlMigrationSupport'
     )
 
     # Discoverability and URLs

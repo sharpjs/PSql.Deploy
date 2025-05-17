@@ -10,7 +10,7 @@ namespace PSql.Deploy.Migrations;
 internal class CmdletMigrationConsole : M.IMigrationConsole
 {
     private readonly ICmdlet _cmdlet;
-    private readonly string  _logPath;
+    private readonly string? _logPath;
 
     /// <summary>
     ///   Initializes a new <see cref="CmdletMigrationConsole"/> instance.
@@ -19,34 +19,36 @@ internal class CmdletMigrationConsole : M.IMigrationConsole
     ///   The PowerShell cmdlet to adapt.
     /// </param>
     /// <param name="logPath">
-    ///   The path of directory in which to store per-target log files.
+    ///   The path of directory in which to store per-phase, per-target log
+    ///   files, or <see langword="null"/> to disable logging.
     /// </param>
     /// <exception cref="ArgumentNullException">
-    ///   <paramref name="cmdlet"/> and/or
-    ///   <paramref name="logPath"/> is <see langword="null"/>.
+    ///   <paramref name="cmdlet"/>  is <see langword="null"/>.
     /// </exception>
-    internal CmdletMigrationConsole(ICmdlet cmdlet, string logPath)
+    internal CmdletMigrationConsole(ICmdlet cmdlet, string? logPath)
     {
         if (cmdlet is null)
             throw new ArgumentNullException(nameof(cmdlet));
-        if (logPath is null)
-            throw new ArgumentNullException(nameof(logPath));
 
         _cmdlet  = cmdlet;
         _logPath = logPath;
 
-        Directory.CreateDirectory(_logPath);
+        if (logPath is not null)
+            Directory.CreateDirectory(logPath);
     }
 
     /// <inheritdoc/>
     public TextWriter CreateLog(M.IMigrationSession session, E.Target target)
     {
+        if (_logPath is not { } logPath)
+            return TextWriter.Null;
+
         var phase    = session.CurrentPhase;
         var server   = target.ServerDisplayName;
         var database = target.DatabaseDisplayName;
         var fileName = $"{server}.{database}.{(int) phase}_{phase}.log".SanitizeFileName();
 
-        return new StreamWriter(Path.Combine(_logPath, fileName));
+        return new StreamWriter(Path.Combine(logPath, fileName));
     }
 
     /// <inheritdoc/>

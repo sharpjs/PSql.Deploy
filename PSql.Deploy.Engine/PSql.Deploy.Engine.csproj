@@ -21,7 +21,11 @@
   <ItemGroup>
     <Using Remove="System.Management.Automation" />
     <Using Include="Microsoft.Data.SqlClient" />
-    <Using Include="Microsoft.Data.SqlClient" Alias="Mds" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="**\*.sql" />
+    <EmbeddedResource Include="**\*.sql" />
   </ItemGroup>
 
 </Project>

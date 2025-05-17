@@ -10,24 +10,28 @@ namespace PSql.Deploy.Migrations;
 internal interface IMigrationSessionInternal : IMigrationSession, IDeploymentSessionInternal
 {
     /// <summary>
-    ///   Gets the migrations applied to the specified target asynchronously.
-    /// </summary>
-    /// <param name="target">
-    ///   An object representing a target database.
-    /// </param>
-    /// <returns>
-    ///   A <see cref="Task"/> representing the asynchronous operation.  When
-    ///   the task completes, its <see cref="Task{TResult}.Result"/> property
-    ///   contains the migrations registered in the database specified by
-    ///   <paramref name="target"/>.
-    /// </returns>
-    Task<IReadOnlyList<Migration>> GetAppliedMigrationsAsync(Target target);
-
-    /// <summary>
     ///   Loads the specified migration's SQL content.
     /// </summary>
     /// <param name="migration">
     ///   The migration for which to load SQL content.
     /// </param>
     void LoadContent(Migration migration);
+
+    /// <summary>
+    ///   Creates a connection to the specified target database.
+    /// </summary>
+    /// <param name="target">
+    ///   An object that represents the target database.
+    /// </param>
+    /// <param name="logger">
+    ///   The logger for server messages received over the connection.
+    /// </param>
+    /// <returns>
+    ///   A connection to <paramref name="target"/>.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    ///   <paramref name="target"/> and/or
+    ///   <paramref name="logger"/> is <see langword="null"/>.
+    /// </exception>
+    IMigrationTargetConnection Connect(Target target, ISqlMessageLogger logger);
 }

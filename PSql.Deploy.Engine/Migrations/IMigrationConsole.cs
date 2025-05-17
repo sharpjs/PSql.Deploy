@@ -77,7 +77,7 @@ public interface IMigrationConsole
     void ReportProblem(IMigrationSession session, Target? target, string message);
 
     /// <summary>
-    ///   Creates a log file for migration application to the specified target
+    ///   Creates a log for migration application to the specified target
     ///   database.
     /// </summary>
     /// <param name="session">
@@ -87,10 +87,7 @@ public interface IMigrationConsole
     ///   An object representing the target database.
     /// </param>
     /// <returns>
-    ///   A writer that writes to the log file.
+    ///   A writer that writes to the log.
     /// </returns>
-    /// <exception cref="ArgumentNullException">
-    ///   <paramref name="target"/> is <see langword="null"/>.
-    /// </exception>
     TextWriter CreateLog(IMigrationSession session, Target target);
 }

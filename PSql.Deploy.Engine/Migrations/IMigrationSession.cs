@@ -74,10 +74,8 @@ public interface IMigrationSession : IDeploymentSession
     /// </param>
     /// <remarks>
     ///   <para>
-    ///     This method populates the
-    ///     <see cref="IMigrationSession.Migrations"/> and
-    ///     <see cref="IMigrationSession.EarliestDefinedMigrationName"/>
-    ///     properties.
+    ///     This method populates the <see cref="Migrations"/> and
+    ///     <see cref="EarliestDefinedMigrationName"/> properties.
     ///   </para>
     ///   <para>
     ///     Invoke this method only when migration application is not
@@ -94,5 +92,34 @@ public interface IMigrationSession : IDeploymentSession
     /// <exception cref="IOException">
     ///   An input/output error occured while discovering migrations.
     /// </exception>
-    void DiscoverMigrations(string path, string? latestName = null);
+    void DiscoverMigrations(
+        string  path,
+        string? latestName = null);
+
+    /// <summary>
+    ///   Discovers the migrations registered in the specified target database
+    ///   asynchronously.
+    /// </summary>
+    /// <param name="target">
+    ///   An object representing a target database.
+    /// </param>
+    /// <param name="earliestName">
+    ///   The earliest (minimum) name of migrations to discover, or
+    ///   <see langword="null"/> to discover all migrations.
+    /// </param>
+    /// <param name="logger">
+    ///   The logger for server messages received from the target database, or
+    ///   <see langword="null"/> to disable logging.
+    /// </param>
+    /// <returns>
+    ///   A <see cref="Task"/> representing the asynchronous operation.  When
+    ///   the task completes, its <see cref="Task{TResult}.Result"/> property
+    ///   contains the migrations registered in the database specified by
+    ///   <paramref name="target"/>.
+    /// </returns>
+    Task<IReadOnlyList<Migration>> GetRegisteredMigrationsAsync(
+        Target             target,
+        string?            earliestName = null,
+        ISqlMessageLogger? logger       = null
+    );
 }

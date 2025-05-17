@@ -81,12 +81,16 @@ internal class MigrationApplicator : IMigrationValidationContext
         {
             ReportStarting();
 
-            var appliedMigrations = await GetAppliedMigrationsAsync();
+            await using var connection = Connect();
+
+            await connection.OpenAsync(Session.CancellationToken);
+
+            var appliedMigrations = await GetAppliedMigrationsAsync(connection);
             var pendingMigrations = GetPendingMigrations(appliedMigrations);
             var migrationPlan     = ComputeMigrationPlan(pendingMigrations);
 
             if (ShouldExecute(migrationPlan))
-                await ExecuteAsync(migrationPlan);
+                await ExecuteAsync(migrationPlan, connection);
         }
         catch (OperationCanceledException)
         {
@@ -110,9 +114,21 @@ internal class MigrationApplicator : IMigrationValidationContext
         }
     }
 
-    private Task<IReadOnlyList<Migration>> GetAppliedMigrationsAsync()
+    private IMigrationTargetConnection Connect()
     {
-        return Session.GetAppliedMigrationsAsync(Target);
+        Assume.NotNull(_logWriter);
+
+        var logger = new TextWriterSqlMessageLogger(_logWriter);
+
+        return Session.Connect(Target, logger);
+    }
+
+    private Task<IReadOnlyList<Migration>> GetAppliedMigrationsAsync(IMigrationTargetConnection connection)
+    {
+        return connection.GetAppliedMigrationsAsync(
+            Session.EarliestDefinedMigrationName,
+            Session.CancellationToken
+        );
     }
 
     private ImmutableArray<Migration> GetPendingMigrations(IReadOnlyList<Migration> appliedMigrations)
@@ -166,32 +182,20 @@ internal class MigrationApplicator : IMigrationValidationContext
         return true;
     }
 
-    private async Task ExecuteAsync(MigrationPlan plan)
+    private async Task ExecuteAsync(MigrationPlan plan, IMigrationTargetConnection connection)
     {
         ReportApplying();
-
-        await using var connection = Connect();
-
-        await connection.OpenAsync(Session.CancellationToken);
 
         foreach (var (migration, phase) in plan.GetItems(Session.CurrentPhase))
         {
             ReportApplying(migration, phase);
 
-            if (migration[phase].Sql is { Length: > 0 } sql)
-                await connection.ExecuteAsync(sql, Session.CancellationToken);
+            await connection.ExecuteMigrationContentAsync(
+                migration, phase, Session.CancellationToken
+            );
 
             _appliedCount++;
         }
-    }
-
-    private ITargetConnection Connect()
-    {
-        Assume.NotNull(_logWriter);
-
-        return Session.IsWhatIfMode
-            ? new NullTargetConnection(Target)
-            : Session.Connect(Target, new TextWriterSqlMessageLogger(_logWriter));
     }
 
     private void ReportStarting()

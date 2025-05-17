@@ -5,6 +5,9 @@ using PSql.Deploy.Migrations;
 
 namespace PSql.Deploy.Commands;
 
+// Resolve ambiguity
+using AllowNull = System.Management.Automation.AllowNullAttribute;
+
 /// <summary>
 ///   The <c>Get-SqlMigrations</c> command.
 /// </summary>
@@ -19,9 +22,10 @@ public sealed class GetSqlMigrationsCommand : AsyncPSCmdlet
     ///   <b>-Path:</b> TODO
     /// </summary>
     [Parameter(
-        ParameterSetName = "Path",  ValueFromPipeline               = true,
-        Mandatory        = true,    ValueFromPipelineByPropertyName = true,
-        Position         = 0
+        ParameterSetName  = "Path",
+        Mandatory         = true,
+        Position          = 0,
+        ValueFromPipeline = true
     )]
     [Alias("PSPath")]
     [ValidateNotNullOrEmpty]
@@ -42,12 +46,20 @@ public sealed class GetSqlMigrationsCommand : AsyncPSCmdlet
     ///   Target | SqlContext | string
     /// </remarks>
     [Parameter(
-        ParameterSetName = "Target", ValueFromPipeline               = true,
-        Mandatory        = true,     ValueFromPipelineByPropertyName = true,
-        Position         = 0
+        ParameterSetName  = "Target",
+        Mandatory         = true,
+        Position          = 0,
+        ValueFromPipeline = true
     )]
     [ValidateNotNullOrEmpty]
     public SqlTargetDatabase? Target { get; set; }
+
+    /// <summary>
+    ///   <b>-MinimumName:</b> TODO
+    /// </summary>
+    [Parameter(ParameterSetName  = "Target")]
+    [AllowNull, AllowEmptyString]
+    public string? MinimumName { get; set; }
 
     protected override void ProcessRecord()
     {
@@ -78,13 +90,18 @@ public sealed class GetSqlMigrationsCommand : AsyncPSCmdlet
         return M.MigrationRepository.GetAll(path);
     }
 
-    private Task<IReadOnlyList<M.Migration>> GetMigrationsAsync(SqlTargetDatabase target)
+    private async Task<IReadOnlyList<M.Migration>> GetMigrationsAsync(SqlTargetDatabase target)
     {
-        return M.MigrationRepository.GetAllAsync(
+        using var session = new M.MigrationSession(
+            M.MigrationSessionOptions.PrePhase |
+            M.MigrationSessionOptions.IsWhatIfMode,
+            M.NullMigrationConsole.Instance
+        );
+
+        return await session.GetRegisteredMigrationsAsync(
             target.InnerTarget,
-            minimumName: "",
-            new CmdletSqlMessageLogger(this),
-            CancellationToken
+            MinimumName,
+            new CmdletSqlMessageLogger(this)
         );
     }
 }
