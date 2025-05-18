@@ -75,7 +75,7 @@ public class InvokeSqlMigrationsCommand : AsyncPSCmdlet
     /// <inheritdoc/>
     protected override void BeginProcessing()
     {
-        base.ProcessRecord();
+        base.BeginProcessing();
 
         _session = new(
             GetOptions(),
