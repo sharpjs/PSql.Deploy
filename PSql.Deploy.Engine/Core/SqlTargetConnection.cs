@@ -189,7 +189,7 @@ internal abstract class SqlTargetConnection : ITargetConnection
                 continue;
 
             // Mark current command if failed
-            HasErrors |= error.Class <= MaxInformationalSeverity;
+            HasErrors |= error.Class > MaxInformationalSeverity;
 
             Logger.Log(
                 error.Procedure.NullIfEmpty() ?? NonProcedureLocationName,

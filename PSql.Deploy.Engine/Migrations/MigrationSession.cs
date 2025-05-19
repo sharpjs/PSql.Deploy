@@ -1,6 +1,7 @@
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
+using System.Collections.Concurrent;
 using System.Numerics;
 
 namespace PSql.Deploy.Migrations;
@@ -38,6 +39,7 @@ public class MigrationSession : DeploymentSession, IMigrationSessionInternal
         Options      = options;
         Console      = console;
         CurrentPhase = GetMinPhase(options);
+        _isNextPhase = false;
 
         if (phaseCount is not 1)
             _targetGroups = [];
@@ -85,11 +87,14 @@ public class MigrationSession : DeploymentSession, IMigrationSessionInternal
     internal MigrationTargetConnectionFactory ConnectionFactory { get; set; }
         = (target, logger) => new SqlMigrationTargetConnection(target, logger);
 
-    // Keep track of what has been simulated in what-if mode
+    // What has been simulated in what-if mode
     private readonly WhatIfMigrationState? _whatIfState;
 
-    // Keep track of targets/groups to repeat in multi-phase sessions
-    private readonly ICollection<TargetGroup>? _targetGroups;
+    // Targets/groups to repeat in a multi-phase session; null for single-phase
+    private readonly ConcurrentQueue<TargetGroup>? _targetGroups;
+
+    // Whether advanced beyond initial phase in a multi-phase session
+    private bool _isNextPhase;
 
     /// <inheritdoc/>
     public void DiscoverMigrations(string path, string? latestName = null)
@@ -107,6 +112,58 @@ public class MigrationSession : DeploymentSession, IMigrationSessionInternal
         await connection.OpenAsync(CancellationToken);
 
         return await connection.GetAppliedMigrationsAsync(earliestName, CancellationToken);
+    }
+
+    /// <inheritdoc/>
+    public override void BeginApplying(TargetGroup group)
+    {
+        base.BeginApplying(group);
+
+        // If in the initial phase of a multi-phase session, remember the
+        // target group for later re-application in subsequent phases.
+        if (_targetGroups is { } queue && !_isNextPhase)
+            queue.Enqueue(group);
+    }
+
+    /// <inheritdoc/>
+    public override async Task CompleteApplyingAsync(CancellationToken cancellation = default)
+    {
+        for (;;)
+        {
+            // Wait for phase to complete
+            await base.CompleteApplyingAsync(cancellation);
+
+            // Check if multi-phase session
+            if (_targetGroups is not { } queue)
+                return;
+
+            // Advance to next phase
+            if (!AdvanceToNextPhase())
+                break;
+
+            // Run next phase
+            foreach (var group in queue)
+                BeginApplying(group);
+        }
+    }
+
+    private bool AdvanceToNextPhase()
+    {
+        var phase = CurrentPhase;
+
+        while (++phase <= MigrationPhase.Post)
+        {
+            if (!IsEnabled(phase))
+                continue;
+
+            Thread.MemoryBarrier();
+            CurrentPhase = phase;
+            _isNextPhase = true;
+            Thread.MemoryBarrier();
+            return true;
+        }
+
+        return false;
     }
 
     /// <inheritdoc/>

@@ -225,6 +225,7 @@ public class MigrationApplicatorTests : TestHarnessBase
         ExpectConnect();
         ExpectGetAppliedMigrations(minimumName: definedA.Name, []);
         ExpectLoadContent(definedA);
+        ExpectInitializeMigrationSupport();
         ExpectReportApplying("a", MigrationPhase.Pre);
         ExpectExecuteAsync("a", MigrationPhase.Pre);
         ExpectReportApplied(1, TargetDisposition.Successful);
@@ -365,6 +366,14 @@ public class MigrationApplicatorTests : TestHarnessBase
             .Setup(s => s.Connect(_target, It.IsNotNull<ISqlMessageLogger>()))
             .Callback(Cancel)
             .Throws(new OperationCanceledException())
+            .Verifiable();
+    }
+
+    private void ExpectInitializeMigrationSupport()
+    {
+        _connection
+            .Setup(c => c.InitializeMigrationSupportAsync(Cancellation.Token))
+            .Returns(Task.CompletedTask)
             .Verifiable();
     }
 

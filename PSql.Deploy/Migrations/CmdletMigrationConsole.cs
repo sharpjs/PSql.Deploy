@@ -11,6 +11,7 @@ internal class CmdletMigrationConsole : M.IMigrationConsole
 {
     private readonly ICmdlet _cmdlet;
     private readonly string? _logPath;
+    private readonly object  _lock;
 
     /// <summary>
     ///   Initializes a new <see cref="CmdletMigrationConsole"/> instance.
@@ -32,6 +33,7 @@ internal class CmdletMigrationConsole : M.IMigrationConsole
 
         _cmdlet  = cmdlet;
         _logPath = logPath;
+        _lock    = new();
 
         if (logPath is not null)
             Directory.CreateDirectory(logPath);
@@ -54,44 +56,56 @@ internal class CmdletMigrationConsole : M.IMigrationConsole
     /// <inheritdoc/>
     public void ReportStarting(M.IMigrationSession session, E.Target target)
     {
-        WriteHeader(session, target);
+        lock (_lock)
+        {
+            WriteHeader(session, target);
 
-        _cmdlet.WriteHost("Starting");
+            _cmdlet.WriteHost("Starting");
+        }
     }
 
     /// <inheritdoc/>
     public void ReportApplying(M.IMigrationSession session, E.Target target,
         string migrationName, M.MigrationPhase phase)
     {
-        WriteHeader(session, target);
+        lock (_lock)
+        {
+            WriteHeader(session, target);
 
-        _cmdlet.WriteHost(string.Format(
-            "Applying {0} ({1})",
-            migrationName,
-            phase
-        ));
+            _cmdlet.WriteHost(string.Format(
+                "Applying {0} ({1})",
+                migrationName,
+                phase
+            ));
+        }
     }
 
     /// <inheritdoc/>
     public void ReportApplied(M.IMigrationSession session, E.Target target,
         int count, TimeSpan duration, E.TargetDisposition disposition)
     {
-        WriteHeader(session, target);
+        lock (_lock)
+        {
+            WriteHeader(session, target);
 
-        _cmdlet.WriteHost(string.Format(
-            "Applied {0} migration(s) in {1:N3} second(s){2}",
-            count,
-            duration.TotalSeconds,
-            disposition.ToMarker()
-        ));
+            _cmdlet.WriteHost(string.Format(
+                "Applied {0} migration(s) in {1:N3} second(s){2}",
+                count,
+                duration.TotalSeconds,
+                disposition.ToMarker()
+            ));
+        }
     }
 
     /// <inheritdoc/>
     public void ReportProblem(M.IMigrationSession session, E.Target? target, string message)
     {
-        WriteHeader(session, target, ConsoleColor.Yellow);
+        lock (_lock)
+        {
+            WriteHeader(session, target, ConsoleColor.Yellow);
 
-        _cmdlet.WriteHost(message, foregroundColor: ConsoleColor.Yellow);
+            _cmdlet.WriteHost(message, foregroundColor: ConsoleColor.Yellow);
+        }
     }
 
     private void WriteHeader(

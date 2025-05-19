@@ -53,9 +53,9 @@ public class TargetGroup
         if (maxParallelismPerTarget < 0)
             throw new ArgumentOutOfRangeException(nameof(maxParallelismPerTarget));
 
-        Targets                   = targets;
-        Name                      = name;
-        MaxParallelism            = InterpretParallelism(maxParallelism);
+        Targets                 = targets;
+        Name                    = name;
+        MaxParallelism          = InterpretParallelism(maxParallelism);
         MaxParallelismPerTarget = InterpretParallelism(maxParallelismPerTarget);
     }
 

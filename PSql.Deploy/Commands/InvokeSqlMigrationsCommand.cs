@@ -75,12 +75,16 @@ public class InvokeSqlMigrationsCommand : AsyncPSCmdlet
     /// <inheritdoc/>
     protected override void BeginProcessing()
     {
+        Assume.NotNull(Path);
+
         base.BeginProcessing();
 
         _session = new(
             GetOptions(),
             new CmdletMigrationConsole(this, this.GetCurrentPath())
         );
+
+        _session.DiscoverMigrations(Path, MaximumMigrationName);
     }
 
     /// <inheritdoc/>
@@ -90,8 +94,7 @@ public class InvokeSqlMigrationsCommand : AsyncPSCmdlet
 
         if (Target is not null)
             foreach (var group in Target)
-                if (group is not null)
-                    _session.BeginApplying(group.InnerGroup);
+                _session.BeginApplying(group.InnerGroup);
     }
 
     /// <inheritdoc/>

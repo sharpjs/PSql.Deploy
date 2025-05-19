@@ -186,6 +186,9 @@ internal class MigrationApplicator : IMigrationValidationContext
     {
         ReportApplying();
 
+        if (Session.CurrentPhase is MigrationPhase.Pre)
+            await connection.InitializeMigrationSupportAsync(Session.CancellationToken);
+
         foreach (var (migration, phase) in plan.GetItems(Session.CurrentPhase))
         {
             ReportApplying(migration, phase);

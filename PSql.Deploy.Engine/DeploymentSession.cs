@@ -55,7 +55,7 @@ public abstract class DeploymentSession : IDeploymentSessionInternal
     public bool HasErrors => !_exceptions.IsEmpty;
 
     /// <inheritdoc/>
-    public void BeginApplying(TargetGroup group)
+    public virtual void BeginApplying(TargetGroup group)
     {
         if (group is null)
             throw new ArgumentNullException(nameof(group));
@@ -68,22 +68,25 @@ public abstract class DeploymentSession : IDeploymentSessionInternal
     {
         if (target is null)
             throw new ArgumentNullException(nameof(target));
-        if (maxParallelism < 0)
-            throw new ArgumentOutOfRangeException(nameof(maxParallelism));
-        if (maxParallelism == 0)
-            maxParallelism = ProcessInfo.Instance.ProcessorCount;
 
-        Run(() => ApplyAsync(target, maxParallelism));
+        BeginApplying(new TargetGroup([target], name: null, maxParallelism: 1, maxParallelism));
     }
 
     /// <inheritdoc/>
-    public async Task CompleteApplyingAsync(CancellationToken cancellation = default)
+    public virtual async Task CompleteApplyingAsync(CancellationToken cancellation = default)
     {
         using var _ = cancellation.Register(_cancellation.Cancel, useSynchronizationContext: false);
 
-        await Task.WhenAll(_tasks).ConfigureAwait(continueOnCapturedContext: false);
-
-        ThrowAccumulatedErrors();
+        try
+        {
+            await Task.WhenAll(_tasks).ConfigureAwait(continueOnCapturedContext: false);
+            ThrowAccumulatedErrors();
+        }
+        finally
+        {
+            _tasks     .Clear();
+            _exceptions.Clear();
+        }
     }
 
     /// <inheritdoc/>
