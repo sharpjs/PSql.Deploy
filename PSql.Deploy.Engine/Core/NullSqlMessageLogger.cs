@@ -16,7 +16,7 @@ public class NullSqlMessageLogger : ISqlMessageLogger
     public static NullSqlMessageLogger Instance { get; } = new();
 
     /// <inheritdoc/>
-    public void Log(string procedure, int line, int number, int severity, string message)
+    public void Log(string procedure, int line, int number, int severity, string? message)
     {
         // NOP
     }

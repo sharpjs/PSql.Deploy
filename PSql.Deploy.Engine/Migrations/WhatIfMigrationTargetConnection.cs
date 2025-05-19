@@ -3,10 +3,29 @@
 
 namespace PSql.Deploy.Migrations;
 
+/// <summary>
+///   A connection to a target database that can discover applied migrations
+///   but will simulate execution of schema migrations or any other requested
+///   database changes.
+/// </summary>
 internal class WhatIfMigrationTargetConnection : WhatIfTargetConnection, IMigrationTargetConnection
 {
     private readonly WhatIfMigrationState _state;
 
+    /// <summary>
+    ///   Initializes a new <see cref="WhatIfMigrationTargetConnection"/>
+    ///   instance wrapping the specified connection.
+    /// </summary>
+    /// <param name="connection">
+    ///   The connection to be wrapped.
+    /// </param>
+    /// <param name="state">
+    ///   What-if simulation state.
+    /// </param>
+    /// <exception cref="ArgumentNullException">
+    ///   <paramref name="connection"/> and/or
+    ///   <paramref name="state"/> is <see langword="null"/>.
+    /// </exception>
     public WhatIfMigrationTargetConnection(
         IMigrationTargetConnection connection,
         WhatIfMigrationState       state)
@@ -18,6 +37,7 @@ internal class WhatIfMigrationTargetConnection : WhatIfTargetConnection, IMigrat
         _state = state;
     }
 
+    /// <inheritdoc cref="WhatIfTargetConnection.UnderlyingConnection"/>
     protected new IMigrationTargetConnection UnderlyingConnection
         => (IMigrationTargetConnection) base.UnderlyingConnection;
 

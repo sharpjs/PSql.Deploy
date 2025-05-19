@@ -3,10 +3,10 @@
 
 namespace PSql.Deploy;
 
+using static E.SqlMessageConstants;
+
 internal class CmdletSqlMessageLogger : E.ISqlMessageLogger
 {
-    const int MaxInformationalSeverity = 10;
-
     private readonly ICmdlet _cmdlet;
 
     public CmdletSqlMessageLogger(ICmdlet cmdlet)
@@ -17,7 +17,7 @@ internal class CmdletSqlMessageLogger : E.ISqlMessageLogger
         _cmdlet = cmdlet;
     }
 
-    public void Log(string procedure, int line, int number, int severity, string message)
+    public void Log(string procedure, int line, int number, int severity, string? message)
     {
         if (severity <= MaxInformationalSeverity)
             _cmdlet.WriteHost(message);

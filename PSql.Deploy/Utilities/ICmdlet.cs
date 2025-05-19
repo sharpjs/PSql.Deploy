@@ -37,7 +37,7 @@ public interface ICmdlet
     /// <param name="record">
     ///   The record to write.
     /// </param>
-    void WriteError(ErrorRecord record);
+    void WriteWarning(ErrorRecord record);
 
     /// <summary>
     ///   Writes the specified text to the warning stream.

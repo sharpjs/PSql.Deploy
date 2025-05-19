@@ -3,11 +3,24 @@
 
 namespace PSql.Deploy;
 
-internal class WhatIfTargetConnection : ITargetConnection
+/// <summary>
+///   A connection to a target database for what-if simulation purposes.
+/// </summary>
+internal abstract class WhatIfTargetConnection : ITargetConnection
 {
     private readonly ITargetConnection _connection;
 
-    internal WhatIfTargetConnection(ITargetConnection connection)
+    /// <summary>
+    ///   Initializes a new <see cref="WhatIfTargetConnection"/> instance
+    ///   wrapping the specified connection.
+    /// </summary>
+    /// <param name="connection">
+    ///   The connection to be wrapped.
+    /// </param>
+    /// <exception cref="ArgumentNullException">
+    ///   <paramref name="connection"/> is <see langword="null"/>.
+    /// </exception>
+    protected WhatIfTargetConnection(ITargetConnection connection)
     {
         if (connection is null)
             throw new ArgumentNullException(nameof(connection));
@@ -15,6 +28,9 @@ internal class WhatIfTargetConnection : ITargetConnection
         _connection = connection;
     }
 
+    /// <summary>
+    ///   Gets the underlying connection.
+    /// </summary>
     protected ITargetConnection UnderlyingConnection
         => _connection;
 
@@ -38,6 +54,12 @@ internal class WhatIfTargetConnection : ITargetConnection
     public virtual ValueTask DisposeAsync()
         => _connection.DisposeAsync();
 
-    protected void Log(string message)
+    /// <summary>
+    ///   Logs the specified message.
+    /// </summary>
+    /// <param name="message">
+    ///   The message to log.
+    /// </param>
+    protected void Log(string? message)
         => Logger.Log("", 0, 0, 0, message);
 }

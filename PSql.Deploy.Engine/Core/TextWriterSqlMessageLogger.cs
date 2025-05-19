@@ -3,14 +3,14 @@
 
 namespace PSql.Deploy;
 
+using static SqlMessageConstants;
+
 /// <summary>
 ///   An <see cref="ISqlMessageLogger"/> implementation that writes messages to
 ///   a <see cref="TextWriter"/>.
 /// </summary>
-internal sealed class TextWriterSqlMessageLogger : ISqlMessageLogger
+public sealed class TextWriterSqlMessageLogger : ISqlMessageLogger
 {
-    const int MaxInformationalSeverity = 10;
-
     private readonly TextWriter _writer;
 
     /// <summary>
@@ -32,7 +32,7 @@ internal sealed class TextWriterSqlMessageLogger : ISqlMessageLogger
     }
 
     /// <inheritdoc/>
-    public void Log(string? procedure, int line, int number, int severity, string message)
+    public void Log(string procedure, int line, int number, int severity, string? message)
     {
         if (severity <= MaxInformationalSeverity)
             _writer.WriteLine(message);

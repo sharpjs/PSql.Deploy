@@ -3,6 +3,8 @@
 
 namespace PSql.Deploy;
 
+using static SqlMessageConstants;
+
 /// <inheritdoc cref="ITargetConnection"/>
 internal abstract class SqlTargetConnection : ITargetConnection
 {
@@ -180,7 +182,6 @@ internal abstract class SqlTargetConnection : ITargetConnection
 
     private void HandleMessage(object sender, SqlInfoMessageEventArgs e)
     {
-        const int    MaxInformationalSeverity = 10;
         const string NonProcedureLocationName = "(batch)";
 
         foreach (SqlError? error in e.Errors)

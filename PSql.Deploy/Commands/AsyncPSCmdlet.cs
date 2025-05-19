@@ -191,7 +191,7 @@ public abstract class AsyncPSCmdlet : PSCmdlet, ICmdlet, IDisposable
     }
 
     /// <inheritdoc/>
-    public new void WriteError(ErrorRecord record)
+    public new void WriteWarning(ErrorRecord record)
     {
         static void WriteError((PSCmdlet cmdlet, ErrorRecord record) x)
             => x.cmdlet.WriteError(x.record);

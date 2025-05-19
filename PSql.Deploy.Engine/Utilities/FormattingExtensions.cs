@@ -7,7 +7,7 @@ namespace PSql.Deploy;
 
 using static MigrationPhase;
 using static MigrationState;
-using static TargetDisposition;
+using static SqlMessageConstants;
 
 internal static class FormattingExtensions
 {
@@ -48,7 +48,6 @@ internal static class FormattingExtensions
 
     internal static string Format(this SqlError item)
     {
-        const int    MaxInformationalSeverity = 10;
         const string NonProcedureLocationName = "(batch)";
 
         var prefix = item.Class > MaxInformationalSeverity

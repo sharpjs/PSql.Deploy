@@ -33,5 +33,5 @@ public interface ISqlMessageLogger
     ///   The text of the message.
     ///   Analogous to the T-SQL <c>ERROR_MESSAGE</c> function.
     /// </param>
-    void Log(string procedure, int line, int number, int severity, string message);
+    void Log(string procedure, int line, int number, int severity, string? message);
 }
