@@ -28,7 +28,7 @@ internal class SqlMigrationTargetConnection : SqlTargetConnection, IMigrationTar
         => GetSql(ref _getRegisteredMigrationsSql, "GetRegisteredMigrations.sql");
 
     /// <inheritdoc/>
-    public async Task InitializeMigrationSupportAsync(CancellationToken cancellation)
+    public async Task InitializeMigrationSupportAsync(CancellationToken cancellation = default)
     {
         SetUpCommand(InitializeMigrationSupportSql);
 
@@ -40,7 +40,7 @@ internal class SqlMigrationTargetConnection : SqlTargetConnection, IMigrationTar
     /// <inheritdoc/>
     public async Task<IReadOnlyList<Migration>> GetAppliedMigrationsAsync(
         string?           minimumName,
-        CancellationToken cancellation)
+        CancellationToken cancellation = default)
     {
         SetUpCommand(GetRegisteredMigrationsSql, timeout: 30, ("MinimumName", minimumName));
 
@@ -59,7 +59,9 @@ internal class SqlMigrationTargetConnection : SqlTargetConnection, IMigrationTar
 
     /// <inheritdoc/>
     public async Task ExecuteMigrationContentAsync(
-        Migration migration, MigrationPhase phase, CancellationToken cancellation)
+        Migration         migration,
+        MigrationPhase    phase,
+        CancellationToken cancellation = default)
     {
         if (migration[phase].Sql is not { Length: > 0 } sql)
             return;

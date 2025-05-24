@@ -184,10 +184,9 @@ internal abstract class SqlTargetConnection : ITargetConnection
     {
         const string NonProcedureLocationName = "(batch)";
 
-        foreach (SqlError? error in e.Errors)
+        foreach (SqlError error in e.Errors)
         {
-            if (error is null)
-                continue;
+            Assume.NotNull(error); // SqlClient code appears to assume this
 
             // Mark current command if failed
             HasErrors |= error.Class > MaxInformationalSeverity;

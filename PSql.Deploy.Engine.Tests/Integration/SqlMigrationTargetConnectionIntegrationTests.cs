@@ -20,8 +20,6 @@ public class SqlMigrationTargetConnectionIntegrationTests
     [Test]
     public async Task Test()
     {
-        var cancellation = CancellationToken.None;
-
         var migration = new Migration("Test1")
         {
             Pre =
@@ -36,24 +34,24 @@ public class SqlMigrationTargetConnectionIntegrationTests
             Post = { Sql = null }, // To test skipping null or empty content
         };
 
-        await _connection.OpenAsync(cancellation);
+        await _connection.OpenAsync();
 
-        var migrations = await _connection.GetAppliedMigrationsAsync(null, cancellation);
-
-        migrations.ShouldBeEmpty();
-
-        await _connection.InitializeMigrationSupportAsync(cancellation);
-        await _connection.InitializeMigrationSupportAsync(cancellation); // Test idempotency
-
-        migrations = await _connection.GetAppliedMigrationsAsync(null, cancellation);
+        var migrations = await _connection.GetAppliedMigrationsAsync(null);
 
         migrations.ShouldBeEmpty();
 
-        await _connection.ExecuteMigrationContentAsync(migration, MigrationPhase.Pre,  cancellation);
-        await _connection.ExecuteMigrationContentAsync(migration, MigrationPhase.Core, cancellation);
-        await _connection.ExecuteMigrationContentAsync(migration, MigrationPhase.Post, cancellation);
+        await _connection.InitializeMigrationSupportAsync();
+        await _connection.InitializeMigrationSupportAsync(); // Test idempotency
 
-        migrations = await _connection.GetAppliedMigrationsAsync(null, cancellation);
+        migrations = await _connection.GetAppliedMigrationsAsync(null);
+
+        migrations.ShouldBeEmpty();
+
+        await _connection.ExecuteMigrationContentAsync(migration, MigrationPhase.Pre);
+        await _connection.ExecuteMigrationContentAsync(migration, MigrationPhase.Core);
+        await _connection.ExecuteMigrationContentAsync(migration, MigrationPhase.Post);
+
+        migrations = await _connection.GetAppliedMigrationsAsync(null);
 
         migrations         .ShouldHaveSingleItem();
         migrations[0].Name .ShouldBe("Test1");

@@ -27,7 +27,7 @@ internal interface IMigrationTargetConnection : ITargetConnection
     /// </remarks>
     Task<IReadOnlyList<Migration>> GetAppliedMigrationsAsync(
         string?           minimumName,
-        CancellationToken cancellation
+        CancellationToken cancellation = default
     );
 
     /// <summary>
@@ -45,7 +45,7 @@ internal interface IMigrationTargetConnection : ITargetConnection
     ///   schema migrations to the target database.
     /// </remarks>
     Task InitializeMigrationSupportAsync(
-        CancellationToken cancellation
+        CancellationToken cancellation = default
     );
 
     /// <summary>
@@ -78,6 +78,6 @@ internal interface IMigrationTargetConnection : ITargetConnection
     Task ExecuteMigrationContentAsync(
         Migration         migration,
         MigrationPhase    phase,
-        CancellationToken cancellation
+        CancellationToken cancellation = default
     );
 }

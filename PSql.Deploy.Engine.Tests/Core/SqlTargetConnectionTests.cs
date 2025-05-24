@@ -8,12 +8,17 @@ namespace PSql.Deploy;
 [TestFixture]
 public class SqlTargetConnectionTests
 {
+    private readonly Target _target               = new("Server=.");
+    private readonly Target _targetWithCredential = new("Server=.", new("username", "password"));
+
+    private readonly ISqlMessageLogger _logger = TestSqlLogger.Instance;
+
     [Test]
     public void Construct_NullTarget()
     {
         Should.Throw<ArgumentNullException>(() =>
         {
-            _ = new TestSqlTargetConnection(null!, TestSqlLogger.Instance);
+            _ = new TestSqlTargetConnection(null!, _logger);
         });
     }
 
@@ -22,36 +27,30 @@ public class SqlTargetConnectionTests
     {
         Should.Throw<ArgumentNullException>(() =>
         {
-            _ = new TestSqlTargetConnection(new Target("Server = ."), null!);
+            _ = new TestSqlTargetConnection(_target, null!);
         });
     }
 
     [Test]
     public void Target_Get()
     {
-        var target = new Target("Server = .");
+        using var connection = new TestSqlTargetConnection(_target, _logger);
 
-        using var connection = new TestSqlTargetConnection(target, TestSqlLogger.Instance);
-
-        connection.Target.ShouldBeSameAs(target);
+        connection.Target.ShouldBeSameAs(_target);
     }
 
     [Test]
     public void Logger_Get()
     {
-        var target = new Target("Server = .");
+        using var connection = new TestSqlTargetConnection(_target, _logger);
 
-        using var connection = new TestSqlTargetConnection(target, TestSqlLogger.Instance);
-
-        connection.Logger.ShouldBeSameAs(TestSqlLogger.Instance);
+        connection.Logger.ShouldBeSameAs(_logger);
     }
 
     [Test]
     public void Connection_Get_WithoutCredential()
     {
-        var target = new Target("Server = .");
-
-        using var connection = new TestSqlTargetConnection(target, TestSqlLogger.Instance);
+        using var connection = new TestSqlTargetConnection(_target, _logger);
 
         connection.Connection           .ShouldNotBeNull();
         connection.Connection.Credential.ShouldBeNull();
@@ -60,16 +59,14 @@ public class SqlTargetConnectionTests
     [Test]
     public void Construct_WithCredential()
     {
-        var input  = new NetworkCredential("user", "password");
-        var target = new Target("Server = .", credential: input);
-
-        using var connection = new TestSqlTargetConnection(target, TestSqlLogger.Instance);
+        using var connection = new TestSqlTargetConnection(_targetWithCredential, _logger);
 
         connection.Connection           .ShouldNotBeNull();
         connection.Connection.Credential.ShouldNotBeNull().AssignTo(out var actual);
 
         actual.ShouldNotBeNull();
 
+        var input  = _targetWithCredential.Credential!;
         var output = new NetworkCredential(actual.UserId, actual.Password);
 
         output.UserName.ShouldBe(input.UserName);
@@ -79,9 +76,7 @@ public class SqlTargetConnectionTests
     [Test]
     public void SetUpCommand_NegativeTimeout()
     {
-        var target = new Target("Server = .");
-
-        using var connection = new TestSqlTargetConnection(target, TestSqlLogger.Instance);
+        using var connection = new TestSqlTargetConnection(_target, _logger);
 
         Should.Throw<ArgumentOutOfRangeException>(() =>
         {
@@ -92,9 +87,7 @@ public class SqlTargetConnectionTests
     [Test]
     public void Dispose()
     {
-        var target = new Target("Server = .");
-
-        using var connection = new TestSqlTargetConnection(target, TestSqlLogger.Instance);
+        using var connection = new TestSqlTargetConnection(_target, _logger);
 
         connection.Dispose(); // To test multiple disposal
     }
@@ -102,9 +95,7 @@ public class SqlTargetConnectionTests
     [Test]
     public async Task DisposeAsync()
     {
-        var target = new Target("Server = .");
-
-        await using var connection = new TestSqlTargetConnection(target, TestSqlLogger.Instance);
+        await using var connection = new TestSqlTargetConnection(_target, _logger);
 
         await connection.DisposeAsync(); // To test multiple disposal
     }
@@ -112,9 +103,7 @@ public class SqlTargetConnectionTests
     [Test]
     public void HandleUnexpectedDisposal()
     {
-        var target = new Target("Server = .");
-
-        using var connection = new TestSqlTargetConnection(target, TestSqlLogger.Instance);
+        using var connection = new TestSqlTargetConnection(_target, _logger);
 
         Should.Throw<DataException>(() =>
         {
