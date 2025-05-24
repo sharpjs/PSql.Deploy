@@ -11,6 +11,7 @@ internal abstract class EmbeddedResource
             ?? LazyLoadCore(ref location, type, name);
     }
 
+    [ExcludeFromCodeCoverage(Justification = "timing-dependent")]
     private static string LazyLoadCore(ref object? location, Type type, string name)
     {
         var deferral = new TaskCompletionSource<string>();

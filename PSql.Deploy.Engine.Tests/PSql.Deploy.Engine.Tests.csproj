@@ -24,4 +24,9 @@
     <None Update="TestDbs\**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Remove="**\*.dat" />
+    <EmbeddedResource Include="**\*.dat" />
+  </ItemGroup>
+
 </Project>

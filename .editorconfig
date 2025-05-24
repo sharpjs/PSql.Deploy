@@ -27,7 +27,7 @@ charset = utf-8-bom
 [*.{config,json,jsonc,md,*proj,props,runsettings,slnLaunch,targets,*xml,yaml,yml}]
 indent_size = 2
 
-[*.slnLaunch]
+[*.{dat,slnLaunch}]
 insert_final_newline = false
 
 [dotnet-tools.json]

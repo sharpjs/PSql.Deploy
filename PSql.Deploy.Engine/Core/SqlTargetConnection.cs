@@ -151,7 +151,7 @@ internal abstract class SqlTargetConnection : ITargetConnection
     }
 
     /// <inheritdoc/>
-    public Task OpenAsync(CancellationToken cancellation)
+    public Task OpenAsync(CancellationToken cancellation = default)
     {
         return Connection.OpenAsync(cancellation);
     }

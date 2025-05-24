@@ -5,7 +5,7 @@ namespace PSql.Deploy;
 
 [TestFixture]
 [FixtureLifeCycle(LifeCycle.SingleInstance)]
-public class NullSelMessageLoggerTests
+public class NullSqlMessageLoggerTests
 {
     [Test]
     public void Log()
