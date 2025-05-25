@@ -1,2 +1,1 @@
-PRINT '_End[Post]';
-GO
+:r $(Path)\2-Post.sql

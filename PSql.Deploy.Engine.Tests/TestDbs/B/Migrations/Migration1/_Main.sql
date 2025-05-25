@@ -1,12 +1,9 @@
 --# PRE
-PRINT '_Migration1[Pre]';
-GO
+:r $(Path)\0-Pre.sql
 
 --# CORE
 -- This chunk is not present in TestDbs\A.
-PRINT '_Migration1[Core]';
-GO
+:r $(Path)\1-Core.sql
 
 --# POST
-PRINT '_Migration1[Post]';
-GO
+:r $(Path)\2-Post.sql

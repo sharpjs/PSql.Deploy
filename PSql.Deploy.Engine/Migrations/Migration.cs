@@ -39,7 +39,7 @@ public class Migration
             throw new ArgumentException("Argument cannot be empty.", nameof(name));
 
         Name     = name;
-        IsPseudo = MigrationComparer.GetRank(name) != 0;
+        IsPseudo = MigrationComparer.IsPseudo(name);
     }
 
     /// <summary>

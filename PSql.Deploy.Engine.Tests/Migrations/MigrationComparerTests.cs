@@ -46,4 +46,12 @@ public class MigrationComparerTests
     {
         MigrationComparer.GetRank(name).ShouldBe(expected);
     }
+
+    [TestCase("_Begin", true )]
+    [TestCase("x",      false)]
+    [TestCase("_End",   true )]
+    public void IsPseudo(string name, bool expected)
+    {
+        MigrationComparer.IsPseudo(name).ShouldBe(expected);
+    }
 }

@@ -87,7 +87,7 @@ public sealed class GetSqlMigrationsCommand : AsyncPSCmdlet
 
     private static IReadOnlyList<M.Migration> GetMigrations(string path)
     {
-        return M.MigrationRepository.GetAll(path);
+        return M.MigrationDiscoverer.GetAll(path);
     }
 
     private async Task<IReadOnlyList<M.Migration>> GetMigrationsAsync(SqlTargetDatabase target)

@@ -10,7 +10,7 @@ namespace PSql.Deploy.Migrations;
 /// <summary>
 ///   Methods to discover migrations.
 /// </summary>
-public static partial class MigrationRepository
+public static class MigrationDiscoverer
 {
     /// <summary>
     ///   Gets migrations defined in the filesystem at the specified path.
@@ -67,9 +67,10 @@ public static partial class MigrationRepository
 
     private static bool HasNameLessThanOrEqualTo(string path, string maxName)
     {
-        return StringComparer.OrdinalIgnoreCase.Compare(
-            Path.GetFileName(path), maxName
-        ) <= 0;
+        var name = Path.GetFileName(path);
+
+        return MigrationComparer.IsPseudo(name) // always discover _Begin and _End
+            || MigrationComparer.NameComparer.Compare(name, maxName) <= 0;
     }
 
     private static void DetectMigration(string path, ConcurrentBag<Migration> bag)
@@ -112,6 +113,9 @@ public static partial class MigrationRepository
             RecurseSubdirectories = true,
         });
 
+        // Specifically for hash computation, sort files by full path, using
+        // ordinal case-sensitive comparison.  This ensures hash stability
+        // across different file systems, OSes, and case folding rules.
         static int Compare(FileInfo x, FileInfo y)
             => StringComparer.Ordinal.Compare(x.FullName, y.FullName);
 

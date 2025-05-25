@@ -1,7 +1,5 @@
 --# PRE
-PRINT '_Migration2[Pre]';
-GO
+:r $(Path)\0-Pre.sql
 
 --# POST
-PRINT '_Migration2[Post]';
-GO
+:r $(Path)\2-Post.sql

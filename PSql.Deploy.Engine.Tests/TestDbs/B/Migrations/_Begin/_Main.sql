@@ -1,2 +1,1 @@
-PRINT '_Begin[Pre]';
-GO
+:r $(Path)\0-Pre.sql

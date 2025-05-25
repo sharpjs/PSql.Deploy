@@ -19,7 +19,13 @@ public sealed class MigrationComparer : IComparer<Migration>
     public static MigrationComparer Instance { get; }
         = new MigrationComparer();
 
-    private static StringComparer NameComparer
+    /// <summary>
+    ///   Gets the comparer to use for migration names.
+    /// </summary>
+    /// <remarks>
+    ///   This property returns a case-insensitive ordinal comparer.
+    /// </remarks>
+    internal static StringComparer NameComparer
         => StringComparer.OrdinalIgnoreCase;
 
     /// <inheritdoc/>
@@ -65,4 +71,22 @@ public sealed class MigrationComparer : IComparer<Migration>
 
         return 0;
     }
+
+    /// <summary>
+    ///   Gets whether the specified migration name denotes a <c>_Begin</c> or
+    ///   <c>_End</c> pseudo-migration.
+    /// </summary>
+    /// <param name="name">
+    ///   A migration name.
+    /// </param>
+    /// <returns>
+    ///   <see langword="true"/> if <paramref name="name"/>
+    ///     is <c>"_Begin"</c> or <c>"_End"</c>;
+    ///   <see langword="false"/> otherwise.
+    /// </returns>
+    /// <remarks>
+    ///   This method uses case-insensitive ordinal comparison.
+    /// </remarks>
+    internal static bool IsPseudo(string name)
+        => GetRank(name) is not 0;
 }

@@ -99,7 +99,7 @@ public class MigrationSession : DeploymentSession, IMigrationSessionInternal
     /// <inheritdoc/>
     public void DiscoverMigrations(string path, string? latestName = null)
     {
-        Migrations                   = MigrationRepository.GetAll(path, latestName);
+        Migrations                   = MigrationDiscoverer.GetAll(path, latestName);
         EarliestDefinedMigrationName = Migrations.FirstOrDefault(m => !m.IsPseudo)?.Name ?? "";
     }
 

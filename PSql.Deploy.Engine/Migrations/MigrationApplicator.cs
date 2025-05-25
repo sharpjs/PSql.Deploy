@@ -105,12 +105,8 @@ internal class MigrationApplicator : IMigrationValidationContext
         }
         finally
         {
-            try
-            {
-                ReportEnded();
-                await CloseLogAsync();
-            }
-            catch { /* best effort only */ }
+                  BestEffort.Do     (self => self.ReportEnded(),   this);
+            await BestEffort.DoAsync(self => self.CloseLogAsync(), this);
         }
     }
 

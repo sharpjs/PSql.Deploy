@@ -80,7 +80,7 @@ public class MigrationApplicatorTests : TestHarnessBase
     }
 
     [Test]
-    public async Task ApplyAsync_NoPendingMigrations()
+    public async Task ApplyAsync_NoMigrations()
     {
         WithDefinedMigrations([]);
 
@@ -100,7 +100,7 @@ public class MigrationApplicatorTests : TestHarnessBase
         var definedA = new Migration("a")
         {
             Path      = "/test/a",
-            DependsOn = ImmutableArray.Create(new MigrationReference("a"))
+            DependsOn = Refs("a"),
         };
 
         WithDefinedMigrations([definedA]);
@@ -122,33 +122,34 @@ public class MigrationApplicatorTests : TestHarnessBase
             "PSql.Deploy Migration Log",
             "Migration Phase:    Pre",
             "Pending Migrations: 1",
-            "Error: Migration 'a' declares a dependency on itself. The dependency cannot be satisfied.",
+            "Error: Migration 'a' declares a dependency on itself.",
             "Applied 0 migration(s)"
         );
     }
 
     [Test]
-    public async Task ApplyAsync_EmptyPlan()
+    public async Task ApplyAsync_ValidWithWarnings()
     {
-        var definedA = new Migration("a")
+        var definedB = new Migration("b")
         {
-            Path = "/test/a",
-            Hash = "abc123",
+            Path      = "/test/b",
+            DependsOn = Refs("a"),
         };
 
-        var appliedA = new Migration("a")
-        {
-            State = MigrationState.AppliedCore,
-            Hash  = "abc123",
-        };
-
-        WithDefinedMigrations([definedA]);
+        WithDefinedMigrations([definedB]);
 
         ExpectReportStarting();
         ExpectConnect();
-        ExpectGetAppliedMigrations(minimumName: definedA.Name, [appliedA]);
-        ExpectLoadContent(definedA);
-        ExpectReportApplied(0, TargetDisposition.Successful);
+        ExpectGetAppliedMigrations(minimumName: definedB.Name, []);
+        ExpectLoadContent(definedB);
+        ExpectReportProblem(
+            "Ignoring migration 'b' dependency on migration 'a', " +
+            "which is older than the earliest migration on disk."
+        );
+        ExpectInitializeMigrationSupport();
+        ExpectReportApplying("b", MigrationPhase.Pre);
+        ExpectExecuteAsync("b", MigrationPhase.Pre);
+        ExpectReportApplied(1, TargetDisposition.Successful);
 
         await _applicator.ApplyAsync();
 
@@ -156,6 +157,47 @@ public class MigrationApplicatorTests : TestHarnessBase
             "PSql.Deploy Migration Log",
             "Migration Phase:    Pre",
             "Pending Migrations: 1",
+            "Warning: Ignoring migration 'b' dependency on migration 'a',",
+            "Applied 1 migration(s)"
+        );
+    }
+
+    [Test]
+    public async Task ApplyAsync_EmptyPlan()
+    {
+        const string
+            BeginName = Migration.BeginPseudoMigrationName,
+            EndName   = Migration.EndPseudoMigrationName;
+
+        var begin    = new Migration(BeginName) { Path = "/test/" + BeginName };
+        var end      = new Migration(EndName)   { Path = "/test/" + EndName   };
+
+        var definedA = new Migration("a") { Path = "/test/a", Hash = "foo" };
+        var definedB = new Migration("b") { Path = "/test/b", Hash = "bar" };
+        var definedC = new Migration("c") { Path = "/test/c", Hash = "baz" };
+
+        var appliedA = new Migration("a") { State = MigrationState.AppliedPre,  Hash = "foo" };
+        var appliedB = new Migration("b") { State = MigrationState.AppliedCore, Hash = "bar" };
+        var appliedC = new Migration("c") { State = MigrationState.AppliedPost, Hash = "baz" };
+
+        WithDefinedMigrations([begin, definedA, definedB, definedC, end]);
+
+        ExpectReportStarting();
+        ExpectConnect();
+        ExpectGetAppliedMigrations(minimumName: definedA.Name, [appliedA, appliedB, appliedC]);
+        ExpectLoadContent(begin);
+        ExpectLoadContent(definedA);
+        ExpectLoadContent(definedB);
+        //pectLoadContent(definedC); // will be skipped because it is fully applied
+        ExpectLoadContent(end);
+        ExpectReportApplied(0, TargetDisposition.Successful);
+
+        await _applicator.ApplyAsync();
+
+        LogShouldContainAll(
+            "PSql.Deploy Migration Log",
+            "Migration Phase:    Pre",
+            "Pending Migrations: 5", // TODO: I'm not sure this count is truly the 'pending' count. Maybe defined, applied, and pending counts separately?
             "Nothing to do for the current phase.",
             "Applied 0 migration(s)"
         );
@@ -213,7 +255,6 @@ public class MigrationApplicatorTests : TestHarnessBase
         var definedA = new Migration("a")
         {
             Path = "/test/a",
-            Pre  = { IsRequired = true, Sql = "pre-sql"  },
             Core = { IsRequired = true, Sql = "core-sql" },
             IsContentLoaded = true,
         };
@@ -236,6 +277,48 @@ public class MigrationApplicatorTests : TestHarnessBase
             "PSql.Deploy Migration Log",
             "Migration Phase:    Pre",
             "Pending Migrations: 1",
+            "All pending migrations are valid for the current phase.",
+            "Applied 1 migration(s)"
+        );
+    }
+
+    [Test]
+    public async Task ApplyAsync_Dependency()
+    {
+        var definedA = new Migration("a")
+        {
+            Path            = "/test/a",
+            Post            = { IsRequired = true, Sql = "post-sql" },
+            IsContentLoaded = true,
+        };
+
+        var definedB = new Migration("b")
+        {
+            Path            = "/test/a",
+            Pre             = { IsRequired = true, Sql = "pre-sql" },
+            DependsOn       = Refs("a"),
+            IsContentLoaded = true,
+        };
+
+        WithDefinedMigrations([definedA, definedB]);
+        WithAllowContentInCorePhase();
+
+        ExpectReportStarting();
+        ExpectConnect();
+        ExpectGetAppliedMigrations(minimumName: definedA.Name, []);
+        ExpectLoadContent(definedA);
+        ExpectLoadContent(definedB);
+        ExpectInitializeMigrationSupport();
+        ExpectReportApplying("a", MigrationPhase.Pre);
+        ExpectExecuteAsync("a", MigrationPhase.Pre);
+        ExpectReportApplied(1, TargetDisposition.Successful);
+
+        await _applicator.ApplyAsync();
+
+        LogShouldContainAll(
+            "PSql.Deploy Migration Log",
+            "Migration Phase:    Pre",
+            "Pending Migrations: 2",
             "All pending migrations are valid for the current phase.",
             "Applied 1 migration(s)"
         );
@@ -275,15 +358,22 @@ public class MigrationApplicatorTests : TestHarnessBase
         );
     }
 
+    private static ImmutableArray<MigrationReference> Refs(string name)
+    {
+        return ImmutableArray.Create(new MigrationReference(name));
+    }
+
     private void WithDefinedMigrations(Migration[] migrations)
     {
+        var earliestName = migrations.FirstOrDefault(m => !m.IsPseudo)?.Name ?? "";
+
         _session
             .Setup(s => s.Migrations)
             .Returns(ImmutableArray.Create(migrations))
             .Verifiable();
         _session
             .Setup(s => s.EarliestDefinedMigrationName)
-            .Returns(migrations is [var m, ..] ? m.Name : "");
+            .Returns(earliestName);
     }
 
     private void WithAllowContentInCorePhase(bool value = true)
@@ -418,6 +508,8 @@ public class MigrationApplicatorTests : TestHarnessBase
     private void LogShouldContainAll(params string[] items)
     {
         var log = _log.ToString();
+
+        TestContext.Write(log);
 
         foreach (var item in items)
             log.ShouldContain(item);
