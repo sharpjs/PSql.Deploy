@@ -23,6 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Using Remove="FluentAssertions" />
     <Using Include="Subatomix.Testing" />
   </ItemGroup>
 

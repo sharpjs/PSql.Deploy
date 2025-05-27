@@ -1,7 +1,7 @@
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
-namespace PSql.Deploy.Utilities;
+namespace PSql.Deploy;
 
 using Void = ValueTuple;
 
@@ -10,6 +10,7 @@ using Void = ValueTuple;
 /// </summary>
 internal static class DispatcherExtensions
 {
+#if NEEDED
     /// <summary>
     ///   Invokes the specified action using the dispatcher and waits for the
     ///   action to complete.
@@ -43,6 +44,7 @@ internal static class DispatcherExtensions
 
         task.Task.GetAwaiter().GetResult();
     }
+#endif
 
     /// <summary>
     ///   Invokes the specified action using the dispatcher and waits for the
@@ -81,6 +83,7 @@ internal static class DispatcherExtensions
         task.Task.GetAwaiter().GetResult();
     }
 
+#if NEEDED
     /// <summary>
     ///   Invokes the specified action using the dispatcher and waits for the
     ///   action to complete.
@@ -116,6 +119,7 @@ internal static class DispatcherExtensions
 
         return task.Task.GetAwaiter().GetResult();
     }
+#endif
 
     /// <summary>
     ///   Invokes the specified action using the dispatcher and waits for the

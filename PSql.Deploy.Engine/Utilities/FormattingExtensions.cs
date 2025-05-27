@@ -5,9 +5,7 @@ using PSql.Deploy.Migrations;
 
 namespace PSql.Deploy;
 
-using static MigrationPhase;
 using static MigrationState;
-using static SqlMessageConstants;
 
 internal static class FormattingExtensions
 {
@@ -25,16 +23,6 @@ internal static class FormattingExtensions
         return "Ok     ";
     }
 
-    internal static string ToFixedWidthString(this MigrationPhase phase)
-    {
-        return phase switch
-        {
-            Pre  => "Pre ",
-            Core => "Core",
-            _    => "Post",
-        };
-    }
-
     internal static string ToFixedWidthString(this MigrationState state)
     {
         return state switch
@@ -44,24 +32,5 @@ internal static class FormattingExtensions
             AppliedCore => "Pre>Core     ",
             _           => "Pre>Core>Post",
         };
-    }
-
-    internal static string Format(this SqlError item)
-    {
-        const string NonProcedureLocationName = "(batch)";
-
-        var prefix = item.Class > MaxInformationalSeverity
-            ? "<!> "
-            : null;
-
-        var procedure
-            =  item.Procedure.NullIfEmpty()
-            ?? NonProcedureLocationName;
-
-        // Examples:
-        // <!> (batch):42: 102:15:1: Incorrect syntax near 'foo'.
-        // <!> MyProc:1337: E2812:L16: Could not find stored procedure 'foo'.
-
-        return $"{prefix}{procedure}:{item.LineNumber}: E{item.Number}:L{item.Class}: {item.Message}";
     }
 }

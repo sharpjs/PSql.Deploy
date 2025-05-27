@@ -308,8 +308,8 @@ internal class MigrationApplicator : IMigrationValidationContext
             var postInPost = migration.Post.PlannedPhase is MigrationPhase.Post;
             var isPlanned  = preInPre | preInCore | coreInCore | postInCore | postInPost;
 
-            if (!isPlanned)
-                continue;
+            //if (!isPlanned)
+            //    continue;
 
             // TODO: Skip applied
             var dependsOn = migration.DependsOn.LastOrDefault()?.Name ?? "(none)";

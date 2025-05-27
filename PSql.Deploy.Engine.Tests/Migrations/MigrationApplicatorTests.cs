@@ -116,6 +116,7 @@ public class MigrationApplicatorTests : TestHarnessBase
         ExpectReportProblem("Migration validation failed.");
         ExpectReportApplied(0, TargetDisposition.Failed);
 
+        //await _applicator.ApplyAsync(); // Uncomment to see the exception thrown
         await Should.ThrowAsync<MigrationException>(_applicator.ApplyAsync);
 
         LogShouldContainAll(
@@ -123,6 +124,88 @@ public class MigrationApplicatorTests : TestHarnessBase
             "Migration Phase:    Pre",
             "Pending Migrations: 1",
             "Error: Migration 'a' declares a dependency on itself.",
+            "Applied 0 migration(s)"
+        );
+    }
+
+    [Test]
+    public async Task ApplyAsync_Missing()
+    {
+        var appliedA = new Migration("a")
+        {
+            State = MigrationState.AppliedPre,
+            Hash  = "foo",
+        };
+
+        WithDefinedMigrations([]);
+        WithCurrentPhase(MigrationPhase.Post);
+
+        ExpectReportStarting();
+        ExpectConnect();
+        ExpectGetAppliedMigrations(minimumName: "", [appliedA]);
+        //ExpectLoadContent(definedA); // because fully applied
+        ExpectReportProblem(
+            "Migration 'a' is only partially applied to database " +
+            "[db.example.com].[test] (through the Pre phase), but the code " +
+            "for the migration was not found in the source directory. It is " +
+            "not possible to complete this migration."
+        );
+        ExpectReportProblem("Migration validation failed.");
+        ExpectReportApplied(0, TargetDisposition.Failed);
+
+        //await _applicator.ApplyAsync(); // Uncomment to see the exception thrown
+        await Should.ThrowAsync<MigrationException>(_applicator.ApplyAsync);
+
+        LogShouldContainAll(
+            "PSql.Deploy Migration Log",
+            "Migration Phase:    Post",
+            "Pending Migrations: 1",
+            " Missing ",
+            "Error: Migration 'a' is only partially applied ",
+            "Applied 0 migration(s)"
+        );
+    }
+
+    [Test]
+    public async Task ApplyAsync_Changed()
+    {
+        var definedA = new Migration("a")
+        {
+            Path = "/test/a",
+            Hash = "600D",
+        };
+
+        var appliedA = new Migration("a")
+        {
+            State = MigrationState.AppliedPost,
+            Hash  = "D1FF", // different hash
+        };
+
+        WithDefinedMigrations([definedA]);
+
+        ExpectReportStarting();
+        ExpectConnect();
+        ExpectGetAppliedMigrations(minimumName: definedA.Name, [appliedA]);
+        //ExpectLoadContent(definedA); // because fully applied
+        ExpectReportProblem(
+            "Migration 'a' has been applied to database [db.example.com].[test] " +
+            "through the Post phase, but the migration's code in the source " +
+            "directory does not match the code previously used. To resolve, " +
+            "revert any accidental changes to this migration. To ignore, " +
+            "update the hash in the _deploy.Migration table to match the hash " +
+            "of the code in the source directory (600D).");
+        ExpectReportProblem("Migration validation failed.");
+        ExpectReportApplied(0, TargetDisposition.Failed);
+
+        //await _applicator.ApplyAsync(); // Uncomment to see the exception thrown
+        await Should.ThrowAsync<MigrationException>(_applicator.ApplyAsync);
+
+        LogShouldContainAll(
+            "PSql.Deploy Migration Log",
+            "Migration Phase:    Pre",
+            "Pending Migrations: 1",
+            "Error: Migration 'a' has been applied to database ",
+            " code in the source directory does not match ",
             "Applied 0 migration(s)"
         );
     }
@@ -163,7 +246,7 @@ public class MigrationApplicatorTests : TestHarnessBase
     }
 
     [Test]
-    public async Task ApplyAsync_EmptyPlan()
+    public async Task ApplyAsync_PhaseAlreadyDone()
     {
         const string
             BeginName = Migration.BeginPseudoMigrationName,
@@ -188,7 +271,7 @@ public class MigrationApplicatorTests : TestHarnessBase
         ExpectLoadContent(begin);
         ExpectLoadContent(definedA);
         ExpectLoadContent(definedB);
-        //pectLoadContent(definedC); // will be skipped because it is fully applied
+        //pectLoadContent(definedC); // skipped because fully applied
         ExpectLoadContent(end);
         ExpectReportApplied(0, TargetDisposition.Successful);
 
@@ -236,6 +319,7 @@ public class MigrationApplicatorTests : TestHarnessBase
         ExpectReportProblem("Migration validation failed.");
         ExpectReportApplied(0, TargetDisposition.Failed);
 
+        //await _applicator.ApplyAsync(); // Uncomment to see the exception thrown
         await Should.ThrowAsync<MigrationException>(_applicator.ApplyAsync);
 
         LogShouldContainAll(
@@ -349,6 +433,7 @@ public class MigrationApplicatorTests : TestHarnessBase
         ExpectConnectCanceled();
         ExpectReportApplied(count: 0, TargetDisposition.Incomplete);
 
+        //await _applicator.ApplyAsync(); // Uncomment to see the exception thrown
         await Should.ThrowAsync<OperationCanceledException>(_applicator.ApplyAsync);
 
         LogShouldContainAll(
@@ -361,6 +446,13 @@ public class MigrationApplicatorTests : TestHarnessBase
     private static ImmutableArray<MigrationReference> Refs(string name)
     {
         return ImmutableArray.Create(new MigrationReference(name));
+    }
+
+    private void WithCurrentPhase(MigrationPhase phase)
+    {
+        _session
+            .Setup(s => s.CurrentPhase)
+            .Returns(phase);
     }
 
     private void WithDefinedMigrations(Migration[] migrations)
@@ -509,9 +601,15 @@ public class MigrationApplicatorTests : TestHarnessBase
     {
         var log = _log.ToString();
 
-        TestContext.Write(log);
-
-        foreach (var item in items)
-            log.ShouldContain(item);
+        try
+        {
+            foreach (var item in items)
+                log.ShouldContain(item);
+        }
+        //finally   // To see the log for all tests
+        catch       // To see the log only when it's wrong
+        {
+            TestContext.Write(log);
+        }
     }
 }
