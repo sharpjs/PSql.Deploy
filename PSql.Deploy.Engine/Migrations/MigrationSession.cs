@@ -74,9 +74,11 @@ public class MigrationSession : DeploymentSession, IMigrationSessionInternal
 
     /// <inheritdoc/>
     public ImmutableArray<Migration> Migrations { get; private set; }
+        = ImmutableArray<Migration>.Empty;
 
     /// <inheritdoc/>
-    public string EarliestDefinedMigrationName { get; private set; } = "";
+    public string EarliestDefinedMigrationName { get; private set; }
+        = "";
 
     /// <summary>
     ///   Gets or sets the factory for connections to target databases.

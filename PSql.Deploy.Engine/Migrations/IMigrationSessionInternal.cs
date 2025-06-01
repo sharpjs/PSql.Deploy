@@ -15,6 +15,13 @@ internal interface IMigrationSessionInternal : IMigrationSession, IDeploymentSes
     /// <param name="migration">
     ///   The migration for which to load SQL content.
     /// </param>
+    /// <exception cref="ArgumentNullException">
+    ///   <paramref name="migration"/> is <see langword="null"/>.
+    /// </exception>
+    /// <exception cref="ArgumentException">
+    ///   <paramref name="migration"/> has a <see langword="null"/>
+    ///   <see cref="Migration.Path"/>.
+    /// </exception>
     void LoadContent(Migration migration);
 
     /// <summary>

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: MIT
 
 using System.Collections.Concurrent;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.Loader;
 
@@ -94,7 +93,8 @@ internal sealed class PrivateAssemblyLoadContext : AssemblyLoadContext
         return Path.Combine(path, PrivateSubdirectoryName, PrivateAssemblyFileName);
     }
 
-    private static string RequireDirectoryPath(string? path)
+    // Made internal for testing
+    internal static string RequireDirectoryPath(string? path)
     {
         path = Path.GetDirectoryName(path);
 
@@ -135,5 +135,17 @@ internal sealed class PrivateAssemblyLoadContext : AssemblyLoadContext
         return request.Name is PrivateAssemblyName
             ? Instance.LoadFromAssemblyName(request)
             : null;
+    }
+
+    // For testing
+    internal Assembly? SimulateLoad(AssemblyName name)
+    {
+        return Load(name);
+    }
+
+    // For testing
+    internal IntPtr SimulateLoadUnmanagedDll(string name)
+    {
+        return LoadUnmanagedDll(name);
     }
 }
