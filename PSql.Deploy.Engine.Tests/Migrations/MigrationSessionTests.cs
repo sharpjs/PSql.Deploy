@@ -154,10 +154,19 @@ public class MigrationSessionTests : TestHarnessBase
     }
 
     [Test]
+    public void DiscoverMigrations_Empty()
+    {
+        var path = Path.Combine(TestContext.CurrentContext.TestDirectory, "TestDbs", "Empty");
+
+        Session.DiscoverMigrations(path);
+
+        Session.Migrations.Length           .ShouldBe(0);
+        Session.EarliestDefinedMigrationName.ShouldBeEmpty();
+    }
+
+    [Test]
     public void DiscoverMigrations_Ok()
     {
-        _options = AllPhases;
-
         var path = Path.Combine(TestContext.CurrentContext.TestDirectory, "TestDbs", "A");
 
         Session.DiscoverMigrations(path);
@@ -175,8 +184,6 @@ public class MigrationSessionTests : TestHarnessBase
     [Test]
     public void DiscoverMigrations_Ok_WithLatestName()
     {
-        _options = AllPhases;
-
         var path = Path.Combine(TestContext.CurrentContext.TestDirectory, "TestDbs", "A");
 
         Session.DiscoverMigrations(path, latestName: "Migration1");
@@ -345,14 +352,42 @@ public class MigrationSessionTests : TestHarnessBase
     }
 
     [Test]
+    public async Task Apply_Target_Exception()
+    {
+        _options = PrePhase;
+        var path = Path.Combine(TestContext.CurrentContext.TestDirectory, "TestDbs", "A");
+
+        var innerException = new InvalidOperationException("Test exception.");
+
+        var t = ForTarget(TargetA);
+        t.ExpectCreateLog ();
+        t.ExpectReportStarting();
+        t.ExpectCreateAndOpenConnection(innerException);
+        t.ExpectReportProblem("Test exception.");
+        t.ExpectDisposeConnection();
+
+        Session.DiscoverMigrations(path);
+        Session.Migrations.Length.ShouldBe(5);
+
+        Session.BeginApplying(TargetA);
+
+        var outerException = await Should.ThrowAsync<MigrationException>(() =>
+        {
+            return Session.CompleteApplyingAsync(Cancellation.Token);
+        });
+
+        outerException.InnerException.ShouldBeSameAs(innerException);
+    }
+
+    [Test]
     public async Task Apply_Target_OnePhase()
     {
         _options = PrePhase;
 
         var path = Path.Combine(TestContext.CurrentContext.TestDirectory, "TestDbs", "A");
 
-        var tA = ForTarget(TargetA);
-        ExpectApplyMigrations(tA, Pre);
+        var t = ForTarget(TargetA);
+        ExpectApplyMigrations(t, Pre);
 
         Session.DiscoverMigrations(path);
         Session.Migrations.Length.ShouldBe(5);
@@ -427,8 +462,8 @@ public class MigrationSessionTests : TestHarnessBase
         var path  = Path.Combine(TestContext.CurrentContext.TestDirectory, "TestDbs", "A");
         var group = new TargetGroup([TargetA]);
 
-        var tA = ForTarget(TargetA);
-        ExpectApplyMigrations(tA, Pre);
+        var t = ForTarget(TargetA);
+        ExpectApplyMigrations(t, Pre);
 
         Session.DiscoverMigrations(path);
         Session.Migrations.Length.ShouldBe(5);
@@ -610,7 +645,15 @@ public class MigrationSessionTests : TestHarnessBase
                 .Verifiable();
         }
 
-        public void ExpectCreateAndOpenConnection()
+        internal void ExpectReportProblem(string message)
+        {
+            Console
+                .InSequence(_sequence)
+                .Setup(c => c.ReportProblem(Session, _target, message))
+                .Verifiable();
+        }
+
+        public void ExpectCreateAndOpenConnection(Exception? exceptionToThrow = null)
         {
             Factory
                 .InSequence(_sequence)
@@ -618,11 +661,14 @@ public class MigrationSessionTests : TestHarnessBase
                 .Returns(_connection.Object)
                 .Verifiable();
 
-            _connection
+            var setup = _connection
                 .InSequence(_sequence)
-                .Setup(c => c.OpenAsync(Session.CancellationToken))
-                .Returns(Task.CompletedTask)
-                .Verifiable();
+                .Setup(c => c.OpenAsync(Session.CancellationToken));
+
+            if (exceptionToThrow is null)
+                setup.Returns(Task.CompletedTask).Verifiable();
+            else
+                setup.Throws(exceptionToThrow).Verifiable();
         }
 
         public void ExpectGetRegisteredMigrations(string? minimumName, params Migration[] migrations)
