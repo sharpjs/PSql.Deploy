@@ -54,10 +54,12 @@ public class SeedSession : DeploymentSession, ISeedSessionInternal
 
     /// <inheritdoc/>
     public ImmutableArray<Seed> Seeds { get; private set; }
+        = ImmutableArray<Seed>.Empty;
 
     /// <inheritdoc/>
     public void DiscoverSeeds(string path, string[] names)
     {
+        Seeds = SeedDiscoverer.Get(path, names);
     }
 
     /// <inheritdoc/>
