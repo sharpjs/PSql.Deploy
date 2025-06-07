@@ -116,8 +116,6 @@ internal static class MigrationLoader
 
     private static IEnumerable<string> Preprocess(Migration migration)
     {
-        // migration.Path null-checked n LoadContent
-
         var directoryPath = Path.GetDirectoryName(migration.Path)!;
         var fileName      = Path.GetFileName     (migration.Path)!;
 
