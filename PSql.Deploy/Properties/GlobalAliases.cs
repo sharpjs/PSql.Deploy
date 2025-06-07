@@ -5,4 +5,4 @@ extern alias Engine;
 
 global using E = Engine::PSql.Deploy;
 global using M = Engine::PSql.Deploy.Migrations;
-global using S = Engine::PSql.Deploy.Seeding;
+global using S = Engine::PSql.Deploy.Seeds;

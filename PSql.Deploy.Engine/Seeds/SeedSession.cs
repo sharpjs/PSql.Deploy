@@ -1,7 +1,7 @@
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
-namespace PSql.Deploy.Seeding;
+namespace PSql.Deploy.Seeds;
 
 /// <summary>
 ///   A deployment session in which one or more content seeds are applied to

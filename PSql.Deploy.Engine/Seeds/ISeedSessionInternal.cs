@@ -1,7 +1,7 @@
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
-namespace PSql.Deploy.Seeding;
+namespace PSql.Deploy.Seeds;
 
 /// <summary>
 ///   Internal surface of a session in which content seeds are applied to

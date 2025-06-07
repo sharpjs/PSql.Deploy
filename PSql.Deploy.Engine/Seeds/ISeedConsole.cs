@@ -1,7 +1,7 @@
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
-namespace PSql.Deploy.Seeding;
+namespace PSql.Deploy.Seeds;
 
 /// <summary>
 ///   A user interface to report the progress of content seed application.

@@ -4,7 +4,7 @@
 
 using System.Management.Automation.Host;
 
-namespace PSql.Deploy.Seeding;
+namespace PSql.Deploy.Seeds;
 
 /// <summary>
 ///   A factory for <see cref="SeedPlan"/> objects that share a common worker

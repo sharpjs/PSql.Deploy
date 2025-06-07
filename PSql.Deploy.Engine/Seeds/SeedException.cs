@@ -5,7 +5,7 @@
 using System.Runtime.Serialization;
 #endif
 
-namespace PSql.Deploy.Seeding;
+namespace PSql.Deploy.Seeds;
 
 /// <summary>
 ///   Represents an error that occurred during database seed application.

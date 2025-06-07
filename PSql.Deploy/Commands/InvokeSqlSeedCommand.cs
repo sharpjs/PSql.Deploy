@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 using System.Diagnostics;
-using PSql.Deploy.Seeding;
+using PSql.Deploy.Seeds;
 
 namespace PSql.Deploy.Commands;
 

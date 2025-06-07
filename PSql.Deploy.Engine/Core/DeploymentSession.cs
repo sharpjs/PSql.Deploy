@@ -8,7 +8,7 @@ namespace PSql.Deploy;
 /// <summary>
 ///   A database deployment session.  Base class of
 ///   <see cref="Migrations.MigrationSession"/> and
-///   <see cref="Seeding.SeedSession"/>.
+///   <see cref="Seeds.SeedSession"/>.
 /// </summary>
 public abstract class DeploymentSession : IDeploymentSessionInternal
 {
