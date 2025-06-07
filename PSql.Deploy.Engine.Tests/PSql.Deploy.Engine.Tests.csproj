@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="TestDbs\**" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\TestDbs\**" LinkBase="TestDbs" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

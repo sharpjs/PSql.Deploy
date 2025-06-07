@@ -29,7 +29,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="TestDbs\**" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="..\TestDbs\**" LinkBase="TestDbs" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
