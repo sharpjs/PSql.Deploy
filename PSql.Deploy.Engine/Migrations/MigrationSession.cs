@@ -24,10 +24,21 @@ public class MigrationSession : DeploymentSession, IMigrationSessionInternal
     /// <param name="console">
     ///   The user interface to report the progress of the session.
     /// </param>
+    /// <param name="maxErrorCount">
+    ///   The maximum count of exceptions that the session should tolerate
+    ///   before cancelling ongoing operations.  Must be zero or a positive
+    ///   number.
+    /// </param>
     /// <exception cref="ArgumentNullException">
     ///   <paramref name="console"/> is <see langword="null"/>.
     /// </exception>
-    public MigrationSession(MigrationSessionOptions options, IMigrationConsole console)
+    /// <exception cref="ArgumentOutOfRangeException">
+    ///   <paramref name="maxErrorCount"/> is negative.
+    /// </exception>
+    public MigrationSession(
+        MigrationSessionOptions options,
+        IMigrationConsole       console,
+        int                     maxErrorCount = 0)
     {
         if (console is null)
             throw new ArgumentNullException(nameof(console));

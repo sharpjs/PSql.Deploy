@@ -21,14 +21,15 @@ public abstract class DeploymentSession : IDeploymentSessionInternal
     /// </summary>
     /// <param name="maxErrorCount">
     ///   The maximum count of exceptions that the session should tolerate
-    ///   before cancelling ongoing operations.  Must be a positive number.
+    ///   before cancelling ongoing operations.  Must be zero or a positive
+    ///   number.
     /// </param>
     /// <exception cref="ArgumentOutOfRangeException">
-    ///   <paramref name="maxErrorCount"/> is <c>0</c> or negative.
+    ///   <paramref name="maxErrorCount"/> is negative.
     /// </exception>
-    private protected DeploymentSession(int maxErrorCount = 1)
+    private protected DeploymentSession(int maxErrorCount = 0)
     {
-        if (maxErrorCount < 1)
+        if (maxErrorCount < 0)
             throw new ArgumentOutOfRangeException(nameof(maxErrorCount));
 
         _tasks        = [];

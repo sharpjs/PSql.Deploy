@@ -20,15 +20,16 @@ public class SeedSession : DeploymentSession, ISeedSessionInternal
     /// </param>
     /// <param name="maxErrorCount">
     ///   The maximum count of exceptions that the session should tolerate
-    ///   before cancelling ongoing operations.  Must be a positive number.
+    ///   before cancelling ongoing operations.  Must be zero or a positive
+    ///   number.
     /// </param>
     /// <exception cref="ArgumentNullException">
     ///   <paramref name="console"/> is <see langword="null"/>.
     /// </exception>
     /// <exception cref="ArgumentOutOfRangeException">
-    ///   <paramref name="maxErrorCount"/> is <c>0</c> or negative.
+    ///   <paramref name="maxErrorCount"/> is negative.
     /// </exception>
-    public SeedSession(SeedSessionOptions options, ISeedConsole console, int maxErrorCount = 1)
+    public SeedSession(SeedSessionOptions options, ISeedConsole console, int maxErrorCount = 0)
         : base(maxErrorCount)
     {
         if (console is null)
