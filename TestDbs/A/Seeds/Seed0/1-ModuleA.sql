@@ -1,4 +1,5 @@
 --# MODULE: a
---# PROVIDES: x
+--# PROVIDES: x y
+--# provides: y x
 PRINT 'This is in module a.';
 PRINT 'The value of ''foo'' is $(foo).';

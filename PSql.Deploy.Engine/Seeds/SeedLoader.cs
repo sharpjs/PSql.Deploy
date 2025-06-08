@@ -10,6 +10,27 @@ using static RegexOptions;
 
 internal class SeedLoader
 {
+    // TODO: Don't include magic comments in batches
+    // TODO: Consistency with MigrationLoader case-sensitivity of magic comments
+    // TODO: Maybe it's better to require magic comments at start of batch
+
+    private readonly ImmutableArray<SeedModule>.Builder _modules;
+    private readonly ImmutableArray<string>    .Builder _batches;
+    private readonly SortedSet<string>                  _provides;
+    private readonly SortedSet<string>                  _requires;
+
+    private const string InitialModuleName = "(init)";
+
+    private string _moduleName = InitialModuleName;
+
+    private SeedLoader()
+    {
+        _modules  = ImmutableArray.CreateBuilder<SeedModule>();
+        _batches  = ImmutableArray.CreateBuilder<string>();
+        _provides = new(StringComparer.OrdinalIgnoreCase);
+        _requires = new(StringComparer.OrdinalIgnoreCase);
+    }
+
     public static LoadedSeed Load(Seed seed, IEnumerable<(string, string)>? defines = null)
     {
         if (seed is null)
@@ -44,31 +65,9 @@ internal class SeedLoader
         return preprocessor.Process(raw, fileName);
     }
 
-    private readonly ImmutableArray<SeedModule>.Builder _modules;
-    private readonly ImmutableArray<string>    .Builder _batches;
-    private readonly ImmutableArray<string>    .Builder _provides;
-    private readonly ImmutableArray<string>    .Builder _requires;
-
-    private const string InitialModuleName = "(init)";
-
-    private string _moduleName = InitialModuleName;
-
-    private SeedLoader()
-    {
-        _modules  = ImmutableArray.CreateBuilder<SeedModule>();
-        _batches  = ImmutableArray.CreateBuilder<string>();
-        _provides = ImmutableArray.CreateBuilder<string>();
-        _requires = ImmutableArray.CreateBuilder<string>();
-    }
-
     private void Process(string text)
     {
-#if BECOMES_PUBLIC_API
-        if (text is null)
-            throw new ArgumentNullException(nameof(text));
-        if (text.Length == 0)
-            return;
-#endif
+        // SqlCmdPreprocessor guarantees text is not null or empty
 
         var start = 0;
         var index = 0;
@@ -148,12 +147,14 @@ internal class SeedLoader
 
     private void AddProvides(CaptureCollection arguments)
     {
-        _provides.AddRange(arguments.Select(a => a.Value));
+        foreach (Capture argument in arguments)
+            _provides.Add(argument.Value);
     }
 
     private void AddRequires(CaptureCollection arguments)
     {
-        _requires.AddRange(arguments.Select(a => a.Value));
+        foreach (Capture argument in arguments)
+            _requires.Add(argument.Value);
     }
 
     private void AddBatch(string text, int start)
@@ -177,8 +178,8 @@ internal class SeedLoader
         _modules.Add(new(
             _moduleName,
             _batches .ToImmutable(),
-            _provides.ToImmutable(),
-            _requires.ToImmutable()
+            _provides.ToImmutableArray(),
+            _requires.ToImmutableArray()
         ));
 
         _moduleName = InitialModuleName;
