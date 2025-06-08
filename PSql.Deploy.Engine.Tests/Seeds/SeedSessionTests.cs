@@ -77,7 +77,7 @@ public class SeedSessionTests : TestHarnessBase
     {
         Should.Throw<ArgumentNullException>(() =>
         {
-            SessionInternal.DiscoverSeeds(null!, ["Seed0"]);
+            SessionInternal.DiscoverSeeds(null!, ["some-seed"]);
         });
     }
 
@@ -115,11 +115,11 @@ public class SeedSessionTests : TestHarnessBase
             TestContext.CurrentContext.TestDirectory, "TestDbs", "A"
         );
 
-        var seeds = SeedDiscoverer.Get(path, ["Seed0"]);
+        var seeds = SeedDiscoverer.Get(path, ["Typical"]);
 
         seeds.ShouldHaveSingleItem().AssignTo(out var seed);
 
-        seed.Name.ShouldBe("Seed0");
-        seed.Path.ShouldBe(Path.Combine(path, "Seeds", "Seed0", "_Main.sql"));
+        seed.Name.ShouldBe("Typical");
+        seed.Path.ShouldBe(Path.Combine(path, "Seeds", "Typical", "_Main.sql"));
     }
 }

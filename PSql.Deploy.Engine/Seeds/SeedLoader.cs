@@ -7,6 +7,7 @@ using Prequel;
 namespace PSql.Deploy.Seeds;
 
 using static RegexOptions;
+using Defines = IEnumerable<ValueTuple<string, string>>;
 
 internal class SeedLoader
 {
@@ -31,7 +32,7 @@ internal class SeedLoader
         _requires = new(StringComparer.OrdinalIgnoreCase);
     }
 
-    public static LoadedSeed Load(Seed seed, IEnumerable<(string, string)>? defines = null)
+    public static LoadedSeed Load(Seed seed, Defines? defines = null)
     {
         if (seed is null)
             throw new ArgumentNullException(nameof(seed));
@@ -44,9 +45,7 @@ internal class SeedLoader
         return new(seed, loader.Complete());
     }
 
-    private static IEnumerable<string> Preprocess(
-        Seed                           seed,
-        IEnumerable<(string, string)>? defines = null)
+    private static IEnumerable<string> Preprocess(Seed seed, Defines? defines = null)
     {
         var directoryPath = Path.GetDirectoryName(seed.Path)!;
         var fileName      = Path.GetFileName     (seed.Path)!;

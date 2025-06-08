@@ -16,14 +16,20 @@ public class SeedLoaderTests
     }
 
     [Test]
+    public void Load_MissingModuleName()
+    {
+        var seed = WithSeed("MissingModuleName");
+
+        Should.Throw<FormatException>(() =>
+        {
+            SeedLoader.Load(seed);
+        });
+    }
+
+    [Test]
     public void Load_Empty()
     {
-        var path = Path.Combine(
-            TestContext.CurrentContext.TestDirectory,
-            "TestDbs", "A", "Seeds", "Empty", "_Main.sql"
-        );
-
-        var seed = new Seed("Empty", path);
+        var seed = WithSeed("Empty");
 
         var loadedSeed = SeedLoader.Load(seed);
 
@@ -38,14 +44,9 @@ public class SeedLoaderTests
     }
 
     [Test]
-    public void Load_Ok()
+    public void Load_Typical()
     {
-        var path = Path.Combine(
-            TestContext.CurrentContext.TestDirectory,
-            "TestDbs", "A", "Seeds", "Seed0", "_Main.sql"
-        );
-
-        var seed = new Seed("Seed0", path);
+        var seed = WithSeed("Typical");
 
         var loadedSeed = SeedLoader.Load(seed, [("foo", "bar")]);
 
@@ -67,6 +68,7 @@ public class SeedLoaderTests
             """
             --# PROVIDES: x y
             --# provides: y x
+            --# Provides:
             PRINT 'This is in module a.';
             PRINT 'The value of ''foo'' is bar.';
 
@@ -80,11 +82,22 @@ public class SeedLoaderTests
         modules[2].Batches   .ShouldHaveSingleItem();
         modules[2].Batches[0].ShouldBe(
             """
-            --# REQUIRES: x y
-            --# requires: y x
+            --# REQUIRES:  x  y
+            --# requires:  y  x
+            --# Requires:  
             PRINT 'This is in module b.';
 
             """
         );
+    }
+
+    private static Seed WithSeed(string name)
+    {
+        var path = Path.Combine(
+            TestContext.CurrentContext.TestDirectory,
+            "TestDbs", "A", "Seeds", name, "_Main.sql"
+        );
+
+        return new Seed(name, path);
     }
 }

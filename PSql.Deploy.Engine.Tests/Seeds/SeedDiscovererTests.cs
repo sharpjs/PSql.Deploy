@@ -11,7 +11,7 @@ public class SeedDiscovererTests
     {
         Should.Throw<ArgumentNullException>(() =>
         {
-            _ = SeedDiscoverer.Get(null!, ["Seed0"]);
+            _ = SeedDiscoverer.Get(null!, ["some-seed"]);
         });
     }
 
@@ -47,12 +47,12 @@ public class SeedDiscovererTests
     {
         var path = Path.Combine(TestDirectory, "TestDbs", "A");
 
-        var seeds = SeedDiscoverer.Get(path, ["Seed0"]);
+        var seeds = SeedDiscoverer.Get(path, ["Typical"]);
 
         seeds.ShouldHaveSingleItem().AssignTo(out var seed);
 
-        seed.Name.ShouldBe("Seed0");
-        seed.Path.ShouldBe(Path.Combine(path, "Seeds", "Seed0", "_Main.sql"));
+        seed.Name.ShouldBe("Typical");
+        seed.Path.ShouldBe(Path.Combine(path, "Seeds", "Typical", "_Main.sql"));
     }
 
     private string TestDirectory { get; }
