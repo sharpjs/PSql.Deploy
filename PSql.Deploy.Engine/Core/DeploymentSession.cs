@@ -181,7 +181,7 @@ public abstract class DeploymentSession : IDeploymentSessionInternal
     private void HandleError(Exception e, Target? target)
     {
         if (e.Data is { IsReadOnly: false } data && target is { })
-            data[nameof(Target)] = target;
+            data[nameof(Target)] = target.FullDisplayName;
 
         _exceptions.Enqueue(e);
 
