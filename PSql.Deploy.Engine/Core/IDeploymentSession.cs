@@ -69,4 +69,9 @@ public interface IDeploymentSession : IDisposable
     ///   A <see cref="Task"/> representing the asynchronous operation.
     /// </returns>
     Task CompleteApplyingAsync(CancellationToken cancellation = default);
+
+    /// <summary>
+    ///   Cancels the deployment operation if it is in progress.
+    /// </summary>
+    void Cancel();
 }

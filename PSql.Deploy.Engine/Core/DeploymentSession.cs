@@ -91,6 +91,12 @@ public abstract class DeploymentSession : IDeploymentSessionInternal
     }
 
     /// <inheritdoc/>
+    public void Cancel()
+    {
+        _cancellation.Cancel();
+    }
+
+    /// <inheritdoc/>
     public virtual void Dispose()
     {
         _cancellation.Dispose();
@@ -180,7 +186,7 @@ public abstract class DeploymentSession : IDeploymentSessionInternal
         _exceptions.Enqueue(e);
 
         if (_exceptions.Count > MaxErrorCount)
-            _cancellation.Cancel();
+            Cancel();
     }
 
     private void ThrowAccumulatedErrors()
