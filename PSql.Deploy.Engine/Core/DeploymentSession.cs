@@ -83,6 +83,12 @@ public abstract class DeploymentSession : IDeploymentSessionInternal
             await Task.WhenAll(_tasks).ConfigureAwait(continueOnCapturedContext: false);
             ThrowAccumulatedErrors();
         }
+        catch (OperationCanceledException)
+        {
+            // If the session has accumulated other exceptions, throw those instead
+            ThrowAccumulatedErrors();
+            throw;
+        }
         finally
         {
             _tasks     .Clear();
