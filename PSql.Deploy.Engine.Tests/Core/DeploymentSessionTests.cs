@@ -1,8 +1,7 @@
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
-using System.Diagnostics;
-using System.Runtime.CompilerServices;
+using System.Collections.ObjectModel;
 using Moq.Protected;
 
 namespace PSql.Deploy;
@@ -179,6 +178,42 @@ public class DeploymentSessionTests : TestHarnessBase
         inner1.Data[nameof(Target)] .ShouldBe(TargetB.FullDisplayName);
     }
 
+    [Test]
+    public async Task Apply_Any_Exception_ReadOnlyData()
+    {
+        var data = new ReadOnlyDictionary<string, object?>(new Dictionary<string, object?>());
+
+        var exception = new ExceptionWithData(data);
+
+        ExpectApplyCore(TargetA, maxParallelism: 1, exception);
+
+        Session.BeginApplying(TargetA, maxParallelism: 1);
+
+        var thrown = await Should.ThrowAsync<ExceptionWithData>(() =>
+        {
+            return Session.CompleteApplyingAsync(Cancellation.Token);
+        });
+
+        thrown.ShouldBeSameAs(exception);
+    }
+
+    [Test]
+    public async Task Apply_Any_Exception_NullData()
+    {
+        var exception = new ExceptionWithData(data: null);
+
+        ExpectApplyCore(TargetA, maxParallelism: 1, exception);
+
+        Session.BeginApplying(TargetA, maxParallelism: 1);
+
+        var thrown = await Should.ThrowAsync<ExceptionWithData>(() =>
+        {
+            return Session.CompleteApplyingAsync(Cancellation.Token);
+        });
+
+        thrown.ShouldBeSameAs(exception);
+    }
+
     private void ExpectApplyCore(Target target, int maxParallelism)
     {
         SessionMock
@@ -253,5 +288,17 @@ public class DeploymentSessionTests : TestHarnessBase
 
         protected override Task ApplyCoreAsync(Target target, int maxParallelism)
             => Task.CompletedTask;
+    }
+
+    private class ExceptionWithData : Exception
+    {
+        public ExceptionWithData(IDictionary? data)
+        {
+            // This is a violation of Exception.Data's informal contract, but
+            // the code under test checks for null as a defensive measure
+            Data = data!;
+        }
+
+        public override IDictionary Data { get; }
     }
 }
