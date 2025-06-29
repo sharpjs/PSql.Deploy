@@ -184,9 +184,9 @@ public abstract class DeploymentSession : IDeploymentSessionInternal
     /// </returns>
     protected abstract Task ApplyCoreAsync(Target target, int maxParallelism);
 
-    private void HandleError(Exception e, Target? target)
+    private void HandleError(Exception e, Target target)
     {
-        if (e.Data is { IsReadOnly: false } data && target is { })
+        if (e.Data is { IsReadOnly: false } data)
             data[nameof(Target)] = target.FullDisplayName;
 
         _exceptions.Enqueue(e);
