@@ -61,6 +61,9 @@ internal class SqlMigrationTargetConnection : SqlTargetConnection, IMigrationTar
         MigrationPhase    phase,
         CancellationToken cancellation = default)
     {
+        if (migration is null)
+            throw new ArgumentNullException(nameof(migration));
+
         if (migration[phase].Sql is not { Length: > 0 } sql)
             return;
 
