@@ -77,7 +77,16 @@ public class WhatIfMigrationTargetConnectionTests : TestHarnessBase
     }
 
     [Test]
-    public async Task ExecuteMigrationContentAsync()
+    public async Task ExecuteMigrationContentAsync_NullMigration()
+    {
+        await Should.ThrowAsync<ArgumentNullException>(() =>
+        {
+            return _outer.ExecuteMigrationContentAsync(null!, MigrationPhase.Core, Cancellation.Token);
+        });
+    }
+
+    [Test]
+    public async Task ExecuteMigrationContentAsync_Ok()
     {
         // Migration has been applied through Core phase according to target database
         var migration = new Migration("M3") { State = MigrationState.AppliedCore };

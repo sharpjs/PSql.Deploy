@@ -69,6 +69,8 @@ internal class WhatIfMigrationTargetConnection : WhatIfTargetConnection, IMigrat
         MigrationPhase    phase,
         CancellationToken cancellation)
     {
+        ArgumentNullException.ThrowIfNull(migration);
+
         Log($"Would execute migration '{migration.Name}' {phase} content.");
 
         _state.OnApplied(Target, migration, phase);
