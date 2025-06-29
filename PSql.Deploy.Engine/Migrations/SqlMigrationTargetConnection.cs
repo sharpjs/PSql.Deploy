@@ -5,9 +5,7 @@ namespace PSql.Deploy.Migrations;
 
 using static CommandBehavior;
 
-/// <summary>
-///   A connection to a target database for schema migration operations.
-/// </summary>
+/// <inheritdoc cref="IMigrationTargetConnection"/>
 internal class SqlMigrationTargetConnection : SqlTargetConnection, IMigrationTargetConnection
 {
     // Cached SQL

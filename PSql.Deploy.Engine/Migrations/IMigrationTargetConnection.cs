@@ -3,6 +3,9 @@
 
 namespace PSql.Deploy.Migrations;
 
+/// <summary>
+///   A connection to a target database for schema migration operations.
+/// </summary>
 internal interface IMigrationTargetConnection : ITargetConnection
 {
     /// <summary>
