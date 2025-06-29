@@ -9,11 +9,13 @@ public class SqlMigrationTargetConnectionTests
     [Test]
     public async Task ExecuteMigrationContentAsync_NullMigration()
     {
-        await using var c = new SqlMigrationTargetConnection(new("Server=."), new TestSqlLogger());
+        await using var connection = new SqlMigrationTargetConnection(
+            new("Server=."), new TestSqlLogger()
+        );
 
         await Should.ThrowAsync<ArgumentNullException>(() =>
         {
-            return c.ExecuteMigrationContentAsync(null!, MigrationPhase.Core);
+            return connection.ExecuteMigrationContentAsync(null!, MigrationPhase.Core);
         });
     }
 }

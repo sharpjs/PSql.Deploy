@@ -9,11 +9,13 @@ public class SqlSeedTargetConnectionTests
     [Test]
     public async Task ExecuteSeedBatchAsync_NullSql()
     {
-        await using var c = new SqlSeedTargetConnection(new("Server=."), new TestSqlLogger());
+        await using var connection = new SqlSeedTargetConnection(
+            new("Server=."), new TestSqlLogger()
+        );
 
         await Should.ThrowAsync<ArgumentNullException>(() =>
         {
-            return c.ExecuteSeedBatchAsync(null!);
+            return connection.ExecuteSeedBatchAsync(null!);
         });
     }
 }
