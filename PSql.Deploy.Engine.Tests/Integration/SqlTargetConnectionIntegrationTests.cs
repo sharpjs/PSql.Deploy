@@ -13,7 +13,7 @@ public class SqlTargetConnectionIntegrationTests
     {
         var logger = new StringSqlLogger();
 
-        await using var connection = new TestSqlTargetConnection(IntegrationTestsSetup.Target, logger);
+        await using var connection = CreateConnection(logger);
 
         await connection.OpenAsync();
 
@@ -25,6 +25,11 @@ public class SqlTargetConnectionIntegrationTests
 
         message0.ShouldBe       ("(batch):1: E0:0: Test message.");
         message1.ShouldStartWith("(batch):2: E8134:16: "); // ...localized divide-by-zero error message
+    }
+
+    private static TestSqlTargetConnection CreateConnection(StringSqlLogger logger)
+    {
+        return new(IntegrationTestsSetup.Target, logger);
     }
 
     private class TestSqlTargetConnection : SqlTargetConnection

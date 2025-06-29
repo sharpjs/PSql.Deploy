@@ -8,15 +8,6 @@ namespace PSql.Deploy.Integration.Migrations;
 [TestFixture]
 public class SqlMigrationTargetConnectionIntegrationTests
 {
-    private readonly SqlMigrationTargetConnection _connection;
-
-    public SqlMigrationTargetConnectionIntegrationTests()
-    {
-        _connection = new SqlMigrationTargetConnection(
-            IntegrationTestsSetup.Target, new TestSqlLogger()
-        );
-    }
-
     [Test]
     public async Task Test()
     {
@@ -34,28 +25,35 @@ public class SqlMigrationTargetConnectionIntegrationTests
             Post = { Sql = null }, // To test skipping null or empty content
         };
 
-        await _connection.OpenAsync();
+        await using var connection = CreateConnection();
 
-        var migrations = await _connection.GetAppliedMigrationsAsync(null);
+        await connection.OpenAsync();
 
-        migrations.ShouldBeEmpty();
-
-        await _connection.InitializeMigrationSupportAsync();
-        await _connection.InitializeMigrationSupportAsync(); // Test idempotency
-
-        migrations = await _connection.GetAppliedMigrationsAsync(null);
+        var migrations = await connection.GetAppliedMigrationsAsync(null);
 
         migrations.ShouldBeEmpty();
 
-        await _connection.ExecuteMigrationContentAsync(migration, MigrationPhase.Pre);
-        await _connection.ExecuteMigrationContentAsync(migration, MigrationPhase.Core);
-        await _connection.ExecuteMigrationContentAsync(migration, MigrationPhase.Post);
+        await connection.InitializeMigrationSupportAsync();
+        await connection.InitializeMigrationSupportAsync(); // Test idempotency
 
-        migrations = await _connection.GetAppliedMigrationsAsync(null);
+        migrations = await connection.GetAppliedMigrationsAsync(null);
+
+        migrations.ShouldBeEmpty();
+
+        await connection.ExecuteMigrationContentAsync(migration, MigrationPhase.Pre);
+        await connection.ExecuteMigrationContentAsync(migration, MigrationPhase.Core);
+        await connection.ExecuteMigrationContentAsync(migration, MigrationPhase.Post);
+
+        migrations = await connection.GetAppliedMigrationsAsync(null);
 
         migrations         .ShouldHaveSingleItem();
         migrations[0].Name .ShouldBe("Test1");
         migrations[0].Hash .ShouldBe("F3BBBD66A63D4BF1747940578EC3D0103530E21D");
         migrations[0].State.ShouldBe(MigrationState.AppliedPre);
+    }
+
+    private static SqlMigrationTargetConnection CreateConnection()
+    {
+        return new(IntegrationTestsSetup.Target, new TestSqlLogger());
     }
 }
