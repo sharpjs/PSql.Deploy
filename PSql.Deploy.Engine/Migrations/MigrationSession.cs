@@ -212,6 +212,8 @@ public class MigrationSession : DeploymentSession, IMigrationSessionInternal
 
     /// <inheritdoc/>
     protected override Exception Transform(Exception exception)
-        => exception as MigrationException
-        ?? new MigrationException(message: null, exception);
+    {
+        return exception as MigrationException
+            ?? new MigrationException(message: null, exception);
+    }
 }
