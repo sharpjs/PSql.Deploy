@@ -66,6 +66,8 @@ public class SeedSession : DeploymentSession, ISeedSessionInternal
     internal SeedTargetConnectionFactory ConnectionFactory { get; set; }
         = (target, logger) => new SqlSeedTargetConnection(target, logger);
 
+    private Task<ImmutableArray<LoadedSeed>>? _loadTask;
+
     /// <inheritdoc/>
     public void DiscoverSeeds(string path, string[] names)
     {
@@ -75,14 +77,31 @@ public class SeedSession : DeploymentSession, ISeedSessionInternal
     /// <inheritdoc/>
     protected override async Task ApplyCoreAsync(Target target, int maxParallelism)
     {
-        ArgumentNullException.ThrowIfNull(target);
+        var seeds = await LazyLoadSeedsAsync();
+
+        foreach (var seed in seeds)
+            await new SeedApplicator(this, seed, target).ApplyAsync();
+    }
+
+    private async Task<ImmutableArray<LoadedSeed>> LazyLoadSeedsAsync()
+    {
+        if (_loadTask is { } otherTask)
+            return await otherTask;
+
+        var deferral = new TaskCompletionSource<ImmutableArray<LoadedSeed>>();
+
+        otherTask = Interlocked.CompareExchange(ref _loadTask, deferral.Task, null);
+        if (otherTask is not null)
+            return await otherTask;
+
+        var builder = ImmutableArray.CreateBuilder<LoadedSeed>();
 
         foreach (var seed in Seeds)
-        {
-            var loadedSeed = SeedLoader.Load(seed); // TODO: once
+            builder.Add(SeedLoader.Load(seed, defines: null));
 
-            await new SeedApplicator(this, loadedSeed, target).ApplyAsync();
-        }
+        var result = builder.MoveToImmutable();
+        deferral.SetResult(result);
+        return result;
     }
 
     private ISeedTargetConnection Connect(Target target, ISqlMessageLogger logger)
