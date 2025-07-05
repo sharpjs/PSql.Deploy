@@ -95,6 +95,7 @@ internal class MigrationApplicator : IMigrationValidationContext
         catch (OperationCanceledException)
         {
             _disposition = TargetDisposition.Incomplete;
+            ReportCanceled();
             throw;
         }
         catch (Exception e)
@@ -421,6 +422,12 @@ internal class MigrationApplicator : IMigrationValidationContext
         Console.ReportProblem(Session, Target, exception.Message);
 
         Log(exception.ToString());
+    }
+
+    private void ReportCanceled()
+    {
+        Log("");
+        Log("Migration application was canceled.");
     }
 
     private void ReportEnded()
