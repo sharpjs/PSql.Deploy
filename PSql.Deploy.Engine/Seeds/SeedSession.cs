@@ -73,9 +73,16 @@ public class SeedSession : DeploymentSession, ISeedSessionInternal
     }
 
     /// <inheritdoc/>
-    protected override Task ApplyCoreAsync(Target target, int maxParallelism)
+    protected override async Task ApplyCoreAsync(Target target, int maxParallelism)
     {
-        return Task.CompletedTask;
+        ArgumentNullException.ThrowIfNull(target);
+
+        foreach (var seed in Seeds)
+        {
+            var loadedSeed = SeedLoader.Load(seed); // TODO: once
+
+            await new SeedApplicator(this, loadedSeed, target).ApplyAsync();
+        }
     }
 
     private ISeedTargetConnection Connect(Target target, ISqlMessageLogger logger)
