@@ -350,7 +350,7 @@ internal class MigrationApplicator : IMigrationValidationContext
         // Body
         foreach (var migration in pendingMigrations)
         {
-            if (migration.Diagnostics.Count == 0)
+            if (migration.Diagnostics.Count is 0)
                 continue;
 
             hasDiagnostics = true;
@@ -438,11 +438,7 @@ internal class MigrationApplicator : IMigrationValidationContext
 
         // Footer
         Log("");
-        Log(string.Format(
-            "Applied {0} migration(s) in {1:N3} second(s)",
-            _appliedCount,
-            elapsed.TotalSeconds
-        ));
+        Log($"Applied {_appliedCount} migration(s) in {elapsed.TotalSeconds:N3} second(s).");
     }
 
     private void BeginLog()
@@ -476,6 +472,6 @@ internal class MigrationApplicator : IMigrationValidationContext
 
     private static MigrationException OnInvalid()
     {
-        return new MigrationException("Migration validation failed.");
+        return new("Migration validation failed.");
     }
 }
