@@ -57,6 +57,15 @@ public class SeedSession : DeploymentSession, ISeedSessionInternal
     public ImmutableArray<Seed> Seeds { get; private set; }
         = ImmutableArray<Seed>.Empty;
 
+    /// <summary>
+    ///   Gets or sets the factory for connections to target databases.
+    /// </summary>
+    /// <remarks>
+    ///   This property enables tests to inject a mock connection factory.
+    /// </remarks>
+    internal SeedTargetConnectionFactory ConnectionFactory { get; set; }
+        = (target, logger) => new SqlSeedTargetConnection(target, logger);
+
     /// <inheritdoc/>
     public void DiscoverSeeds(string path, string[] names)
     {
@@ -68,6 +77,21 @@ public class SeedSession : DeploymentSession, ISeedSessionInternal
     {
         return Task.CompletedTask;
     }
+
+    private ISeedTargetConnection Connect(Target target, ISqlMessageLogger logger)
+    {
+        var connection = ConnectionFactory.Invoke(target, logger);
+
+        if (IsWhatIfMode)
+            connection = new WhatIfSeedTargetConnection(connection);
+
+        return connection;
+    }
+
+    /// <inheritdoc/>
+    ISeedTargetConnection ISeedSessionInternal
+        .Connect(Target target, ISqlMessageLogger logger)
+        => Connect(target, logger);
 
     /// <inheritdoc/>
     protected override Exception Transform(Exception exception)
