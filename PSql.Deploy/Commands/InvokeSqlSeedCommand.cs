@@ -115,13 +115,8 @@ public class InvokeSqlSeedCommand : AsyncPSCmdlet
 
         foreach (DictionaryEntry entry in Define)
         {
-            var key
-                =  entry.Key?.ToString()
-                ?? throw OnNullOrEmptyDefineKey();
-
-            var value
-                =  entry.Value?.ToString()
-                ?? "";
+            var key   = entry.Key  ?.ToString() ?? throw OnNullOrEmptyDefineKey();
+            var value = entry.Value?.ToString() ?? "";
 
             builder.Add((key, value));
         }
