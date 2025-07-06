@@ -61,7 +61,8 @@ public class InvokeSqlSeedCommand : AsyncPSCmdlet
 
         _session = new(
             GetOptions(),
-            new CmdletSeedConsole(this, this.GetCurrentPath())
+            new CmdletSeedConsole(this, this.GetCurrentPath()),
+            GetDefines()
         );
     }
 
@@ -103,6 +104,37 @@ public class InvokeSqlSeedCommand : AsyncPSCmdlet
             options |= S.SeedSessionOptions.IsWhatIfMode;
 
         return options;
+    }
+
+    private IEnumerable<(string, string)>? GetDefines()
+    {
+        if (Define is null || Define.Count is 0)
+            return [];
+
+        var builder = ImmutableArray.CreateBuilder<(string, string)>(Define.Count);
+
+        foreach (DictionaryEntry entry in Define)
+        {
+            var key
+                =  entry.Key?.ToString()
+                ?? throw OnNullOrEmptyDefineKey();
+
+            var value
+                =  entry.Value?.ToString()
+                ?? "";
+
+            builder.Add((key, value));
+        }
+
+        return builder.MoveToImmutable();
+    }
+
+    private Exception OnNullOrEmptyDefineKey()
+    {
+        return new ArgumentException(
+            "Key must be non-null and must convert to a non-empty string.",
+            nameof(Define)
+        );
     }
 
     [Conditional("DEBUG")]

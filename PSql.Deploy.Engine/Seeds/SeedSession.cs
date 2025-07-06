@@ -29,7 +29,9 @@ public class SeedSession : DeploymentSession, ISeedSessionInternal
     /// <exception cref="ArgumentOutOfRangeException">
     ///   <paramref name="maxErrorCount"/> is negative.
     /// </exception>
-    public SeedSession(SeedSessionOptions options, ISeedConsole console, int maxErrorCount = 0)
+    public SeedSession(SeedSessionOptions options, ISeedConsole console,
+        IEnumerable<(string, string)>? defines = null,
+        int maxErrorCount = 0)
         : base(maxErrorCount)
     {
         if (console is null)
@@ -37,6 +39,7 @@ public class SeedSession : DeploymentSession, ISeedSessionInternal
 
         Options = options;
         Console = console;
+        Defines = defines ?? [];
     }
 
     /// <summary>
@@ -48,6 +51,11 @@ public class SeedSession : DeploymentSession, ISeedSessionInternal
     ///   Gets the user interface via which to report progress.
     /// </summary>
     public ISeedConsole Console { get; }
+
+    /// <summary>
+    ///   Gets the preprocessor variable definitions for the session.
+    /// </summary>
+    public IEnumerable<(string, string)> Defines { get; }
 
     /// <inheritdoc/>
     public override bool IsWhatIfMode
@@ -97,7 +105,7 @@ public class SeedSession : DeploymentSession, ISeedSessionInternal
         var builder = ImmutableArray.CreateBuilder<LoadedSeed>();
 
         foreach (var seed in Seeds)
-            builder.Add(SeedLoader.Load(seed, defines: null));
+            builder.Add(SeedLoader.Load(seed, Defines));
 
         var result = builder.MoveToImmutable();
         deferral.SetResult(result);
