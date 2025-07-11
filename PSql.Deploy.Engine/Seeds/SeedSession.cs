@@ -19,13 +19,14 @@ public class SeedSession : DeploymentSession, ISeedSessionInternal
     ///   The user interface via which to report progress.
     /// </param>
     /// <exception cref="ArgumentNullException">
+    ///   <paramref name="options"/> and/or
     ///   <paramref name="console"/> is <see langword="null"/>.
     /// </exception>
     public SeedSession(SeedSessionOptions options, ISeedConsole console)
-        : base(options.MaxErrorCount)
+        : base(options?.MaxErrorCount ?? 0)
     {
-        if (console is null)
-            throw new ArgumentNullException(nameof(console));
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(console);
 
         Console = console;
         Defines = options.Defines ?? [];
