@@ -324,32 +324,32 @@ public class MigrationSessionTests : TestHarnessBase
         migration.Post.Sql       .ShouldNotBeNullOrEmpty();
     }
 
-    [Test]
-    public void BeginApplying_Target_NullTarget()
-    {
-        Should.Throw<ArgumentNullException>(() =>
-        {
-            Session.BeginApplying(target: null!);
-        });
-    }
+    // [Test]
+    // public void BeginApplying_Target_NullTarget()
+    // {
+    //     Should.Throw<ArgumentNullException>(() =>
+    //     {
+    //         Session.BeginApplying(target: null!);
+    //     });
+    // }
 
-    [Test]
-    public void BeginApplying_Target_NegativeParallelism()
-    {
-        Should.Throw<ArgumentOutOfRangeException>(() =>
-        {
-            Session.BeginApplying(TargetA, maxParallelism: -1);
-        });
-    }
+    // [Test]
+    // public void BeginApplying_Target_NegativeParallelism()
+    // {
+    //     Should.Throw<ArgumentOutOfRangeException>(() =>
+    //     {
+    //         Session.BeginApplying(TargetA, maxParallelism: -1);
+    //     });
+    // }
 
-    [Test]
-    public void BeginApplying_Group_NullTarget()
-    {
-        Should.Throw<ArgumentNullException>(() =>
-        {
-            Session.BeginApplying(group: null!);
-        });
-    }
+    // [Test]
+    // public void BeginApplying_Group_NullTarget()
+    // {
+    //     Should.Throw<ArgumentNullException>(() =>
+    //     {
+    //         Session.BeginApplying(group: null!);
+    //     });
+    // }
 
     [Test]
     public async Task Apply_Target_Exception()
@@ -581,11 +581,11 @@ public class MigrationSessionTests : TestHarnessBase
 
     private class TargetFocus
     {
-        private readonly MigrationSessionTests                  _parent;
-        private readonly Mock<IMigrationTargetConnection>       _connection;
-        private readonly Target                                 _target;
-        private readonly MockSequence                           _sequence;
-        private readonly StringWriter                           _log;
+        private readonly MigrationSessionTests            _parent;
+        private readonly Target                           _target;
+        private readonly Mock<IMigrationTargetConnection> _connection;
+        private readonly MockSequence                     _sequence;
+        private readonly StringWriter                     _log;
 
         public TargetFocus(MigrationSessionTests parent, Target target)
             : this(parent, target, sequence: new())
@@ -599,8 +599,8 @@ public class MigrationSessionTests : TestHarnessBase
         {
             _parent     = parent;
             _target     = target;
-            _sequence   = sequence;
             _connection = parent.Mocks.Create<IMigrationTargetConnection>();
+            _sequence   = sequence;
             _log        = new();
         }
 

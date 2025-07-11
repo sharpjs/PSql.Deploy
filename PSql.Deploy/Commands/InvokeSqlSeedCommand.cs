@@ -61,8 +61,7 @@ public class InvokeSqlSeedCommand : AsyncPSCmdlet
 
         _session = new(
             GetOptions(),
-            new CmdletSeedConsole(this, this.GetCurrentPath()),
-            GetDefines()
+            new CmdletSeedConsole(this, this.GetCurrentPath())
         );
     }
 
@@ -98,12 +97,12 @@ public class InvokeSqlSeedCommand : AsyncPSCmdlet
 
     private S.SeedSessionOptions GetOptions()
     {
-        var options = default(S.SeedSessionOptions);
-
-        if (this.IsWhatIf())
-            options |= S.SeedSessionOptions.IsWhatIfMode;
-
-        return options;
+        return new S.SeedSessionOptions
+        {
+            Defines       = GetDefines(),
+            IsWhatIfMode  = this.IsWhatIf(),
+            MaxErrorCount = MaxErrorCount,
+        };
     }
 
     private IEnumerable<(string, string)>? GetDefines()

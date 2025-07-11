@@ -16,7 +16,7 @@ using UnprovidedTopicError = DependencyQueueUnprovidedTopicError <SeedModule>;
 /// <summary>
 ///   An algorithm that applies a content seed to a target database.
 /// </summary>
-internal class SeedApplicator //: IDisposable
+internal class SeedApplicator
 {
     /// <summary>
     ///   Initializes a new <see cref="SeedApplicator"/> instance.
@@ -30,12 +30,23 @@ internal class SeedApplicator //: IDisposable
     /// <param name="target">
     ///   An object specifying how to connect to the target database.
     /// </param>
+    /// <param name="maxParallelism">
+    ///   The maximum number of batches that may be executed against the target
+    ///   database in parallel.
+    /// </param>
     /// <exception cref="ArgumentNullException">
     ///   <paramref name="session"/>,
     ///   <paramref name="seed"/>, and/or
     ///   <paramref name="target"/> is <see langword="null"/>.
     /// </exception>
-    public SeedApplicator(ISeedSessionInternal session, LoadedSeed seed, Target target)
+    /// <exception cref="ArgumentOutOfRangeException">
+    ///   <paramref name="maxParallelism"/> is zero or negative.
+    /// </exception>
+    public SeedApplicator(
+        ISeedSessionInternal session,
+        LoadedSeed           seed,
+        Target               target,
+        int                  maxParallelism)
     {
         if (session is null)
             throw new ArgumentNullException(nameof(session));
@@ -43,10 +54,13 @@ internal class SeedApplicator //: IDisposable
             throw new ArgumentNullException(nameof(seed));
         if (target is null)
             throw new ArgumentNullException(nameof(target));
+        if (maxParallelism < 1)
+            throw new ArgumentOutOfRangeException(nameof(maxParallelism));
 
-        Session = session;
-        Seed    = seed;
-        Target  = target;
+        Session        = session;
+        Seed           = seed;
+        Target         = target;
+        MaxParallelism = maxParallelism;
 
         _stopwatch = new();
     }
@@ -70,6 +84,12 @@ internal class SeedApplicator //: IDisposable
     ///   Gets an object representing the target database.
     /// </summary>
     public Target Target { get; }
+
+    /// <summary>
+    ///   Gets the maximum number of batches that may be executed against the
+    ///   target database in parallel.
+    /// </summary>
+    public int MaxParallelism { get; }
 
     // Time elapsed in ApplyAsync
     private readonly Stopwatch _stopwatch;
@@ -109,7 +129,7 @@ internal class SeedApplicator //: IDisposable
             await queue.RunAsync(
                 SeedWorkerMainAsync,
                 Session,
-                4, // TODO: Session.MaxParallelism,
+                MaxParallelism,
                 Session.CancellationToken
             );
         }
@@ -175,9 +195,11 @@ internal class SeedApplicator //: IDisposable
         return Session.Connect(Target, logger);
     }
 
-    private Task PrepareAsync(ISeedTargetConnection connection, QueueContext context)
+    private async Task PrepareAsync(ISeedTargetConnection connection, QueueContext context)
     {
-        return connection.PrepareAsync(
+        await connection.OpenAsync(context.CancellationToken);
+
+        await connection.PrepareAsync(
             context.RunId,
             context.WorkerId,
             context.CancellationToken
@@ -295,7 +317,7 @@ internal class SeedApplicator //: IDisposable
                 ));
 
                 var hasProvides = provides.MoveNext();
-                var hasRequires = provides.MoveNext();
+                var hasRequires = requires.MoveNext();
                 if (!hasProvides && !hasRequires)
                     break;
 

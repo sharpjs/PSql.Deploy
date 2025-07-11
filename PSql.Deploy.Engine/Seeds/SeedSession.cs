@@ -18,34 +18,19 @@ public class SeedSession : DeploymentSession, ISeedSessionInternal
     /// <param name="console">
     ///   The user interface via which to report progress.
     /// </param>
-    /// <param name="maxErrorCount">
-    ///   The maximum count of exceptions that the session should tolerate
-    ///   before cancelling ongoing operations.  Must be zero or a positive
-    ///   number.
-    /// </param>
     /// <exception cref="ArgumentNullException">
     ///   <paramref name="console"/> is <see langword="null"/>.
     /// </exception>
-    /// <exception cref="ArgumentOutOfRangeException">
-    ///   <paramref name="maxErrorCount"/> is negative.
-    /// </exception>
-    public SeedSession(SeedSessionOptions options, ISeedConsole console,
-        IEnumerable<(string, string)>? defines = null,
-        int maxErrorCount = 0)
-        : base(maxErrorCount)
+    public SeedSession(SeedSessionOptions options, ISeedConsole console)
+        : base(options.MaxErrorCount)
     {
         if (console is null)
             throw new ArgumentNullException(nameof(console));
 
-        Options = options;
         Console = console;
-        Defines = defines ?? [];
+        Defines = options.Defines ?? [];
+        IsWhatIfMode = options.IsWhatIfMode;
     }
-
-    /// <summary>
-    ///   Gets thie options for the session.
-    /// </summary>
-    public SeedSessionOptions Options { get; }
 
     /// <summary>
     ///   Gets the user interface via which to report progress.
@@ -58,8 +43,7 @@ public class SeedSession : DeploymentSession, ISeedSessionInternal
     public IEnumerable<(string, string)> Defines { get; }
 
     /// <inheritdoc/>
-    public override bool IsWhatIfMode
-        => (Options & SeedSessionOptions.IsWhatIfMode) is not 0;
+    public override bool IsWhatIfMode { get; }
 
     /// <inheritdoc/>
     public ImmutableArray<Seed> Seeds { get; private set; }
@@ -88,9 +72,10 @@ public class SeedSession : DeploymentSession, ISeedSessionInternal
         var seeds = await LazyLoadSeedsAsync();
 
         foreach (var seed in seeds)
-            await new SeedApplicator(this, seed, target).ApplyAsync();
+            await new SeedApplicator(this, seed, target, maxParallelism).ApplyAsync();
     }
 
+    [ExcludeFromCodeCoverage(Justification = "timing-dependent")]
     private async Task<ImmutableArray<LoadedSeed>> LazyLoadSeedsAsync()
     {
         if (_loadTask is { } otherTask)
@@ -102,7 +87,7 @@ public class SeedSession : DeploymentSession, ISeedSessionInternal
         if (otherTask is not null)
             return await otherTask;
 
-        var builder = ImmutableArray.CreateBuilder<LoadedSeed>();
+        var builder = ImmutableArray.CreateBuilder<LoadedSeed>(Seeds.Length);
 
         foreach (var seed in Seeds)
             builder.Add(SeedLoader.Load(seed, Defines));
