@@ -19,6 +19,27 @@ public abstract class DeploymentSession : IDeploymentSessionInternal
     /// <summary>
     ///   Initializes a new <see cref="DeploymentSession"/> instance.
     /// </summary>
+    /// <param name="options">
+    ///   Options for the session.
+    /// </param>
+    /// <exception cref="ArgumentNullException">
+    ///   <paramref name="options"/> is <see langword="null"/>.
+    /// </exception>
+    protected DeploymentSession(DeploymentSessionOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        _tasks        = [];
+        _exceptions   = [];
+        _cancellation = new();
+
+        MaxErrorCount = options.MaxErrorCount;
+        IsWhatIfMode  = options.IsWhatIfMode;
+    }
+
+    /// <summary>
+    ///   Initializes a new <see cref="DeploymentSession"/> instance.
+    /// </summary>
     /// <param name="maxErrorCount">
     ///   The maximum count of exceptions that the session should tolerate
     ///   before cancelling ongoing operations.  Must be zero or a positive
@@ -50,7 +71,8 @@ public abstract class DeploymentSession : IDeploymentSessionInternal
     public int MaxErrorCount { get; }
 
     /// <inheritdoc/>
-    public abstract bool IsWhatIfMode { get; }
+    public virtual bool IsWhatIfMode { get; }
+    // TODO: Remove virtual
 
     /// <inheritdoc/>
     public bool HasErrors => !_exceptions.IsEmpty;

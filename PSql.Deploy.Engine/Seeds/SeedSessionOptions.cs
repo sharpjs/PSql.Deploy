@@ -4,9 +4,10 @@
 namespace PSql.Deploy.Seeds;
 
 /// <summary>
-///   Options for <see cref="SeedSession"/>.
+///   Options for a deployment session in which content seeds are applied to
+///   target databases.
 /// </summary>
-public class SeedSessionOptions
+public class SeedSessionOptions : DeploymentSessionOptions
 {
     /// <summary>
     ///   Gets or sets preprocessor variable definitions for the session.  Each
@@ -14,33 +15,4 @@ public class SeedSessionOptions
     ///   default value is <see langword="null"/>.
     /// </summary>
     public IEnumerable<(string Name, string Value)>? Defines { get; set; }
-
-    /// <summary>
-    ///   Gets or sets whether the seeding session operates in what-if mode.
-    ///   In this mode, a seeding session reports what actions it would perform
-    ///   against a target database but does not perform the actions.  The
-    ///   default value is <see langword="false"/>.
-    /// </summary>
-    public bool IsWhatIfMode { get; set; }
-
-    /// <summary>
-    ///   Gets or sets the maximum count of exceptions that the seeding session
-    ///   should tolerate before cancelling ongoing operations.  Must be zero
-    ///   or a positive number.  The default value is zero.
-    /// </summary>
-    /// <exception cref="ArgumentOutOfRangeException">
-    ///   <paramref name="value"/> is negative.
-    /// </exception>
-    public int MaxErrorCount
-    {
-        get => _maxErrorCount;
-        set
-        {
-            if (value < 0)
-                throw new ArgumentOutOfRangeException(nameof(value));
-
-            _maxErrorCount = value;
-        }
-    }
-    private int _maxErrorCount;
 }

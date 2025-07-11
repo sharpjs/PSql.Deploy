@@ -23,14 +23,13 @@ public class SeedSession : DeploymentSession, ISeedSessionInternal
     ///   <paramref name="console"/> is <see langword="null"/>.
     /// </exception>
     public SeedSession(SeedSessionOptions options, ISeedConsole console)
-        : base(options?.MaxErrorCount ?? 0)
+        : base(options)
     {
-        ArgumentNullException.ThrowIfNull(options);
+        // options null-checked by base constructor
         ArgumentNullException.ThrowIfNull(console);
 
         Console = console;
         Defines = options.Defines ?? [];
-        IsWhatIfMode = options.IsWhatIfMode;
     }
 
     /// <summary>
@@ -42,9 +41,6 @@ public class SeedSession : DeploymentSession, ISeedSessionInternal
     ///   Gets the preprocessor variable definitions for the session.
     /// </summary>
     public IEnumerable<(string, string)> Defines { get; }
-
-    /// <inheritdoc/>
-    public override bool IsWhatIfMode { get; }
 
     /// <inheritdoc/>
     public ImmutableArray<Seed> Seeds { get; private set; }

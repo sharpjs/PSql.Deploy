@@ -4,7 +4,6 @@
 namespace PSql.Deploy.Seeds;
 
 using System.Collections.Concurrent;
-using static SeedSessionOptions;
 
 [TestFixture]
 public class SeedSessionTests : TestHarnessBase
