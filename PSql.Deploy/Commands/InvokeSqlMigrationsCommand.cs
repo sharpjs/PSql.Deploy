@@ -121,19 +121,14 @@ public class InvokeSqlMigrationsCommand : AsyncPSCmdlet
 
     private M.MigrationSessionOptions GetOptions()
     {
-        var options = default(M.MigrationSessionOptions);
+        var options = new M.MigrationSessionOptions();
 
-        if (Phase is null)
-            options |= M.MigrationSessionOptions.AllPhases;
-        else
-            foreach (var phase in Phase)
-                options |= (M.MigrationSessionOptions) (1 << (int) phase);
+        if (Phase is not null)
+            options.EnabledPhases = Phase.Select(p => (M.MigrationPhase) p);
 
-        if (AllowContentInCorePhase)
-            options |= M.MigrationSessionOptions.AllowContentInCorePhase;
-
-        if (this.IsWhatIf())
-            options |= M.MigrationSessionOptions.IsWhatIfMode;
+        options.AllowContentInCorePhase = AllowContentInCorePhase;
+        options.MaxErrorCount           = MaxErrorCount;
+        options.IsWhatIfMode            = this.IsWhatIf();
 
         return options;
     }

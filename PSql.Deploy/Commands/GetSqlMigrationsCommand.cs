@@ -93,8 +93,11 @@ public sealed class GetSqlMigrationsCommand : AsyncPSCmdlet
     private async Task<IReadOnlyList<M.Migration>> GetMigrationsAsync(SqlTargetDatabase target)
     {
         using var session = new M.MigrationSession(
-            M.MigrationSessionOptions.PrePhase |
-            M.MigrationSessionOptions.IsWhatIfMode,
+            new()
+            {
+                EnabledPhases = [M.MigrationPhase.Pre],
+                IsWhatIfMode  = true,
+            },
             M.NullMigrationConsole.Instance
         );
 

@@ -2,11 +2,8 @@
 // SPDX-License-Identifier: MIT
 
 using System.Collections.Concurrent;
-using System.Numerics;
 
 namespace PSql.Deploy.Migrations;
-
-using static BitOperations;
 
 /// <summary>
 ///   A session in which schema migrations are applied to target databases.
@@ -18,70 +15,59 @@ public class MigrationSession : DeploymentSession, IMigrationSessionInternal
     ///   specified options and console.
     /// </summary>
     /// <param name="options">
-    ///   The options for the session.  If the options specify no phases, the
-    ///   session enables <see cref="MigrationSessionOptions.AllPhases"/>.
+    ///   The options for the session.
     /// </param>
     /// <param name="console">
     ///   The user interface to report the progress of the session.
     /// </param>
-    /// <param name="maxErrorCount">
-    ///   The maximum count of exceptions that the session should tolerate
-    ///   before cancelling ongoing operations.  Must be zero or a positive
-    ///   number.
-    /// </param>
     /// <exception cref="ArgumentNullException">
+    ///   <paramref name="options"/> and/or
     ///   <paramref name="console"/> is <see langword="null"/>.
     /// </exception>
-    /// <exception cref="ArgumentOutOfRangeException">
-    ///   <paramref name="maxErrorCount"/> is negative.
+    /// <exception cref="ArgumentException">
+    ///    <paramref name="options"/> specifies that no phases are enabled.
     /// </exception>
-    public MigrationSession(
-        MigrationSessionOptions options,
-        IMigrationConsole       console,
-        int                     maxErrorCount = 0)
+    public MigrationSession(MigrationSessionOptions options, IMigrationConsole console)
+        : base(options)
     {
-        if (console is null)
-            throw new ArgumentNullException(nameof(console));
+        // options null-checked by base constructor
+        ArgumentNullException.ThrowIfNull(console);
 
-        var phaseCount = GetPhaseCount(options);
-        if (phaseCount is 0)
-            options |= MigrationSessionOptions.AllPhases;
+        Console                 = console;
+        EnabledPhases           = new(options.EnabledPhases);
+        AllowContentInCorePhase = options.AllowContentInCorePhase;
 
-        Options      = options;
-        Console      = console;
-        CurrentPhase = GetMinPhase(options);
-        _isNextPhase = false;
+        // At least one phase must be enabled
+        if (EnabledPhases.Count is 0)
+            throw OnNoEnabledPhases();
 
-        if (phaseCount is not 1)
+        // Multi-phase sessions need to remember target groups for later phases
+        if (EnabledPhases.Count > 1)
             _targetGroups = [];
 
+        // What-if sessions need to remember what they have pretended to do
         if (IsWhatIfMode)
             _whatIfState = new();
-    }
 
-    /// <summary>
-    ///   Gets the options for the session.
-    /// </summary>
-    public MigrationSessionOptions Options { get; }
+        CurrentPhase = EnabledPhases.First();
+        _isNextPhase = false;
+    }
 
     /// <inheritdoc/>
     public IMigrationConsole Console { get; }
 
     /// <inheritdoc/>
-    public bool IsEnabled(MigrationPhase phase)
-        => ((int) Options & 1 << (int) phase) is not 0;
-
-    /// <inheritdoc/>
-    public bool AllowContentInCorePhase
-        => (Options & MigrationSessionOptions.AllowContentInCorePhase) is not 0;
-
-    /// <inheritdoc/>
-    [MemberNotNullWhen(true, nameof(_whatIfState))]
-    public override bool IsWhatIfMode
-        => (Options & MigrationSessionOptions.IsWhatIfMode) is not 0;
+    public MigrationPhaseSet EnabledPhases { get; }
 
     /// <inheritdoc/>
     public MigrationPhase CurrentPhase { get; private set; }
+
+    /// <inheritdoc/>
+    public bool AllowContentInCorePhase { get; }
+
+    /// <inheritdoc/>
+    [MemberNotNullWhen(true, nameof(_whatIfState))]
+    public override bool IsWhatIfMode => base.IsWhatIfMode;
 
     /// <inheritdoc/>
     public ImmutableArray<Migration> Migrations { get; private set; }
@@ -100,13 +86,13 @@ public class MigrationSession : DeploymentSession, IMigrationSessionInternal
     internal MigrationTargetConnectionFactory ConnectionFactory { get; set; }
         = (target, logger) => new SqlMigrationTargetConnection(target, logger);
 
-    // What has been simulated in what-if mode
-    private readonly WhatIfMigrationState? _whatIfState;
-
     // Targets/groups to repeat in a multi-phase session; null for single-phase
     private readonly ConcurrentQueue<TargetGroup>? _targetGroups;
 
-    // Whether advanced beyond initial phase in a multi-phase session
+    // What has been simulated in what-if mode
+    private readonly WhatIfMigrationState? _whatIfState;
+
+    // Whether the session has advanced beyond the initial phase (and is multi-phase)
     private bool _isNextPhase;
 
     /// <inheritdoc/>
@@ -166,7 +152,7 @@ public class MigrationSession : DeploymentSession, IMigrationSessionInternal
 
         while (++phase <= MigrationPhase.Post)
         {
-            if (!IsEnabled(phase))
+            if (!EnabledPhases.Contains(phase))
                 continue;
 
             Thread.MemoryBarrier();
@@ -204,16 +190,15 @@ public class MigrationSession : DeploymentSession, IMigrationSessionInternal
     void IMigrationSessionInternal.LoadContent(Migration migration)
         => MigrationLoader.LoadContent(migration);
 
-    private static MigrationPhase GetMinPhase(MigrationSessionOptions options)
-        => (MigrationPhase) TrailingZeroCount((int) options);
-
-    private static int GetPhaseCount(MigrationSessionOptions options)
-        => PopCount((uint) (options & MigrationSessionOptions.AllPhases));
-
     /// <inheritdoc/>
     protected override Exception Transform(Exception exception)
     {
         return exception as MigrationException
             ?? new MigrationException(message: null, exception);
+    }
+
+    private static ArgumentException OnNoEnabledPhases()
+    {
+        return new ArgumentException("At least one migration phase must be enabled.", "options");
     }
 }

@@ -4,70 +4,34 @@
 namespace PSql.Deploy.Migrations;
 
 /// <summary>
-///   Options for <see cref="MigrationSession"/>.
+///   Options for a session in which schema migrations are applied to target
+///   databases.
 /// </summary>
-[Flags]
-public enum MigrationSessionOptions
+public class MigrationSessionOptions : DeploymentSessionOptions
 {
     /// <summary>
-    ///   Apply migration content in the <b>Pre</b>-deployment phase, if any
-    ///   such content exists.
+    ///   Gets or sets the phases in which the session should apply migrations,
+    ///   or <see langword="null"/> to specify all phases.  The default value
+    ///   is <see langword="null"/>.
     /// </summary>
     /// <remarks>
-    ///   This phase supports zero-downtime deployment scenarios.  Migration
-    ///   content in the Pre phase runs <b>before</b> application deployment,
-    ///   while the previous version of the application is running.
+    ///   <see cref="MigrationSession"/> requires this property either to be
+    ///   <see langword="null"/> or to specify at least one migration phase.
+    ///   To avoid an exception, ensure that the value of this property is not
+    ///   an empty collection.
     /// </remarks>
-    /// <seealso cref="MigrationPhase.Pre"/>
-    PrePhase = 1 << MigrationPhase.Pre,
+    public IEnumerable<MigrationPhase>? EnabledPhases { get; set; }
 
     /// <summary>
-    ///   Apply migration content in the <b>Core</b> phase, if any such content
-    ///   exists.
-    /// </summary>
-    /// <remarks>
-    ///   ⚠ PSql.Deploy interprets migration content in the Core phase as
-    ///   requiring application downtime, explicitly breaking a zero-downtime
-    ///   deployment scenario.  As a safety measure, PSql.Deploy disallows
-    ///   content in the Core phase by default.  To opt in to Core content,
-    ///   use the <see cref="AllowContentInCorePhase"/> option.
-    /// </remarks>
-    /// <seealso cref="MigrationPhase.Core"/>
-    CorePhase = 1 << MigrationPhase.Core,
-
-    /// <summary>
-    ///   Apply migration content in the <b>Post</b>-deployment phase, if any
-    ///   such content exists.
-    /// </summary>
-    /// <remarks>
-    ///   This phase supports zero-downtime deployment scenarios.  Migration
-    ///   content in the Post phase runs <b>after</b> application deployment,
-    ///   while the new version of the application is running.
-    /// </remarks>
-    /// <seealso cref="MigrationPhase.Post"/>
-    PostPhase = 1 << MigrationPhase.Post,
-
-    /// <summary>
-    ///   Apply migration content in all phases for which content exists.
-    /// </summary>
-    AllPhases = PrePhase | CorePhase | PostPhase,
-
-    /// <summary>
-    ///   Allow migration content in the <b>Core</b> phase.
+    ///   Gets or sets whether the session should allow migration content in
+    ///   the <b>Core</b> phase.  The default value is <see langword="false"/>.
     /// </summary>
     /// <remarks>
     ///   ⚠ PSql.Deploy interprets migration content in the Core phase as
     ///   requiring application downtime, explicitly breaking a zero-downtime
     ///   deployment scenario.  As a safety measure, PSql.Deploy disallows
-    ///   content in the Core phase by default.  This option removes that
-    ///   safety measure.
+    ///   content in the Core phase by default.  Setting this property to
+    ///   <see langword="true"/> removes that safety measure.
     /// </remarks>
-    AllowContentInCorePhase = 1 << 3,
-
-    /// <summary>
-    ///   Operate in what-if mode.  In this mode, a migration session reports
-    ///   what actions it would perform against a target database but does not
-    ///   perform the actions.
-    /// </summary>
-    IsWhatIfMode = 1 << 31,
+    public bool AllowContentInCorePhase { get; set; }
 }

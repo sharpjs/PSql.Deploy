@@ -9,18 +9,14 @@ namespace PSql.Deploy.Migrations;
 public interface IMigrationSession : IDeploymentSession
 {
     /// <summary>
-    ///   Gets whether the session applies migration content in the specified
-    ///   phase, if any such content exists.
+    ///   Gets the user interface via which the session reports progress.
     /// </summary>
-    /// <param name="phase">
-    ///   The phase to check.
-    /// </param>
-    /// <returns>
-    ///   <see langword="true"/> if the session applies migration content
-    ///     in the <paramref name="phase"/> if any such content exists;
-    ///   <see langword="false"/> otherwise.
-    /// </returns>
-    bool IsEnabled(MigrationPhase phase);
+    IMigrationConsole Console { get; }
+
+    /// <summary>
+    ///   Gets the phases in which session applies migrations.
+    /// </summary>
+    public MigrationPhaseSet EnabledPhases { get; }
 
     /// <summary>
     ///   Gets the current phase.
@@ -34,12 +30,7 @@ public interface IMigrationSession : IDeploymentSession
     ///   See remarks for
     ///   <see cref="MigrationSessionOptions.AllowContentInCorePhase"/>.
     /// </remarks>
-    bool AllowContentInCorePhase { get; } // TODO: Mention 'non-skippable' again?
-
-    /// <summary>
-    ///   Gets the user interface via which the session reports progress.
-    /// </summary>
-    IMigrationConsole Console { get; }
+    bool AllowContentInCorePhase { get; }
 
     /// <summary>
     ///   Gets the defined migrations.

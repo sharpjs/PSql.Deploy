@@ -4,7 +4,6 @@
 namespace PSql.Deploy.Migrations;
 
 using static MigrationPhase;
-using static MigrationSessionOptions;
 
 [TestFixture]
 public class MigrationSessionTests : TestHarnessBase
@@ -12,9 +11,9 @@ public class MigrationSessionTests : TestHarnessBase
     // To make truth tables easier to read
     const bool Yes = true, ___ = false;
 
-    private MigrationSession?       _session;
-    private MigrationSessionOptions _options;
+    private MigrationSession? _session;
 
+    private readonly MigrationSessionOptions                _options;
     private readonly Mock<IMigrationConsole>                _console;
     private readonly Mock<MigrationTargetConnectionFactory> _factory;
 
@@ -31,6 +30,7 @@ public class MigrationSessionTests : TestHarnessBase
 
     public MigrationSessionTests()
     {
+        _options = new();
         _console = Mocks.Create<IMigrationConsole>();
         _factory = Mocks.Create<MigrationTargetConnectionFactory>();
     }
@@ -51,25 +51,17 @@ public class MigrationSessionTests : TestHarnessBase
     }
 
     [Test]
-    public void Options_Get()
-    {
-        _options = CorePhase | AllowContentInCorePhase;
-
-        Session.Options.ShouldBe(CorePhase | AllowContentInCorePhase);
-    }
-
-    [Test]
-    public void Options_Get_NoPhases()
-    {
-        _options = AllowContentInCorePhase;
-
-        Session.Options.ShouldBe(AllPhases | AllowContentInCorePhase);
-    }
-
-    [Test]
     public void Console_Get()
     {
         Session.Console.ShouldBeSameAs(_console.Object);
+    }
+
+    [Test]
+    public void EnabledPhases_Get()
+    {
+        _options.EnabledPhases = [Pre, Post];
+
+        Session.EnabledPhases.ShouldBe([Pre, Post]);
     }
 
     [Test]
@@ -81,7 +73,7 @@ public class MigrationSessionTests : TestHarnessBase
     [Test]
     public void AllowContentInCorePhase_Get_True()
     {
-        _options = AllowContentInCorePhase;
+        _options.AllowContentInCorePhase = true;
 
         Session.AllowContentInCorePhase.ShouldBeTrue();
     }
@@ -95,41 +87,17 @@ public class MigrationSessionTests : TestHarnessBase
     [Test]
     public void IsWhatIfMode_Get_True()
     {
-        _options = IsWhatIfMode;
+        _options.IsWhatIfMode = true;
 
         Session.IsWhatIfMode.ShouldBeTrue();
     }
 
     [Test]
-    [TestCase(PrePhase,              Yes, ___, ___ )]
-    [TestCase(CorePhase,             ___, Yes, ___ )]
-    [TestCase(PostPhase,             ___, ___, Yes )]
-    [TestCase(PrePhase  | CorePhase, Yes, Yes, ___ )]
-    [TestCase(PrePhase  | PostPhase, Yes, ___, Yes )]
-    [TestCase(CorePhase | PostPhase, ___, Yes, Yes )]
-    [TestCase(AllPhases,             Yes, Yes, Yes )]
-    public void IsEnabled(MigrationSessionOptions options, bool pre, bool core, bool post)
+    public void CurrentPhase_Get()
     {
-        _options = options;
+        _options.EnabledPhases = [Core, Post];
 
-        Session.IsEnabled(Pre ).ShouldBe(pre );
-        Session.IsEnabled(Core).ShouldBe(core);
-        Session.IsEnabled(Post).ShouldBe(post);
-    }
-
-    [Test]
-    [TestCase(PrePhase,              Pre )]
-    [TestCase(CorePhase,             Core)]
-    [TestCase(PostPhase,             Post)]
-    [TestCase(PrePhase  | CorePhase, Pre )]
-    [TestCase(PrePhase  | PostPhase, Pre )]
-    [TestCase(CorePhase | PostPhase, Core)]
-    [TestCase(AllPhases,             Pre )]
-    public void CurrentPhase_Get(MigrationSessionOptions options, MigrationPhase expected)
-    {
-        _options = options;
-
-        Session.CurrentPhase.ShouldBe(expected);
+        Session.CurrentPhase.ShouldBe(Core);
     }
 
     [Test]
@@ -272,7 +240,7 @@ public class MigrationSessionTests : TestHarnessBase
     [Test]
     public void Connect_WhatIf()
     {
-        _options = IsWhatIfMode;
+        _options.IsWhatIfMode = true;
 
         var logger = Mocks.Create<ISqlMessageLogger>();
 
@@ -324,37 +292,10 @@ public class MigrationSessionTests : TestHarnessBase
         migration.Post.Sql       .ShouldNotBeNullOrEmpty();
     }
 
-    // [Test]
-    // public void BeginApplying_Target_NullTarget()
-    // {
-    //     Should.Throw<ArgumentNullException>(() =>
-    //     {
-    //         Session.BeginApplying(target: null!);
-    //     });
-    // }
-
-    // [Test]
-    // public void BeginApplying_Target_NegativeParallelism()
-    // {
-    //     Should.Throw<ArgumentOutOfRangeException>(() =>
-    //     {
-    //         Session.BeginApplying(TargetA, maxParallelism: -1);
-    //     });
-    // }
-
-    // [Test]
-    // public void BeginApplying_Group_NullTarget()
-    // {
-    //     Should.Throw<ArgumentNullException>(() =>
-    //     {
-    //         Session.BeginApplying(group: null!);
-    //     });
-    // }
-
     [Test]
     public async Task Apply_Target_Exception()
     {
-        _options = PrePhase;
+        _options.EnabledPhases = [Pre];
         var path = Path.Combine(TestContext.CurrentContext.TestDirectory, "TestDbs", "A");
 
         var innerException = new InvalidOperationException("Test exception.");
@@ -382,7 +323,7 @@ public class MigrationSessionTests : TestHarnessBase
     [Test]
     public async Task Apply_Target_OnePhase()
     {
-        _options = PrePhase;
+        _options.EnabledPhases = [Pre];
 
         var path = Path.Combine(TestContext.CurrentContext.TestDirectory, "TestDbs", "A");
 
@@ -400,7 +341,7 @@ public class MigrationSessionTests : TestHarnessBase
     [Test]
     public async Task Apply_Target_MultiplePhases()
     {
-        _options = PrePhase | PostPhase;
+        _options.EnabledPhases = [Pre, Post];
 
         var path = Path.Combine(TestContext.CurrentContext.TestDirectory, "TestDbs", "A");
 
@@ -457,7 +398,7 @@ public class MigrationSessionTests : TestHarnessBase
     [Test]
     public async Task Apply_Group_OnePhase()
     {
-        _options = PrePhase;
+        _options.EnabledPhases = [Pre];
 
         var path  = Path.Combine(TestContext.CurrentContext.TestDirectory, "TestDbs", "A");
         var group = new TargetGroup([TargetA]);
@@ -476,7 +417,7 @@ public class MigrationSessionTests : TestHarnessBase
     [Test]
     public async Task Apply_Group_MultiplePhases()
     {
-        _options = PrePhase | PostPhase;
+        _options.EnabledPhases = [Pre, Post];
 
         var path  = Path.Combine(TestContext.CurrentContext.TestDirectory, "TestDbs", "A");
         var group = new TargetGroup([TargetA]);
@@ -534,7 +475,7 @@ public class MigrationSessionTests : TestHarnessBase
     [Test]
     public async Task Apply_Mix_OnePhase()
     {
-        _options = PrePhase;
+        _options.EnabledPhases = [Pre];
 
         var path  = Path.Combine(TestContext.CurrentContext.TestDirectory, "TestDbs", "A");
         var group = new TargetGroup([TargetA, TargetB], name: "A+B", maxParallelism: 3);

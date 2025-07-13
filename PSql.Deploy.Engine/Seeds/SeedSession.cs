@@ -13,7 +13,7 @@ public class SeedSession : DeploymentSession, ISeedSessionInternal
     ///   Initializes a new <see cref="SeedSession"/> instance.
     /// </summary>
     /// <param name="options">
-    ///   Options for the session.
+    ///   The options for the session.
     /// </param>
     /// <param name="console">
     ///   The user interface via which to report progress.
