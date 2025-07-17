@@ -44,6 +44,15 @@ public class InvokeSqlSeedCommand : AsyncPSCmdlet
     public Hashtable? Define { get; set; }
 
     /// <summary>
+    ///   <b>-Path:</b>
+    ///   Path to a directory containing seeds.
+    /// </summary>
+    [Parameter()]
+    [Alias("PSPath", "SourcePath")]
+    [ValidateNotNullOrEmpty]
+    public string? Path { get; set; }
+
+    /// <summary>
     ///   <b>-MaxErrorCount:</b>
     ///   Maximum count of errors to allow.  If the count of errors exceeds
     ///   this value, the command attempts to cancel in-progress operations and
@@ -57,12 +66,17 @@ public class InvokeSqlSeedCommand : AsyncPSCmdlet
 
     protected override void BeginProcessing()
     {
+        Assume.NotNull(Path);
+        Assume.NotNull(Seed);
+
         base.BeginProcessing();
 
         _session = new(
             GetOptions(),
             new CmdletSeedConsole(this, this.GetCurrentPath())
         );
+
+        _session.DiscoverSeeds(Path, Seed);
     }
 
     protected override void ProcessRecord()
