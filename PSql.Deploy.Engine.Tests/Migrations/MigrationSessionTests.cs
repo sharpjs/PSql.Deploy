@@ -480,9 +480,9 @@ public class MigrationSessionTests : TestHarnessBase
         var path  = Path.Combine(TestContext.CurrentContext.TestDirectory, "TestDbs", "A");
         var group = new TargetGroup([TargetA, TargetB], name: "A+B", maxParallelism: 3);
 
-        var tA = ForTarget(TargetA); ExpectApplyMigrations(tA, Pre); //ExpectApplyMigrations(tA, Post);
-        var tB = ForTarget(TargetB); ExpectApplyMigrations(tB, Pre); //ExpectApplyMigrations(tB, Post);
-        var tC = ForTarget(TargetC); ExpectApplyMigrations(tC, Pre); //ExpectApplyMigrations(tC, Post);
+        var tA = ForTarget(TargetA); ExpectApplyMigrations(tA, Pre);
+        var tB = ForTarget(TargetB); ExpectApplyMigrations(tB, Pre);
+        var tC = ForTarget(TargetC); ExpectApplyMigrations(tC, Pre);
 
         Session.DiscoverMigrations(path);
         Session.Migrations.Length.ShouldBe(5);
@@ -497,7 +497,7 @@ public class MigrationSessionTests : TestHarnessBase
     {
         t.ExpectCreateLog                 ();
         t.ExpectReportStarting            ();
-        t.ExpectCreateAndOpenConnection();
+        t.ExpectCreateAndOpenConnection   ();
         t.ExpectGetRegisteredMigrations   ("Migration0");
         t.ExpectInitializeMigrationSupport();
         t.ExpectReportApplying            ("_Begin",     phase);
