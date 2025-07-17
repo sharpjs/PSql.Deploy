@@ -73,6 +73,26 @@ public class SeedSessionTests : TestHarnessBase
     }
 
     [Test]
+    public void Console_Get()
+    {
+        Session.Console.ShouldBeSameAs(_console.Object);
+    }
+
+    [Test]
+    public void Defines_Get()
+    {
+        Session.Defines.ShouldBeSameAs(_options.Defines);
+    }
+
+    [Test]
+    public void Defines_Get_Default()
+    {
+        _options.Defines = null;
+
+        Session.Defines.ShouldNotBeNull().ShouldBeEmpty();
+    }
+
+    [Test]
     public void IsWhatIfMode_Get_False()
     {
         Session.IsWhatIfMode.ShouldBeFalse();
@@ -203,8 +223,6 @@ public class SeedSessionTests : TestHarnessBase
         t.ExpectReportProblem("Test exception.");
 
         Session.DiscoverSeeds(path, ["Typical"]);
-        Session.Seeds.ShouldHaveSingleItem();
-
         Session.BeginApplying(TargetA, maxParallelism: 1);
 
         var outerException = await Should.ThrowAsync<SeedException>(() =>
@@ -220,21 +238,30 @@ public class SeedSessionTests : TestHarnessBase
     {
         var path = Path.Combine(TestContext.CurrentContext.TestDirectory, "TestDbs", "A");
 
-        var t = ForTarget(TargetA);
-        t.ExpectCreateLog("Typical");
-        t.ExpectReportStarting();
-        t.ExpectUseConnection();
-        t.ExpectReportApplying("(init)");
-        t.ExpectInvokeBatch(TypicalSeed_InitialModule_Batch0);
-        t.ExpectReportApplying("a");
-        t.ExpectInvokeBatch(TypicalSeed_ModuleA_Batch0);
-        t.ExpectReportApplying("b");
-        t.ExpectInvokeBatch(TypicalSeed_ModuleB_Batch0);
+        ForTarget(TargetA).ExpectApplyTypicalSeed();
 
         Session.DiscoverSeeds(path, ["Typical"]);
-        Session.Seeds.ShouldHaveSingleItem();
-
         Session.BeginApplying(TargetA, maxParallelism: 1);
+
+        await Session.CompleteApplyingAsync(Cancellation.Token);
+    }
+
+    [Test]
+    public async Task Apply_Group_Ok()
+    {
+        var path = Path.Combine(TestContext.CurrentContext.TestDirectory, "TestDbs", "A");
+
+        var group = new TargetGroup(
+            [TargetA, TargetB],
+            maxParallelism:          1,
+            maxParallelismPerTarget: 1
+        );
+
+        ForTarget(TargetA).ExpectApplyTypicalSeed();
+        ForTarget(TargetB).ExpectApplyTypicalSeed();
+
+        Session.DiscoverSeeds(path, ["Typical"]);
+        Session.BeginApplying(group);
 
         await Session.CompleteApplyingAsync(Cancellation.Token);
     }
@@ -267,6 +294,19 @@ public class SeedSessionTests : TestHarnessBase
         public Mock<SeedTargetConnectionFactory> Factory => _parent._factory;
 
         public string Log => _log.ToString();
+
+        public void ExpectApplyTypicalSeed()
+        {
+            ExpectCreateLog("Typical");
+            ExpectReportStarting();
+            ExpectUseConnection();
+            ExpectReportApplying("(init)");
+            ExpectInvokeBatch(TypicalSeed_InitialModule_Batch0);
+            ExpectReportApplying("a");
+            ExpectInvokeBatch(TypicalSeed_ModuleA_Batch0);
+            ExpectReportApplying("b");
+            ExpectInvokeBatch(TypicalSeed_ModuleB_Batch0);
+        }
 
         public void ExpectCreateLog(string seedName)
         {
