@@ -51,6 +51,17 @@ public class MigrationSessionTests : TestHarnessBase
     }
 
     [Test]
+    public void Constructor_NoEnabledPhases()
+    {
+        _options.EnabledPhases = [];
+
+        Should.Throw<ArgumentException>(() =>
+        {
+            return new MigrationSession(_options, _console.Object);
+        });
+    }
+
+    [Test]
     public void Console_Get()
     {
         Session.Console.ShouldBeSameAs(_console.Object);
