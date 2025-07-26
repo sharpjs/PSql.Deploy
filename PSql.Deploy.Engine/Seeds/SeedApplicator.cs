@@ -126,6 +126,8 @@ internal class SeedApplicator
             Populate(queue);
             Validate(queue);
 
+            ReportApplying();
+
             await queue.RunAsync(
                 SeedWorkerMainAsync,
                 Session,
@@ -377,6 +379,13 @@ internal class SeedApplicator
         );
     }
 
+    private void ReportApplying()
+    {
+        Log("");
+        Log("Execution Log:");
+        Log("");
+    }
+
     private void ReportApplying(SeedModule module, int workerId)
     {
         Console.ReportApplying(Target, module.Name);
@@ -386,7 +395,6 @@ internal class SeedApplicator
 
     private void ReportCanceled()
     {
-        Log("");
         Log("Seed application was canceled.");
     }
 
@@ -394,7 +402,11 @@ internal class SeedApplicator
     {
         Console.ReportProblem(Target, exception.Message);
 
-        Log(exception.ToString());
+        // In the case of a SeedException, the applicator has already logged
+        // helpful diagnostics; log the exception message only, as summary.
+        // Other exceptions are truly unexpected; log full exception details.
+        Log("");
+        Log(exception is SeedException ? exception.Message : exception.ToString());
     }
 
     private void ReportEnded()
@@ -404,7 +416,6 @@ internal class SeedApplicator
 
         Console.ReportApplied(Target, count, elapsed, _disposition);
 
-        // Footer
         Log("");
         Log($"Applied {count} modules(s) in {elapsed.TotalSeconds:N3} second(s).");
     }
