@@ -13,6 +13,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PSql.Deploy.Engine.Tests", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PSql.Deploy.Tests", "PSql.Deploy.Tests\PSql.Deploy.Tests.csproj", "{A18D29F8-9B50-46D8-A786-DB77BDF7C7F0}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PSql.Deploy.Tests.FakePSql0", "PSql.Deploy.Tests.FakePSql0\PSql.Deploy.Tests.FakePSql0.csproj", "{DD9723F9-48A1-46B9-93BC-88436CA63F8C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PSql.Deploy.Tests.FakePSql1", "PSql.Deploy.Tests.FakePSql1\PSql.Deploy.Tests.FakePSql1.csproj", "{DC8E6CE2-2129-44A8-9811-D73694023106}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -37,6 +41,14 @@ Global
 		{A18D29F8-9B50-46D8-A786-DB77BDF7C7F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A18D29F8-9B50-46D8-A786-DB77BDF7C7F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A18D29F8-9B50-46D8-A786-DB77BDF7C7F0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DD9723F9-48A1-46B9-93BC-88436CA63F8C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DD9723F9-48A1-46B9-93BC-88436CA63F8C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DD9723F9-48A1-46B9-93BC-88436CA63F8C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DD9723F9-48A1-46B9-93BC-88436CA63F8C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DC8E6CE2-2129-44A8-9811-D73694023106}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DC8E6CE2-2129-44A8-9811-D73694023106}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DC8E6CE2-2129-44A8-9811-D73694023106}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DC8E6CE2-2129-44A8-9811-D73694023106}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

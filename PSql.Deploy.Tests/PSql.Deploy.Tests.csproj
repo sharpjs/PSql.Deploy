@@ -18,9 +18,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PSql.Deploy\PSql.Deploy.csproj" />
-    <ProjectReference
-      Include="..\PSql.Deploy.Engine\PSql.Deploy.Engine.csproj"
-      Private="false" PrivateAssets="all" Aliases="Engine" />
+    <ProjectReference Include="..\PSql.Deploy.Engine\PSql.Deploy.Engine.csproj" Private="false" PrivateAssets="all" Aliases="Engine" />
+    <ProjectReference Include="..\PSql.Deploy.Tests.FakePSql0\PSql.Deploy.Tests.FakePSql0.csproj" Aliases="FakePSql0" />
+    <ProjectReference Include="..\PSql.Deploy.Tests.FakePSql1\PSql.Deploy.Tests.FakePSql1.csproj" Aliases="FakePSql1" />
   </ItemGroup>
 
   <ItemGroup>

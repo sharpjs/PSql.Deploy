@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Fake PSql for PSql.Deploy Testing</Description>
+    <RootNamespace>PSql</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Using Remove="System.Management.Automation" />
+  </ItemGroup>
+
+</Project>
