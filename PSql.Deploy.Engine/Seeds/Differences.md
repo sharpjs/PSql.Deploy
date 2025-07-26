@@ -9,5 +9,3 @@ Maybe these inconsistencies should be fixed.
   single `Migration` class, but perhaps could be split into `Migration`,
   `LoadedMigration`, `AppliedMigration`, and `MergedMigration` wrappers
   classes.
-
-- `SeedOptions` is a class, but `MigrationOptions` is a flags enum.
