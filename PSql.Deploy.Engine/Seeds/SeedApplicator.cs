@@ -395,6 +395,7 @@ internal class SeedApplicator
 
     private void ReportCanceled()
     {
+        Log("");
         Log("Seed application was canceled.");
     }
 
