@@ -411,17 +411,19 @@ public class MigrationApplicatorTests : TestHarnessBase
     [Test]
     public async Task ApplyAsync_Exception()
     {
+        var exception = new DataException("Database is on fire.");
+
         ExpectReportStarting();
-        ExpectConnectThrows("Oops!");
-        ExpectReportProblem("Oops!");
+        ExpectConnectThrows(exception);
+        ExpectReportProblem("Database is on fire.");
         ExpectReportApplied(count: 0, TargetDisposition.Failed);
 
-        var exception = await Should.ThrowAsync<Exception>(_applicator.ApplyAsync);
-        exception.Message.ShouldBe("Oops!");
+        await Should.ThrowAsync<DataException>(_applicator.ApplyAsync);
 
         LogShouldContainAll(
             "PSql.Deploy Migration Log",
             "Migration Phase:    Pre",
+            "System.Data.DataException: Database is on fire.",
             "Applied 0 migration(s)"
         );
     }
@@ -439,6 +441,7 @@ public class MigrationApplicatorTests : TestHarnessBase
         LogShouldContainAll(
             "PSql.Deploy Migration Log",
             "Migration Phase:    Pre",
+            "Migration application was canceled.",
             "Applied 0 migration(s)"
         );
     }
@@ -511,6 +514,28 @@ public class MigrationApplicatorTests : TestHarnessBase
             .Verifiable();
     }
 
+    private void ExpectConnectCanceled()
+    {
+        void Cancel(Target target, ISqlMessageLogger logger)
+            => Cancellation.Cancel();
+
+        _session
+            .InSequence(_sequence)
+            .Setup(s => s.Connect(_target, It.IsNotNull<ISqlMessageLogger>()))
+            .Callback(Cancel)
+            .Throws(new OperationCanceledException())
+            .Verifiable();
+    }
+
+    private void ExpectConnectThrows(Exception exception)
+    {
+        _session
+            .InSequence(_sequence)
+            .Setup(s => s.Connect(_target, It.IsNotNull<ISqlMessageLogger>()))
+            .Throws(exception)
+            .Verifiable();
+    }
+
     private void ExpectGetAppliedMigrations(string? minimumName, Migration[] migrations)
     {
         _connection
@@ -526,28 +551,6 @@ public class MigrationApplicatorTests : TestHarnessBase
             .InSequence(_sequence)
             .Setup(i => i.LoadContent(migration))
             .Callback(() => { migration.IsContentLoaded = true; })
-            .Verifiable();
-    }
-
-    private void ExpectConnectThrows(string error)
-    {
-        _session
-            .InSequence(_sequence)
-            .Setup(s => s.Connect(_target, It.IsNotNull<ISqlMessageLogger>()))
-            .Throws(new Exception(error))
-            .Verifiable();
-    }
-
-    private void ExpectConnectCanceled()
-    {
-        void Cancel(Target target, ISqlMessageLogger logger)
-            => Cancellation.Cancel();
-
-        _session
-            .InSequence(_sequence)
-            .Setup(s => s.Connect(_target, It.IsNotNull<ISqlMessageLogger>()))
-            .Callback(Cancel)
-            .Throws(new OperationCanceledException())
             .Verifiable();
     }
 
@@ -606,8 +609,8 @@ public class MigrationApplicatorTests : TestHarnessBase
             foreach (var item in items)
                 log.ShouldContain(item);
         }
-        //finally   // To see the log for all tests
-        catch       // To see the log only when it's wrong
+        finally   // To see the log for all tests
+        //catch       // To see the log only when it's wrong
         {
             TestContext.Write(log);
         }

@@ -26,10 +26,8 @@ internal class MigrationApplicator : IMigrationValidationContext
     /// </exception>
     public MigrationApplicator(IMigrationSessionInternal session, Target target)
     {
-        if (session is null)
-            throw new ArgumentNullException(nameof(session));
-        if (target is null)
-            throw new ArgumentNullException(nameof(target));
+        ArgumentNullException.ThrowIfNull(session);
+        ArgumentNullException.ThrowIfNull(target);
 
         Session = session;
         Target  = target;
@@ -421,7 +419,12 @@ internal class MigrationApplicator : IMigrationValidationContext
     {
         Console.ReportProblem(Session, Target, exception.Message);
 
-        Log(exception.ToString());
+        // In the case of a MigrationException, the applicator has already
+        // logged helpful diagnostics; log the exception message only, as a
+        // summary.  Other exceptions are truly unexpected; log full exception
+        // details.
+        Log("");
+        Log(exception is MigrationException ? exception.Message : exception.ToString());
     }
 
     private void ReportCanceled()
