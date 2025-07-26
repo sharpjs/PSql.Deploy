@@ -9,7 +9,7 @@ public class DeploymentSessionOptionsTests
     [Test]
     public void MaxErrorCount_Set_OutOfRange()
     {
-        Should.Throw<ArgumentNullException>(() =>
+        Should.Throw<ArgumentOutOfRangeException>(() =>
         {
             new TestDeploymentSessionOptions().MaxErrorCount = -1;
         });
