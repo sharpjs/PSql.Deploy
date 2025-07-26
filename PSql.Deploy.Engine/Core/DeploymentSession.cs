@@ -38,28 +38,6 @@ public abstract class DeploymentSession : IDeploymentSessionInternal
     }
 
     /// <summary>
-    ///   Initializes a new <see cref="DeploymentSession"/> instance.
-    /// </summary>
-    /// <param name="maxErrorCount">
-    ///   The maximum count of exceptions that the session should tolerate
-    ///   before cancelling ongoing operations.  Must be zero or a positive
-    ///   number.
-    /// </param>
-    /// <exception cref="ArgumentOutOfRangeException">
-    ///   <paramref name="maxErrorCount"/> is negative.
-    /// </exception>
-    private protected DeploymentSession(int maxErrorCount = 0)
-    {
-        if (maxErrorCount < 0)
-            throw new ArgumentOutOfRangeException(nameof(maxErrorCount));
-
-        _tasks        = [];
-        _exceptions   = [];
-        _cancellation = new();
-        MaxErrorCount = maxErrorCount;
-    }
-
-    /// <summary>
     ///   Gets the token to monitor for cancellation requests.
     /// </summary>
     public CancellationToken CancellationToken => _cancellation.Token;
@@ -71,8 +49,7 @@ public abstract class DeploymentSession : IDeploymentSessionInternal
     public int MaxErrorCount { get; }
 
     /// <inheritdoc/>
-    public virtual bool IsWhatIfMode { get; }
-    // TODO: Remove virtual
+    public bool IsWhatIfMode { get; }
 
     /// <inheritdoc/>
     public bool HasErrors => !_exceptions.IsEmpty;

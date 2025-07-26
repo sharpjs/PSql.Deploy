@@ -10,7 +10,9 @@ namespace PSql.Deploy;
 public class DeploymentSessionTests : TestHarnessBase
 {
     private Mock<DeploymentSession>? _session;
-    private int                      _maxErrorCount;
+
+    private readonly DeploymentSessionOptions
+        _options = new TestDeploymentSessionOptions();
 
     private Mock<DeploymentSession> SessionMock
         => _session ??= CreateSession();
@@ -27,18 +29,18 @@ public class DeploymentSessionTests : TestHarnessBase
         TargetC = new Target("Server=sql.example.com;Database=c");
 
     [Test]
-    public void Construct_NegativeMaxErrorCount()
+    public void Construct_NullOptions()
     {
-        Should.Throw<ArgumentOutOfRangeException>(() =>
+        Should.Throw<ArgumentNullException>(() =>
         {
-            _ = new TestDeploymentSession(maxErrorCount: -1);
+            _ = new TestDeploymentSession(null!);
         });
     }
 
     [Test]
     public void MaxErrorCount_Get()
     {
-        _maxErrorCount = 3;
+        _options.MaxErrorCount = 3;
 
         Session.MaxErrorCount.ShouldBe(3);
     }
@@ -124,7 +126,7 @@ public class DeploymentSessionTests : TestHarnessBase
     [Test]
     public async Task Apply_Any_Exception_UpToMax()
     {
-        _maxErrorCount = 1;
+        _options.MaxErrorCount = 1;
         var exception  = new Exception("Oops!");
 
         ExpectApplyCore(TargetA, maxParallelism: 1, exception); // error tolerated
@@ -148,7 +150,7 @@ public class DeploymentSessionTests : TestHarnessBase
     [Test]
     public async Task Apply_Any_Exception_OverMax()
     {
-        _maxErrorCount = 1;
+        _options.MaxErrorCount = 1;
         var exceptionA = new Exception("Bam!");
         var exceptionB = new Exception("Pow!");
 
@@ -244,7 +246,7 @@ public class DeploymentSessionTests : TestHarnessBase
 
     private Mock<DeploymentSession> CreateSession()
     {
-        var session = Mocks.Create<DeploymentSession>(MockBehavior.Loose, _maxErrorCount);
+        var session = Mocks.Create<DeploymentSession>(MockBehavior.Loose, _options);
 
         session.CallBase = true;
 
@@ -278,13 +280,12 @@ public class DeploymentSessionTests : TestHarnessBase
         base.CleanUp(managed);
     }
 
+    private class TestDeploymentSessionOptions : DeploymentSessionOptions { }
+
     private class TestDeploymentSession : DeploymentSession
     {
-        public TestDeploymentSession(int maxErrorCount)
-            : base(maxErrorCount) { }
-
-        public override bool IsWhatIfMode
-            => false;
+        public TestDeploymentSession(TestDeploymentSessionOptions options)
+            : base(options) { }
 
         protected override Task ApplyCoreAsync(Target target, int maxParallelism)
             => Task.CompletedTask;

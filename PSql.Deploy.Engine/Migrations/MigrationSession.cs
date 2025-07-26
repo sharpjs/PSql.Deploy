@@ -67,7 +67,7 @@ public class MigrationSession : DeploymentSession, IMigrationSessionInternal
 
     /// <inheritdoc/>
     [MemberNotNullWhen(true, nameof(_whatIfState))]
-    public override bool IsWhatIfMode => base.IsWhatIfMode;
+    public new bool IsWhatIfMode => base.IsWhatIfMode;
 
     /// <inheritdoc/>
     public ImmutableArray<Migration> Migrations { get; private set; }
