@@ -8,9 +8,6 @@ using System.Collections.Concurrent;
 [TestFixture]
 public class SeedSessionTests : TestHarnessBase
 {
-    // To make truth tables easier to read
-    const bool Yes = true, ___ = false;
-
     private SeedSession? _session;
 
     private readonly SeedSessionOptions                _options;
@@ -21,8 +18,7 @@ public class SeedSessionTests : TestHarnessBase
 
     private static readonly Target
         TargetA = new Target("Server=sql.example.com;Database=a"),
-        TargetB = new Target("Server=sql.example.com;Database=b"),
-        TargetC = new Target("Server=sql.example.com;Database=c");
+        TargetB = new Target("Server=sql.example.com;Database=b");
 
     private SeedSession Session
         => _session ??= new SeedSession(_options, _console.Object);
