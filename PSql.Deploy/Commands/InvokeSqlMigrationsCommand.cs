@@ -94,7 +94,17 @@ public class InvokeSqlMigrationsCommand : AsyncPSCmdlet
 
         if (Target is not null)
             foreach (var group in Target)
-                _session.BeginApplying(group.InnerGroup);
+                if (ShouldProcess(group))
+                    _session.BeginApplying(group.InnerGroup);
+    }
+
+    private bool ShouldProcess(SqlTargetDatabaseGroup group)
+    {
+        var action   = $"Applying migrations to {group}.";
+        var question = $"Apply migrations to {group}?";
+
+        return ShouldProcess(action, question, null, out var whyNot)
+            || whyNot is ShouldProcessReason.WhatIf;
     }
 
     /// <inheritdoc/>

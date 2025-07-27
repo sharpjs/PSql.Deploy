@@ -170,4 +170,22 @@ public class SqlTargetDatabaseGroup
 
         return array.MoveToImmutable();
     }
+
+    /// <inheritdoc/>
+    public override string ToString()
+    {
+        return string.IsNullOrEmpty(Name)
+            ? DescribeTargets()
+            : string.Format("{0} ({1})", Name, DescribeTargets());
+    }
+
+    private string DescribeTargets()
+    {
+        return Targets.Count switch
+        {
+            0     => "empty",
+            1     =>    Targets[0].FullDisplayName,
+            var n => $"{Targets[0].FullDisplayName} +{n - 1}"
+        };
+    }
 }
