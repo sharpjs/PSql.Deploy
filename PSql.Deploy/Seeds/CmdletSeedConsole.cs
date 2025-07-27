@@ -21,26 +21,29 @@ internal class CmdletSeedConsole : S.ISeedConsole
         Directory.CreateDirectory(_logPath);
     }
 
-    public TextWriter CreateLog(E.Target target, S.Seed seed)
+    public TextWriter CreateLog(S.ISeedApplication info)
     {
-        var fileName = $"{target.FullDisplayName}.{seed.Name}.log".SanitizeFileName();
+        var target = info.Target.FullDisplayName;
+        var seed   = info.Seed.Seed.Name;
+
+        var fileName = $"{target}.{seed}.log".SanitizeFileName();
 
         return new StreamWriter(Path.Combine(_logPath, fileName));
     }
 
-    public void ReportApplied(E.Target target, int count, TimeSpan duration, E.TargetDisposition disposition)
+    public void ReportApplied(S.ISeedApplication info, int count, TimeSpan duration, E.TargetDisposition disposition)
     {
     }
 
-    public void ReportApplying(E.Target target, string moduleName)
+    public void ReportApplying(S.ISeedApplication info, string moduleName)
     {
     }
 
-    public void ReportProblem(E.Target? target, string message)
+    public void ReportProblem(S.ISeedApplication info, string message)
     {
     }
 
-    public void ReportStarting(E.Target target)
+    public void ReportStarting(S.ISeedApplication info)
     {
     }
 }

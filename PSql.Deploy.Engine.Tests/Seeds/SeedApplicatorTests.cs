@@ -254,7 +254,7 @@ public class SeedApplicatorTests : TestHarnessBase
     {
         _console
             .InSequence(_sequence)
-            .Setup(s => s.CreateLog(_target, _seed.Seed))
+            .Setup(s => s.CreateLog(Applicator))
             .Returns(_log)
             .Verifiable();
     }
@@ -263,7 +263,7 @@ public class SeedApplicatorTests : TestHarnessBase
     {
         _console
             .InSequence(_sequence)
-            .Setup(c => c.ReportStarting(_target))
+            .Setup(c => c.ReportStarting(Applicator))
             .Verifiable();
     }
 
@@ -317,7 +317,7 @@ public class SeedApplicatorTests : TestHarnessBase
     {
         _console
             .InSequence(_sequence)
-            .Setup(c => c.ReportApplying(_target, moduleName))
+            .Setup(c => c.ReportApplying(Applicator, moduleName))
             .Verifiable();
     }
 
@@ -338,7 +338,7 @@ public class SeedApplicatorTests : TestHarnessBase
         _console
             .InSequence(_sequence)
             .Setup(c => c.ReportApplied(
-                _target, count, It.Is<TimeSpan>(t => t >= TimeSpan.Zero), disposition
+                Applicator, count, It.Is<TimeSpan>(t => t >= TimeSpan.Zero), disposition
             ))
             .Verifiable();
     }
@@ -348,7 +348,7 @@ public class SeedApplicatorTests : TestHarnessBase
         _console
             .InSequence(_sequence)
             .Setup(c => c.ReportProblem(
-                _target, It.Is<string>(s => s.Contains(part, StringComparison.Ordinal))
+                Applicator, It.Is<string>(s => s.Contains(part, StringComparison.Ordinal))
             ))
             .Verifiable();
     }

@@ -221,7 +221,7 @@ internal class SeedApplicator : ISeedApplication
 
     private void ReportStarting()
     {
-        Console.ReportStarting(Target);
+        Console.ReportStarting(this);
 
         var i = ProcessInfo.Instance;
 
@@ -354,7 +354,7 @@ internal class SeedApplicator : ISeedApplication
             QueueErrorType.Cycle or _      => Format((CycleError)           error),
         };
 
-        Console.ReportProblem(Target, message);
+        Console.ReportProblem(this, message);
 
         Log($"Error: {message}");
     }
@@ -389,7 +389,7 @@ internal class SeedApplicator : ISeedApplication
 
     private void ReportApplying(SeedModule module, int workerId)
     {
-        Console.ReportApplying(Target, module.Name);
+        Console.ReportApplying(this, module.Name);
 
         Log($"{workerId}> [{module.Name}]");
     }
@@ -402,7 +402,7 @@ internal class SeedApplicator : ISeedApplication
 
     private void ReportException(Exception exception)
     {
-        Console.ReportProblem(Target, exception.Message);
+        Console.ReportProblem(this, exception.Message);
 
         // In the case of a SeedException, the applicator has already logged
         // helpful diagnostics; log the exception message only, as summary.
@@ -416,7 +416,7 @@ internal class SeedApplicator : ISeedApplication
         var count   = Volatile.Read(ref _appliedCount);
         var elapsed = _stopwatch.Elapsed;
 
-        Console.ReportApplied(Target, count, elapsed, _disposition);
+        Console.ReportApplied(this, count, elapsed, _disposition);
 
         Log("");
         Log($"Applied {count} modules(s) in {elapsed.TotalSeconds:N3} second(s).");
@@ -424,7 +424,7 @@ internal class SeedApplicator : ISeedApplication
 
     private void BeginLog()
     {
-        _logWriter = Console.CreateLog(Target, Seed.Seed);
+        _logWriter = Console.CreateLog(this);
     }
 
     private async ValueTask CloseLogAsync()

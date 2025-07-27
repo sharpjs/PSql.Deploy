@@ -9,71 +9,65 @@ namespace PSql.Deploy.Seeds;
 public interface ISeedConsole
 {
     /// <summary>
-    ///   Reports the start of seed application to the specified target
-    ///   database.
+    ///   Reports the start of seed application to a target database.
     /// </summary>
-    /// <param name="target">
-    ///   An object representing the target database.
+    /// <param name="info">
+    ///   Information about the seed application.
     /// </param>
-    void ReportStarting(Target target);
+    void ReportStarting(ISeedApplication info);
 
     /// <summary>
-    ///   Reports the application of the specified seed module to the specified
-    ///   target database.
+    ///   Reports the application of the specified seed module to a target
+    ///   database.
     /// </summary>
-    /// <param name="target">
-    ///   An object representing the target database.
+    /// <param name="info">
+    ///   Information about the seed application.
     /// </param>
     /// <param name="moduleName">
     ///   The name of the seed module.
     /// </param>
-    void ReportApplying(Target target, string moduleName);
+    void ReportApplying(ISeedApplication info, string moduleName);
 
     /// <summary>
-    ///   Reports the end of seed application to the specified target database.
+    ///   Reports the end of seed application to a target database.
     /// </summary>
-    /// <param name="target">
-    ///   An object representing the target database.
+    /// <param name="info">
+    ///   Information about the seed application.
     /// </param>
     /// <param name="count">
-    ///   The count of seeds that were applied.
+    ///   The count of seed modules that were applied.
     /// </param>
     /// <param name="duration">
-    ///   The duration of seed application to the target database.
+    ///   The duration of the seed application.
     /// </param>
     /// <param name="disposition">
-    ///   The outcome of seed application to the target database.
+    ///   The outcome of the seed application.
     /// </param>
-    void ReportApplied(Target target, int count, TimeSpan duration, TargetDisposition disposition);
+    void ReportApplied(ISeedApplication info, int count, TimeSpan duration, TargetDisposition disposition);
 
     /// <summary>
     ///   Reports a problem.
     /// </summary>
-    /// <param name="target">
-    ///   An object representing the target database to which the problem
-    ///   applies, or <see langword="null"/> for a general problem.
+    /// <param name="info">
+    ///   Information about the seed application.
     /// </param>
     /// <param name="message">
     ///   A message that describes the problem.
     /// </param>
-    void ReportProblem(Target? target, string message);
+    void ReportProblem(ISeedApplication info, string message);
 
     /// <summary>
     ///   Creates a log file for application of the specified seed to the
     ///   specified target database.
     /// </summary>
-    /// <param name="target">
-    ///   An object representing the target database.
-    /// </param>
-    /// <param name="seed">
-    ///   The seed being applied to the target database.
+    /// <param name="info">
+    ///   Information about the seed application.
     /// </param>
     /// <returns>
     ///   A writer that writes to the log file.
     /// </returns>
     /// <exception cref="ArgumentNullException">
-    ///   <paramref name="seed"/> and/or
-    ///   <paramref name="target"/> is <see langword="null"/>.
+    ///   <paramref name="info"/> is <see langword="null"/>.
     /// </exception>
-    TextWriter CreateLog(Target target, Seed seed);
+    TextWriter CreateLog(ISeedApplication info);
 }

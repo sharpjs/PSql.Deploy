@@ -308,7 +308,12 @@ public class SeedSessionTests : TestHarnessBase
         {
             Console
                 .InSequence(_sequence)
-                .Setup(c => c.CreateLog(_target, It.Is<Seed>(s => s.Name == seedName)))
+                .Setup(c => c.CreateLog(
+                    It.Is<ISeedApplication>(a
+                        => a.Target         == _target
+                        && a.Seed.Seed.Name == seedName
+                    )
+                ))
                 .Returns(_log)
                 .Verifiable();
         }
@@ -317,14 +322,19 @@ public class SeedSessionTests : TestHarnessBase
         {
             Console
                 .InSequence(_sequence)
-                .Setup(c => c.ReportStarting(_target))
+                .Setup(c => c.ReportStarting(
+                    It.Is<ISeedApplication>(a => a.Target == _target)
+                ))
                 .Verifiable();
         }
 
         internal void ExpectReportApplying(string moduleName)
         {
             Console
-                .Setup(c => c.ReportApplying(_target, moduleName))
+                .Setup(c => c.ReportApplying(
+                    It.Is<ISeedApplication>(a => a.Target == _target),
+                    moduleName
+                ))
                 .Verifiable();
         }
 
@@ -332,7 +342,10 @@ public class SeedSessionTests : TestHarnessBase
         {
             Console
                 .InSequence(_sequence)
-                .Setup(c => c.ReportProblem(_target, message))
+                .Setup(c => c.ReportProblem(
+                    It.Is<ISeedApplication>(a => a.Target == _target),
+                    message
+                ))
                 .Verifiable();
         }
 
