@@ -8,9 +8,6 @@ using static MigrationPhase;
 [TestFixture]
 public class MigrationSessionTests : TestHarnessBase
 {
-    // To make truth tables easier to read
-    const bool Yes = true, ___ = false;
-
     private MigrationSession? _session;
 
     private readonly MigrationSessionOptions                _options;
@@ -18,9 +15,9 @@ public class MigrationSessionTests : TestHarnessBase
     private readonly Mock<MigrationTargetConnectionFactory> _factory;
 
     private static readonly Target
-        TargetA = new Target("Server=sql.example.com;Database=a"),
-        TargetB = new Target("Server=sql.example.com;Database=b"),
-        TargetC = new Target("Server=sql.example.com;Database=c");
+        TargetA = new("Server=sql.example.com;Database=a"),
+        TargetB = new("Server=sql.example.com;Database=b"),
+        TargetC = new("Server=sql.example.com;Database=c");
 
     private MigrationSession Session
         => _session ??= new MigrationSession(_options, _console.Object);
@@ -38,6 +35,7 @@ public class MigrationSessionTests : TestHarnessBase
     protected override void CleanUp(bool managed)
     {
         _session?.Dispose();
+
         base.CleanUp(managed);
     }
 
@@ -150,12 +148,12 @@ public class MigrationSessionTests : TestHarnessBase
 
         Session.DiscoverMigrations(path);
 
-        Session.Migrations.Length           .ShouldBe(5);
-        Session.Migrations[0].Name          .ShouldBe("_Begin");
-        Session.Migrations[1].Name          .ShouldBe("Migration0");
-        Session.Migrations[2].Name          .ShouldBe("Migration1");
-        Session.Migrations[3].Name          .ShouldBe("Migration2");
-        Session.Migrations[4].Name          .ShouldBe("_End");
+        Session.Migrations.Length .ShouldBe(5);
+        Session.Migrations[0].Name.ShouldBe("_Begin");
+        Session.Migrations[1].Name.ShouldBe("Migration0");
+        Session.Migrations[2].Name.ShouldBe("Migration1");
+        Session.Migrations[3].Name.ShouldBe("Migration2");
+        Session.Migrations[4].Name.ShouldBe("_End");
 
         Session.EarliestDefinedMigrationName.ShouldBe("Migration0");
     }
@@ -167,11 +165,11 @@ public class MigrationSessionTests : TestHarnessBase
 
         Session.DiscoverMigrations(path, latestName: "Migration1");
 
-        Session.Migrations.Length           .ShouldBe(4);
-        Session.Migrations[0].Name          .ShouldBe("_Begin");
-        Session.Migrations[1].Name          .ShouldBe("Migration0");
-        Session.Migrations[2].Name          .ShouldBe("Migration1");
-        Session.Migrations[3].Name          .ShouldBe("_End");
+        Session.Migrations.Length .ShouldBe(4);
+        Session.Migrations[0].Name.ShouldBe("_Begin");
+        Session.Migrations[1].Name.ShouldBe("Migration0");
+        Session.Migrations[2].Name.ShouldBe("Migration1");
+        Session.Migrations[3].Name.ShouldBe("_End");
 
         Session.EarliestDefinedMigrationName.ShouldBe("Migration0");
     }
