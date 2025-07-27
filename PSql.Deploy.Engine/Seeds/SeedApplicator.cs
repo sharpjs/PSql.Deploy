@@ -198,7 +198,7 @@ internal class SeedApplicator : ISeedApplication
         return Session.Connect(Target, logger);
     }
 
-    private async Task PrepareAsync(ISeedTargetConnection connection, QueueContext context)
+    private static async Task PrepareAsync(ISeedTargetConnection connection, QueueContext context)
     {
         await connection.OpenAsync(context.CancellationToken);
 
@@ -359,7 +359,7 @@ internal class SeedApplicator : ISeedApplication
         Log($"Error: {message}");
     }
 
-    private string Format(UnprovidedTopicError error)
+    private static string Format(UnprovidedTopicError error)
     {
         return string.Format(
             "The topic '{0}' is required but not provided by any module. " +
@@ -369,7 +369,7 @@ internal class SeedApplicator : ISeedApplication
         );
     }
 
-    private string Format(CycleError error)
+    private static string Format(CycleError error)
     {
         return string.Format(
             "The module '{0}' cannot require the topic '{1}' because " +
