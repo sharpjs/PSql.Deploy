@@ -8,8 +8,8 @@ using static MigrationPhase;
 [TestFixture]
 public class MigrationValidatorTests : TestHarnessBase
 {
-    private readonly Mock<IMigrationValidationContext> _context;
-    private readonly Mock<IMigrationSessionInternal>   _session;
+    private readonly Mock<IMigrationApplication> _context;
+    private readonly Mock<IMigrationSession>     _session;
 
     public MigrationValidatorTests()
     {
@@ -19,10 +19,10 @@ public class MigrationValidatorTests : TestHarnessBase
             databaseDisplayName: "d"
         );
 
-        _session = Mocks.Create<IMigrationSessionInternal>();
+        _session = Mocks.Create<IMigrationSession>();
         _session.Setup(c => c.CurrentPhase).Returns(Post);
 
-        _context = Mocks.Create<IMigrationValidationContext>();
+        _context = Mocks.Create<IMigrationApplication>();
         _context.Setup(c => c.Session).Returns(_session.Object);
         _context.Setup(c => c.Target ).Returns(target);
     }

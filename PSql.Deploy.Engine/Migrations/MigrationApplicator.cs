@@ -8,7 +8,7 @@ namespace PSql.Deploy.Migrations;
 /// <summary>
 ///   Core logic for applying schema migrations to a target database.
 /// </summary>
-internal class MigrationApplicator : IMigrationValidationContext
+internal class MigrationApplicator : IMigrationApplication
 {
     /// <summary>
     ///   Initializes a new <see cref="MigrationApplicator"/> instance for the
@@ -35,10 +35,11 @@ internal class MigrationApplicator : IMigrationValidationContext
         _stopwatch = new();
     }
 
-    /// <summary>
-    ///   Gets the migration session.
-    /// </summary>
+    /// <inheritdoc cref="IMigrationApplication.Session"/>
     public IMigrationSessionInternal Session { get; }
+
+    /// <inheritdoc/>
+    IMigrationSession IMigrationApplication.Session => Session;
 
     /// <summary>
     ///   Gets the user interface via which to report progress.

@@ -17,7 +17,7 @@ internal ref struct MigrationValidator
     /// <exception cref="ArgumentNullException">
     ///   <paramref name="context"/> is <see langword="null"/>.
     /// </exception>
-    public MigrationValidator(IMigrationValidationContext context)
+    public MigrationValidator(IMigrationApplication context)
     {
         if (context is null)
             throw new ArgumentNullException(nameof(context));
@@ -30,7 +30,7 @@ internal ref struct MigrationValidator
     /// <summary>
     ///   Gets contextual information for validation.
     /// </summary>
-    public IMigrationValidationContext Context { get; }
+    public IMigrationApplication Context { get; }
 
     /// <inheritdoc cref="IMigrationSession.CurrentPhase"/>
     private readonly MigrationPhase CurrentPhase

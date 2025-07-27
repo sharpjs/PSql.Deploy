@@ -4,14 +4,15 @@
 namespace PSql.Deploy.Migrations;
 
 /// <summary>
-///   Contextual information provided to <see cref="MigrationValidator"/>.
+///   Information about the application of schema migrations to a target
+///   database.
 /// </summary>
-internal interface IMigrationValidationContext
+public interface IMigrationApplication
 {
     /// <summary>
     ///   Gets the migration session.
     /// </summary>
-    IMigrationSessionInternal Session { get; }
+    IMigrationSession Session { get; }
 
     /// <summary>
     ///   Gets an object representing the target database.
