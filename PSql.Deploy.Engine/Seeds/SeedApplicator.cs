@@ -221,6 +221,8 @@ internal class SeedApplicator : ISeedApplication
 
     private void ReportStarting()
     {
+        _stopwatch.Restart();
+
         Console.ReportStarting(this);
 
         var i = ProcessInfo.Instance;
@@ -413,6 +415,8 @@ internal class SeedApplicator : ISeedApplication
 
     private void ReportEnded()
     {
+        _stopwatch.Stop();
+
         var count   = Volatile.Read(ref _appliedCount);
         var elapsed = _stopwatch.Elapsed;
 

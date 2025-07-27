@@ -199,6 +199,8 @@ internal class MigrationApplicator : IMigrationApplication
 
     private void ReportStarting()
     {
+        _stopwatch.Restart();
+
         Console.ReportStarting(this);
 
         var i = ProcessInfo.Instance;
@@ -436,6 +438,8 @@ internal class MigrationApplicator : IMigrationApplication
 
     private void ReportEnded()
     {
+        _stopwatch.Stop();
+
         var elapsed = _stopwatch.Elapsed;
 
         Console.ReportApplied(this, _appliedCount, elapsed, _disposition);
