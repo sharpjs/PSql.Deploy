@@ -16,7 +16,7 @@ using UnprovidedTopicError = DependencyQueueUnprovidedTopicError <SeedModule>;
 /// <summary>
 ///   An algorithm that applies a content seed to a target database.
 /// </summary>
-internal class SeedApplicator
+internal class SeedApplicator : ISeedApplication
 {
     /// <summary>
     ///   Initializes a new <see cref="SeedApplicator"/> instance.
@@ -65,10 +65,11 @@ internal class SeedApplicator
         _stopwatch = new();
     }
 
-    /// <summary>
-    ///   Gets the seed session.
-    /// </summary>
+    /// <inheritdoc cref="ISeedApplication.Session"/>
     public ISeedSessionInternal Session { get; }
+
+    /// <inheritdoc/>
+    ISeedSession ISeedApplication.Session => Session;
 
     /// <summary>
     ///   Gets the user interface via which to report progress.
