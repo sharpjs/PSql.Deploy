@@ -315,8 +315,8 @@ public class MigrationSessionTests : TestHarnessBase
         t.ExpectCreateLog ();
         t.ExpectReportStarting();
         t.ExpectCreateAndOpenConnection(innerException);
-        t.ExpectReportProblem("Test exception.");
         t.ExpectDisposeConnection();
+        t.ExpectReportProblem("Test exception.");
 
         Session.DiscoverMigrations(path);
         Session.Migrations.Length.ShouldBe(5);
@@ -655,7 +655,7 @@ public class MigrationSessionTests : TestHarnessBase
         public void ExpectDisposeConnection()
         {
             _connection
-                //.InSequence(_sequence)
+                .InSequence(_sequence)
                 .Setup(c => c.DisposeAsync())
                 .Returns(ValueTask.CompletedTask)
                 .Verifiable();
