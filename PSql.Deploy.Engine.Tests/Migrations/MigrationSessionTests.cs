@@ -566,7 +566,9 @@ public class MigrationSessionTests : TestHarnessBase
         {
             Console
                 .InSequence(_sequence)
-                .Setup(c => c.CreateLog(Session, _target))
+                .Setup(c => c.CreateLog(
+                    It.Is<IMigrationApplication>(a => a.Session == Session && a.Target == _target)
+                ))
                 .Returns(_log)
                 .Verifiable();
         }
@@ -575,7 +577,9 @@ public class MigrationSessionTests : TestHarnessBase
         {
             Console
                 .InSequence(_sequence)
-                .Setup(c => c.ReportStarting(Session, _target))
+                .Setup(c => c.ReportStarting(
+                    It.Is<IMigrationApplication>(a => a.Session == Session && a.Target == _target)
+                ))
                 .Verifiable();
         }
 
@@ -583,7 +587,10 @@ public class MigrationSessionTests : TestHarnessBase
         {
             Console
                 .InSequence(_sequence)
-                .Setup(c => c.ReportApplying(Session, _target, name, phase))
+                .Setup(c => c.ReportApplying(
+                    It.Is<IMigrationApplication>(a => a.Session == Session && a.Target == _target),
+                    name, phase
+                ))
                 .Verifiable();
         }
 
@@ -591,7 +598,10 @@ public class MigrationSessionTests : TestHarnessBase
         {
             Console
                 .InSequence(_sequence)
-                .Setup(c => c.ReportApplied(Session, _target, count, It.IsAny<TimeSpan>(), disposition))
+                .Setup(c => c.ReportApplied(
+                    It.Is<IMigrationApplication>(a => a.Session == Session && a.Target == _target),
+                    count, It.IsAny<TimeSpan>(), disposition
+                ))
                 .Verifiable();
         }
 
@@ -599,7 +609,10 @@ public class MigrationSessionTests : TestHarnessBase
         {
             Console
                 .InSequence(_sequence)
-                .Setup(c => c.ReportProblem(Session, _target, message))
+                .Setup(c => c.ReportProblem(
+                    It.Is<IMigrationApplication>(a => a.Session == Session && a.Target == _target),
+                    message
+                ))
                 .Verifiable();
         }
 

@@ -199,7 +199,7 @@ internal class MigrationApplicator : IMigrationApplication
 
     private void ReportStarting()
     {
-        Console.ReportStarting(Session, Target);
+        Console.ReportStarting(this);
 
         var i = ProcessInfo.Instance;
 
@@ -364,7 +364,7 @@ internal class MigrationApplicator : IMigrationApplication
 
     private void ReportDiagnostic(MigrationDiagnostic diagnostic)
     {
-        Console.ReportProblem(Session, Target, diagnostic.Message);
+        Console.ReportProblem(this, diagnostic.Message);
 
         Log(string.Concat(
             diagnostic.IsError ? "Error: " : "Warning: ",
@@ -394,7 +394,7 @@ internal class MigrationApplicator : IMigrationApplication
             Target.DatabaseDisplayName
         );
 
-        Console.ReportProblem(Session, Target, message);
+        Console.ReportProblem(this, message);
 
         Log("");
         Log("Error: " + message);
@@ -409,7 +409,7 @@ internal class MigrationApplicator : IMigrationApplication
 
     private void ReportApplying(Migration migration, MigrationPhase phase)
     {
-        Console.ReportApplying(Session, Target, migration.Name, phase);
+        Console.ReportApplying(this, migration.Name, phase);
 
         Log(string.Concat("[", migration.Name, " ", phase.ToString(), "]"));
 
@@ -418,7 +418,7 @@ internal class MigrationApplicator : IMigrationApplication
 
     private void ReportException(Exception exception)
     {
-        Console.ReportProblem(Session, Target, exception.Message);
+        Console.ReportProblem(this, exception.Message);
 
         // In the case of a MigrationException, the applicator has already
         // logged helpful diagnostics; log the exception message only, as a
@@ -438,7 +438,7 @@ internal class MigrationApplicator : IMigrationApplication
     {
         var elapsed = _stopwatch.Elapsed;
 
-        Console.ReportApplied(Session, Target, _appliedCount, elapsed, _disposition);
+        Console.ReportApplied(this, _appliedCount, elapsed, _disposition);
 
         // Footer
         Log("");
@@ -447,7 +447,7 @@ internal class MigrationApplicator : IMigrationApplication
 
     private void BeginLog()
     {
-        _logWriter = Console.CreateLog(Session, Target);
+        _logWriter = Console.CreateLog(this);
     }
 
     private async ValueTask CloseLogAsync()

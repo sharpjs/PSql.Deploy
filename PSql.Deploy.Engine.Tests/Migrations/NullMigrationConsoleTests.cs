@@ -11,8 +11,7 @@ public class NullMigrationConsoleTests
     public void ReportStarting()
     {
         NullMigrationConsole.Instance.ReportStarting(
-            Mock.Of<IMigrationSession>(),
-            new Target("Server=.")
+            Mock.Of<IMigrationApplication>()
         );
     }
 
@@ -20,8 +19,7 @@ public class NullMigrationConsoleTests
     public void ReportApplying()
     {
         NullMigrationConsole.Instance.ReportApplying(
-            Mock.Of<IMigrationSession>(),
-            new Target("Server=."),
+            Mock.Of<IMigrationApplication>(),
             "Test",
             MigrationPhase.Pre
         );
@@ -31,8 +29,7 @@ public class NullMigrationConsoleTests
     public void ReportApplied()
     {
         NullMigrationConsole.Instance.ReportApplied(
-            Mock.Of<IMigrationSession>(),
-            new Target("Server=."),
+            Mock.Of<IMigrationApplication>(),
             count: 42,
             TimeSpan.FromMilliseconds(1234),
             TargetDisposition.Successful
@@ -43,8 +40,7 @@ public class NullMigrationConsoleTests
     public void ReportProblem()
     {
         NullMigrationConsole.Instance.ReportProblem(
-            Mock.Of<IMigrationSession>(),
-            new Target("Server=."),
+            Mock.Of<IMigrationApplication>(),
             message: "any"
         );
     }
@@ -52,8 +48,7 @@ public class NullMigrationConsoleTests
     public void CreateLog()
     {
         using var log = NullMigrationConsole.Instance.CreateLog(
-            Mock.Of<IMigrationSession>(),
-            new Target("Server=.")
+            Mock.Of<IMigrationApplication>()
         );
 
         log.ShouldBeSameAs(TextWriter.Null);

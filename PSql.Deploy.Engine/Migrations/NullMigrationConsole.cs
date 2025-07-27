@@ -16,33 +16,33 @@ public class NullMigrationConsole : IMigrationConsole
     public static NullMigrationConsole Instance { get; } = new();
 
     /// <inheritdoc/>
-    public void ReportStarting(IMigrationSession session, Target target)
+    public void ReportStarting(IMigrationApplication info)
     {
         // NOP
     }
 
     /// <inheritdoc/>
-    public void ReportApplying(IMigrationSession session, Target target,
+    public void ReportApplying(IMigrationApplication info,
         string migrationName, MigrationPhase phase)
     {
         // NOP
     }
 
     /// <inheritdoc/>
-    public void ReportApplied(IMigrationSession session, Target target,
+    public void ReportApplied(IMigrationApplication info,
         int count, TimeSpan duration, TargetDisposition disposition)
     {
         // NOP
     }
 
     /// <inheritdoc/>
-    public void ReportProblem(IMigrationSession session, Target? target, string message)
+    public void ReportProblem(IMigrationApplication info, string message)
     {
         // NOP
     }
 
     /// <inheritdoc/>
-    public TextWriter CreateLog(IMigrationSession session, Target target)
+    public TextWriter CreateLog(IMigrationApplication info)
     {
         return TextWriter.Null;
     }

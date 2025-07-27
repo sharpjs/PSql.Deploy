@@ -40,37 +40,37 @@ internal class CmdletMigrationConsole : M.IMigrationConsole
     }
 
     /// <inheritdoc/>
-    public TextWriter CreateLog(M.IMigrationSession session, E.Target target)
+    public TextWriter CreateLog(M.IMigrationApplication info)
     {
         if (_logPath is not { } logPath)
             return TextWriter.Null;
 
-        var phase    = session.CurrentPhase;
-        var server   = target.ServerDisplayName;
-        var database = target.DatabaseDisplayName;
+        var phase    = info.Session.CurrentPhase;
+        var server   = info.Target.ServerDisplayName;
+        var database = info.Target.DatabaseDisplayName;
         var fileName = $"{server}.{database}.{(int) phase}_{phase}.log".SanitizeFileName();
 
         return new StreamWriter(Path.Combine(logPath, fileName));
     }
 
     /// <inheritdoc/>
-    public void ReportStarting(M.IMigrationSession session, E.Target target)
+    public void ReportStarting(M.IMigrationApplication info)
     {
         lock (_lock)
         {
-            WriteHeader(session, target);
+            WriteHeader(info);
 
             _cmdlet.WriteHost("Starting");
         }
     }
 
     /// <inheritdoc/>
-    public void ReportApplying(M.IMigrationSession session, E.Target target,
+    public void ReportApplying(M.IMigrationApplication info,
         string migrationName, M.MigrationPhase phase)
     {
         lock (_lock)
         {
-            WriteHeader(session, target);
+            WriteHeader(info);
 
             _cmdlet.WriteHost(string.Format(
                 "Applying {0} ({1})",
@@ -81,12 +81,12 @@ internal class CmdletMigrationConsole : M.IMigrationConsole
     }
 
     /// <inheritdoc/>
-    public void ReportApplied(M.IMigrationSession session, E.Target target,
+    public void ReportApplied(M.IMigrationApplication info,
         int count, TimeSpan duration, E.TargetDisposition disposition)
     {
         lock (_lock)
         {
-            WriteHeader(session, target);
+            WriteHeader(info);
 
             _cmdlet.WriteHost(string.Format(
                 "Applied {0} migration(s) in {1:N3} second(s){2}",
@@ -98,25 +98,21 @@ internal class CmdletMigrationConsole : M.IMigrationConsole
     }
 
     /// <inheritdoc/>
-    public void ReportProblem(M.IMigrationSession session, E.Target? target, string message)
+    public void ReportProblem(M.IMigrationApplication info, string message)
     {
         lock (_lock)
         {
-            WriteHeader(session, target, ConsoleColor.Yellow);
+            WriteHeader(info, ConsoleColor.Yellow);
 
             _cmdlet.WriteHost(message, foregroundColor: ConsoleColor.Yellow);
         }
     }
 
-    private void WriteHeader(
-        M.IMigrationSession session,
-        E.Target?           target = null,
-        ConsoleColor        color  = ConsoleColor.Blue)
+    private void WriteHeader(M.IMigrationApplication info, ConsoleColor color = ConsoleColor.Blue)
     {
-        var message = target is null
-            ? $"[{session.CurrentPhase}] "
-            : $"[{session.CurrentPhase}] [{target.DatabaseDisplayName}] ";
+        var phase    = info.Session.CurrentPhase;
+        var database = info.Target.DatabaseDisplayName;
 
-        _cmdlet.WriteHost(message, newLine: false, color);
+        _cmdlet.WriteHost($"[{phase}] [{database}] ", newLine: false, color);
     }
 }

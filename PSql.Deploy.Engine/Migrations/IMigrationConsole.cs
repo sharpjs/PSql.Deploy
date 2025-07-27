@@ -9,45 +9,33 @@ namespace PSql.Deploy.Migrations;
 public interface IMigrationConsole
 {
     /// <summary>
-    ///   Reports the start of migration application to the specified target
-    ///   database.
+    ///   Reports the start of migration application to a target database.
     /// </summary>
-    /// <param name="session">
-    ///   The migration session.
+    /// <param name="info">
+    ///   Information about the migration application.
     /// </param>
-    /// <param name="target">
-    ///   An object representing the target database.
-    /// </param>
-    void ReportStarting(IMigrationSession session, Target target);
+    void ReportStarting(IMigrationApplication info);
 
     /// <summary>
-    ///   Reports the application of the specified migration content to the
-    ///   specified target database.
+    ///   Reports the application of the specified migration content to a
+    ///   target database.
     /// </summary>
-    /// <param name="session">
-    ///   The migration session.
-    /// </param>
-    /// <param name="target">
-    ///   An object representing the target database.
+    /// <param name="info">
+    ///   Information about the schema migration application.
     /// </param>
     /// <param name="migrationName">
-    ///   The name of the migration.
+    ///   The name of the migration being applied.
     /// </param>
     /// <param name="phase">
-    ///   The phase that identifies the content of the migration.
+    ///   The phase that identifies the content of the migration being applied.
     /// </param>
-    void ReportApplying(IMigrationSession session, Target target,
-        string migrationName, MigrationPhase phase);
+    void ReportApplying(IMigrationApplication info, string migrationName, MigrationPhase phase);
 
     /// <summary>
-    ///   Reports the end of migration application to the specified target
-    ///   database.
+    ///   Reports the end of migration application to a target database.
     /// </summary>
-    /// <param name="session">
-    ///   The migration session.
-    /// </param>
-    /// <param name="target">
-    ///   An object representing the target database.
+    /// <param name="info">
+    ///   Information about the schema migration application.
     /// </param>
     /// <param name="count">
     ///   The count of migrations that were applied.
@@ -58,36 +46,28 @@ public interface IMigrationConsole
     /// <param name="disposition">
     ///   The outcome of migration application to the target database.
     /// </param>
-    void ReportApplied(IMigrationSession session, Target target,
+    void ReportApplied(IMigrationApplication info,
         int count, TimeSpan duration, TargetDisposition disposition);
 
     /// <summary>
     ///   Reports a problem.
     /// </summary>
-    /// <param name="session">
-    ///   The migration session.
-    /// </param>
-    /// <param name="target">
-    ///   An object representing the target database to which the problem
-    ///   applies, or <see langword="null"/> for a general problem.
+    /// <param name="info">
+    ///   Information about the schema migration application.
     /// </param>
     /// <param name="message">
     ///   A message that describes the problem.
     /// </param>
-    void ReportProblem(IMigrationSession session, Target? target, string message);
+    void ReportProblem(IMigrationApplication info, string message);
 
     /// <summary>
-    ///   Creates a log for migration application to the specified target
-    ///   database.
+    ///   Creates a log for migration application to a target database.
     /// </summary>
-    /// <param name="session">
-    ///   The migration session.
-    /// </param>
-    /// <param name="target">
-    ///   An object representing the target database.
+    /// <param name="info">
+    ///   Information about the schema migration application.
     /// </param>
     /// <returns>
     ///   A writer that writes to the log.
     /// </returns>
-    TextWriter CreateLog(IMigrationSession session, Target target);
+    TextWriter CreateLog(IMigrationApplication info);
 }

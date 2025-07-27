@@ -36,11 +36,11 @@ public class MigrationApplicatorTests : TestHarnessBase
             .Setup(s => s.CancellationToken)
             .Returns(Cancellation.Token);
 
-        _console
-            .Setup(s => s.CreateLog(_session.Object, _target))
-            .Returns(_log);
-
         _applicator = new MigrationApplicator(_session.Object, _target);
+
+        _console
+            .Setup(c => c.CreateLog(_applicator))
+            .Returns(_log);
     }
 
     [Test]
@@ -489,7 +489,7 @@ public class MigrationApplicatorTests : TestHarnessBase
     {
         _console
             .InSequence(_sequence)
-            .Setup(c => c.ReportStarting(_session.Object, _target))
+            .Setup(c => c.ReportStarting(_applicator))
             .Verifiable();
     }
 
@@ -566,7 +566,7 @@ public class MigrationApplicatorTests : TestHarnessBase
     {
         _console
             .InSequence(_sequence)
-            .Setup(c => c.ReportApplying(_session.Object, _target, migrationName, phase))
+            .Setup(c => c.ReportApplying(_applicator, migrationName, phase))
             .Verifiable();
     }
 
@@ -585,7 +585,7 @@ public class MigrationApplicatorTests : TestHarnessBase
     {
         _console
             .InSequence(_sequence)
-            .Setup(c => c.ReportProblem(_session.Object, _target, problem))
+            .Setup(c => c.ReportProblem(_applicator, problem))
             .Verifiable();
     }
 
@@ -594,8 +594,7 @@ public class MigrationApplicatorTests : TestHarnessBase
         _console
             .InSequence(_sequence)
             .Setup(c => c.ReportApplied(
-                _session.Object, _target,
-                count, It.Is<TimeSpan>(t => t >= TimeSpan.Zero), disposition
+                _applicator, count, It.Is<TimeSpan>(t => t >= TimeSpan.Zero), disposition
             ))
             .Verifiable();
     }
