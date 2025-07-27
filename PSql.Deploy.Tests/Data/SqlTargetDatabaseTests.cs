@@ -55,6 +55,15 @@ public class SqlTargetDatabaseTests
     }
 
     [Test]
+    public void Construct_WithValues_NullConnectionString()
+    {
+        Should.Throw<ArgumentNullException>(() =>
+        {
+            _ = new SqlTargetDatabase(connectionString: null!);
+        });
+    }
+
+    [Test]
     public void Construct_FromNull()
     {
         Should.Throw<ArgumentNullException>(() =>
@@ -271,12 +280,9 @@ public class SqlTargetDatabaseTests
     {
         Should
             .Throw<ArgumentException>(() => MakeSqlTargetDatabase(obj))
-            .Message.ShouldBe(NonConformingApiMessage);
+            .Message.ShouldBe("The object does not conform to the expected API surface of PSql.SqlContext.");
     }
 
     private SqlTargetDatabase MakeSqlTargetDatabase(object obj)
         => new SqlTargetDatabase(_wrap(obj));
-
-    private const string
-        NonConformingApiMessage = "The object does not conform to the expected API surface of PSql.SqlContext.";
 }
