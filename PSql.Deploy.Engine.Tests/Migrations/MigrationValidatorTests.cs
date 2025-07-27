@@ -32,7 +32,7 @@ public class MigrationValidatorTests : TestHarnessBase
     {
         Should.Throw<ArgumentNullException>(() =>
         {
-            new MigrationValidator(null!);
+            _ = new MigrationValidator(null!);
         });
     }
 
@@ -41,7 +41,7 @@ public class MigrationValidatorTests : TestHarnessBase
     {
         Should.Throw<ArgumentNullException>(() =>
         {
-            new MigrationValidator(_context.Object).Validate(null!);
+            _ = new MigrationValidator(_context.Object).Validate(null!);
         });
     }
 
