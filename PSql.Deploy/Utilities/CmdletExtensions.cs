@@ -15,7 +15,10 @@ internal static class CmdletExtensions
         if (cmdlet is null)
             throw new ArgumentNullException(nameof(cmdlet));
 
-        return cmdlet.GetVariableValue("WhatIfPreference") is not (null or false);
+        return cmdlet.GetVariableValue("WhatIfPreference") is not (null or false)
+            || cmdlet.MyInvocation.BoundParameters.TryGetValue("WhatIf", out var whatIf)
+                && whatIf is SwitchParameter { IsPresent: true }
+            ;
     }
 
     public static string GetCurrentPath(this PSCmdlet cmdlet)
