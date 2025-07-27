@@ -12,7 +12,7 @@ public interface ISeedConsole
     ///   Reports the start of seed application to a target database.
     /// </summary>
     /// <param name="info">
-    ///   Information about the seed application.
+    ///   Information about the content seed application.
     /// </param>
     void ReportStarting(ISeedApplication info);
 
@@ -21,7 +21,7 @@ public interface ISeedConsole
     ///   database.
     /// </summary>
     /// <param name="info">
-    ///   Information about the seed application.
+    ///   Information about the content seed application.
     /// </param>
     /// <param name="moduleName">
     ///   The name of the seed module.
@@ -32,7 +32,7 @@ public interface ISeedConsole
     ///   Reports the end of seed application to a target database.
     /// </summary>
     /// <param name="info">
-    ///   Information about the seed application.
+    ///   Information about the content seed application.
     /// </param>
     /// <param name="count">
     ///   The count of seed modules that were applied.
@@ -43,13 +43,14 @@ public interface ISeedConsole
     /// <param name="disposition">
     ///   The outcome of the seed application.
     /// </param>
-    void ReportApplied(ISeedApplication info, int count, TimeSpan duration, TargetDisposition disposition);
+    void ReportApplied(ISeedApplication info,
+        int count, TimeSpan duration, TargetDisposition disposition);
 
     /// <summary>
     ///   Reports a problem.
     /// </summary>
     /// <param name="info">
-    ///   Information about the seed application.
+    ///   Information about the content seed application.
     /// </param>
     /// <param name="message">
     ///   A message that describes the problem.
@@ -61,7 +62,7 @@ public interface ISeedConsole
     ///   specified target database.
     /// </summary>
     /// <param name="info">
-    ///   Information about the seed application.
+    ///   Information about the content seed application.
     /// </param>
     /// <returns>
     ///   A writer that writes to the log file.

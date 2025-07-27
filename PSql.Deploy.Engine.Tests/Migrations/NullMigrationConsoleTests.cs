@@ -45,6 +45,7 @@ public class NullMigrationConsoleTests
         );
     }
 
+    [Test]
     public void CreateLog()
     {
         using var log = NullMigrationConsole.Instance.CreateLog(

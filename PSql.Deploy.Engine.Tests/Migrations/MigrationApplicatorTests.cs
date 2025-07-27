@@ -608,8 +608,8 @@ public class MigrationApplicatorTests : TestHarnessBase
             foreach (var item in items)
                 log.ShouldContain(item);
         }
-        finally   // To see the log for all tests
-        //catch       // To see the log only when it's wrong
+        //finally   // To see the log for all tests
+        catch       // To see the log only when it's wrong
         {
             TestContext.Write(log);
         }

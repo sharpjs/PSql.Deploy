@@ -17,8 +17,8 @@ public class SeedSessionTests : TestHarnessBase
     private readonly ConcurrentBag<string>             _actualBatches;
 
     private static readonly Target
-        TargetA = new Target("Server=sql.example.com;Database=a"),
-        TargetB = new Target("Server=sql.example.com;Database=b");
+        TargetA = new("Server=sql.example.com;Database=a"),
+        TargetB = new("Server=sql.example.com;Database=b");
 
     private SeedSession Session
         => _session ??= new SeedSession(_options, _console.Object);
