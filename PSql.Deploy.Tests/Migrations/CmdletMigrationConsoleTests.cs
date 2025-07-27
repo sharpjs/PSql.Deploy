@@ -33,6 +33,15 @@ public class CmdletMigrationConsoleTests : TestHarnessBase
         => _console ??= new(_cmdlet.Object, _logPath);
 
     [Test]
+    public void Constructor_NullCmdlet()
+    {
+        Should.Throw<ArgumentNullException>(() =>
+        {
+            _ = new CmdletMigrationConsole(null!, _logPath);
+        });
+    }
+
+    [Test]
     public void CreateLog_NullLogPath()
     {
         Console
