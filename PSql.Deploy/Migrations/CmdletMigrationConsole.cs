@@ -26,7 +26,7 @@ internal class CmdletMigrationConsole : M.IMigrationConsole
     /// <exception cref="ArgumentNullException">
     ///   <paramref name="cmdlet"/>  is <see langword="null"/>.
     /// </exception>
-    internal CmdletMigrationConsole(ICmdlet cmdlet, string? logPath)
+    public CmdletMigrationConsole(ICmdlet cmdlet, string? logPath)
     {
         if (cmdlet is null)
             throw new ArgumentNullException(nameof(cmdlet));
