@@ -28,8 +28,7 @@ internal class CmdletMigrationConsole : M.IMigrationConsole
     /// </exception>
     public CmdletMigrationConsole(ICmdlet cmdlet, string? logPath)
     {
-        if (cmdlet is null)
-            throw new ArgumentNullException(nameof(cmdlet));
+        ArgumentNullException.ThrowIfNull(cmdlet);
 
         _cmdlet  = cmdlet;
         _logPath = logPath;

@@ -98,15 +98,6 @@ public class InvokeSqlMigrationsCommand : AsyncPSCmdlet
                     _session.BeginApplying(group.InnerGroup);
     }
 
-    private bool ShouldProcess(SqlTargetDatabaseGroup group)
-    {
-        var action   = $"Applying migrations to {group}.";
-        var question = $"Apply migrations to {group}?";
-
-        return ShouldProcess(action, question, null, out var whyNot)
-            || whyNot is ShouldProcessReason.WhatIf;
-    }
-
     /// <inheritdoc/>
     protected override void EndProcessing()
     {
@@ -141,6 +132,15 @@ public class InvokeSqlMigrationsCommand : AsyncPSCmdlet
         options.IsWhatIfMode            = this.IsWhatIf();
 
         return options;
+    }
+
+    private bool ShouldProcess(SqlTargetDatabaseGroup group)
+    {
+        var action   = $"Applying migrations to {group}.";
+        var question = $"Apply migrations to {group}?";
+
+        return ShouldProcess(action, question, null, out var whyNot)
+            || whyNot is ShouldProcessReason.WhatIf;
     }
 
     [Conditional("DEBUG")]
