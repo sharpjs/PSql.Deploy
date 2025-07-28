@@ -163,6 +163,69 @@ public class SqlTargetDatabaseGroupTests
             .Message.ShouldContain("Unsupported conversion.");
     }
 
+    [Test]
+    public void ToString_Unnamed_Empty()
+    {
+        var group = new SqlTargetDatabaseGroup(
+            []
+        );
+
+        group.ToString().ShouldBe("empty");
+    }
+
+    [Test]
+    public void ToString_Unnamed_One()
+    {
+        var group = new SqlTargetDatabaseGroup(
+            [new("Server = foo; Database = bar")]
+        );
+
+        group.ToString().ShouldBe("foo.bar");
+    }
+
+    [Test]
+    public void ToString_Unnamed_Many()
+    {
+        var group = new SqlTargetDatabaseGroup(
+            [new("Server = foo; Database = bar"), new("Server = baz; Database = quux")]
+        );
+
+        group.ToString().ShouldBe("foo.bar +1");
+    }
+
+    [Test]
+    public void ToString_Named_Empty()
+    {
+        var group = new SqlTargetDatabaseGroup(
+            [],
+            name: "Test"
+        );
+
+        group.ToString().ShouldBe("Test (empty)");
+    }
+
+    [Test]
+    public void ToString_Named_One()
+    {
+        var group = new SqlTargetDatabaseGroup(
+            [new("Server = foo; Database = bar")],
+            name: "Test"
+        );
+
+        group.ToString().ShouldBe("Test (foo.bar)");
+    }
+
+    [Test]
+    public void ToString_Named_Many()
+    {
+        var group = new SqlTargetDatabaseGroup(
+            [new("Server = foo; Database = bar"), new("Server = baz; Database = quux")],
+            name: "Test"
+        );
+
+        group.ToString().ShouldBe("Test (foo.bar +1)");
+    }
+
     private SqlTargetDatabaseGroup MakeSqlTargetDatabaseGroup(object obj)
         => new SqlTargetDatabaseGroup(_wrap(obj));
 }
