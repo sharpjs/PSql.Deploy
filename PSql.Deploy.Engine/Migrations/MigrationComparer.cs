@@ -11,7 +11,7 @@ namespace PSql.Deploy.Migrations;
 ///   case-insensitive ordinal comparison, with the special pseudo-migrations
 ///   <c>_Begin</c> and <c>_End</c> at the beginning and end, respectively.
 /// </remarks>
-public sealed class MigrationComparer : IComparer<Migration>
+public sealed class MigrationComparer : IComparer<Migration>, IComparer<string>
 {
     /// <summary>
     ///   Gets the singleton instance of <see cref="MigrationComparer"/>.
@@ -40,11 +40,31 @@ public sealed class MigrationComparer : IComparer<Migration>
         if (y is null)
             return +1;
 
-        var result = GetRank(x.Name) - GetRank(y.Name);
+        return CompareCore(x.Name, y.Name);
+    }
+
+    /// <inheritdoc/>
+    public int Compare(string? x, string? y)
+    {
+        if (ReferenceEquals(x, y))
+            return 0;
+
+        if (x is null)
+            return -1;
+
+        if (y is null)
+            return +1;
+
+        return CompareCore(x, y);
+    }
+
+    private static int CompareCore(string x, string y)
+    {
+        var result = GetRank(x) - GetRank(y);
 
         return result != 0
             ? result
-            : NameComparer.Compare(x.Name, y.Name);
+            : NameComparer.Compare(x, y);
     }
 
     /// <summary>
