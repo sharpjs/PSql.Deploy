@@ -101,6 +101,8 @@ public class WhatIfMigrationTargetConnectionTests : TestHarnessBase
 
         // Instead, ExecuteMigrationContentAsync updated the what-if state,
         // which a later GetAppliedMigrationsAsync would consume.
-        _state.GetState(_target, migration).ShouldBe(MigrationState.AppliedPost);
+        _state.Get(_target, [migration])
+            .ShouldHaveSingleItem()
+            .State.ShouldBe(MigrationState.AppliedPost);
     }
 }

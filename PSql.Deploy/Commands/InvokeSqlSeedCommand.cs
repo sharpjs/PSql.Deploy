@@ -84,9 +84,9 @@ public class InvokeSqlSeedCommand : AsyncPSCmdlet
         AssumeBeginProcessingInvoked();
 
         if (Target is not null)
-            foreach (var target in Target)
-                if (target is not null)
-                    _session.BeginApplying(target.InnerGroup);
+            foreach (var group in Target)
+                if (ShouldProcess(group))
+                    _session.BeginApplying(group.InnerGroup);
     }
 
     protected override void EndProcessing()
@@ -143,6 +143,15 @@ public class InvokeSqlSeedCommand : AsyncPSCmdlet
             "Key must be non-null and must convert to a non-empty string.",
             nameof(Define)
         );
+    }
+
+    private bool ShouldProcess(SqlTargetDatabaseGroup group)
+    {
+        var action   = $"Applying seed(s) to {group}.";
+        var question = $"Apply seed(s) to {group}?";
+
+        return ShouldProcess(action, question, null, out var whyNot)
+            || whyNot is ShouldProcessReason.WhatIf;
     }
 
     [Conditional("DEBUG")]

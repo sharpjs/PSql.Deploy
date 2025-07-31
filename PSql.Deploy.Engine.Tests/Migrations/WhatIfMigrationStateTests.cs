@@ -8,54 +8,87 @@ namespace PSql.Deploy.Migrations;
 public class WhatIfMigrationStateTests
 {
     [Test]
-    public void GetState_NullTarget()
+    public void Get_NullTarget()
     {
         var state = new WhatIfMigrationState();
 
         Should.Throw<ArgumentNullException>(() =>
         {
-            state.GetState(null!, new("A"));
+            state.Get(null!, []);
         });
     }
 
     [Test]
-    public void GetState_NullMigration()
+    public void Get_NullMigrations()
     {
         var state = new WhatIfMigrationState();
 
         Should.Throw<ArgumentNullException>(() =>
         {
-            state.GetState(new("Server=.;Database=A"), null!);
+            state.Get(null!, []);
         });
     }
 
     [Test]
-    public void GetState_Initial()
+    public void Get_Empty()
     {
-        var state     = new WhatIfMigrationState();
-        var target    = new Target("Server=.;Database=A");
-        var migration = new Migration("A") { State = MigrationState.AppliedPre };
+        var state  = new WhatIfMigrationState();
+        var target = new Target("Server=.;Database=X");
 
-        state.GetState(target, migration).ShouldBe(MigrationState.AppliedPre);
+        state.Get(target, []).ShouldBeEmpty();
+        state.Get(target, []).ShouldBeEmpty();
     }
 
     [Test]
-    public void GetState_Applied()
+    public void Get_RegisteredOnTarget()
     {
-        var state     = new WhatIfMigrationState();
-        var target    = new Target("Server=.;Database=A");
-        var migration = new Migration("A");
+        var state      = new WhatIfMigrationState();
+        var target     = new Target("Server=.;Database=X");
+        var registered = new Migration("A") { Hash = "123" };
 
-        state.GetState(target, migration).ShouldBe(MigrationState.NotApplied);
+        state.Get(target, [registered])
+            .ShouldHaveSingleItem()
+            .AssignTo(out var returned);
 
-        state.OnApplied(target, migration, MigrationPhase.Pre);
-        state.GetState(target, migration).ShouldBe(MigrationState.AppliedPre);
+        returned      .ShouldBeSameAs(registered);
+        returned.State.ShouldBe(MigrationState.NotApplied);
+    }
 
-        state.OnApplied(target, migration, MigrationPhase.Core);
-        state.GetState(target, migration).ShouldBe(MigrationState.AppliedCore);
+    [Test]
+    public void Get_RegisteredOnTarget_PreviouslyAppliedInWhatIf()
+    {
+        var state      = new WhatIfMigrationState();
+        var target     = new Target("Server=.;Database=X");
+        var applied    = new Migration("A") { Hash = "123" };
+        var registered = new Migration("A") { Hash = "123" };
 
-        state.OnApplied(target, migration, MigrationPhase.Post);
-        state.GetState(target, migration).ShouldBe(MigrationState.AppliedPost);
+        state.OnApplied(target, applied, MigrationPhase.Pre);
+
+        state.Get(target, [registered])
+            .ShouldHaveSingleItem()
+            .AssignTo(out var returned);
+
+        returned      .ShouldBeSameAs(registered);
+        returned.State.ShouldBe(MigrationState.AppliedPre);
+    }
+
+    [Test]
+    public void Get_PreviouslyAppliedInWhatIf()
+    {
+        var state   = new WhatIfMigrationState();
+        var target  = new Target("Server=.;Database=X");
+        var applied = new Migration("A") { Hash = "123" };
+
+        state.OnApplied(target, applied, MigrationPhase.Pre);
+
+        state.Get(target, [])
+            .ShouldHaveSingleItem()
+            .AssignTo(out var returned);
+
+        returned      .ShouldNotBeSameAs(applied);
+        returned.Name .ShouldBeSameAs(applied.Name);
+        returned.Hash .ShouldBeSameAs(applied.Hash);
+        returned.State.ShouldBe(MigrationState.AppliedPre);
     }
 
     [Test]

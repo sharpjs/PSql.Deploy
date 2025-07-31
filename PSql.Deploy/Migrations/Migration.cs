@@ -15,8 +15,7 @@ public class Migration
 
     internal Migration(M.Migration inner)
     {
-        if (inner is null)
-            throw new ArgumentNullException(nameof(inner));
+        ArgumentNullException.ThrowIfNull(inner);
 
         _inner = inner;
     }

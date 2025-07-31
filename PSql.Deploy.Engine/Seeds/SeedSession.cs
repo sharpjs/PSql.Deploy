@@ -84,14 +84,22 @@ public class SeedSession : DeploymentSession, ISeedSessionInternal
         if (otherTask is not null)
             return await otherTask;
 
-        var builder = ImmutableArray.CreateBuilder<LoadedSeed>(Seeds.Length);
+        try
+        {
+            var builder = ImmutableArray.CreateBuilder<LoadedSeed>(Seeds.Length);
 
-        foreach (var seed in Seeds)
-            builder.Add(SeedLoader.Load(seed, Defines));
+            foreach (var seed in Seeds)
+                builder.Add(SeedLoader.Load(seed, Defines));
 
-        var result = builder.MoveToImmutable();
-        deferral.SetResult(result);
-        return result;
+            var result = builder.MoveToImmutable();
+            deferral.SetResult(result);
+            return result;
+        }
+        catch (Exception e)
+        {
+            deferral.SetException(e);
+            throw;
+        }
     }
 
     private ISeedTargetConnection Connect(Target target, ISqlMessageLogger logger)

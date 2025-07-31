@@ -49,10 +49,7 @@ internal class WhatIfMigrationTargetConnection : WhatIfTargetConnection, IMigrat
         var migrations = await UnderlyingConnection
             .GetAppliedMigrationsAsync(minimumName, cancellation);
 
-        foreach (var migration in migrations)
-            migration.State = _state.GetState(Target, migration);
-
-        return migrations;
+        return _state.Get(Target, migrations);
     }
 
     /// <inheritdoc/>

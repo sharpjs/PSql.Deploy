@@ -146,6 +146,52 @@ public class MainThreadDispatcherTests
     }
 
     [Test]
+    public void RunPending_OnOtherThread()
+    {
+        using var dispatcher = new MainThreadDispatcher();
+
+        Should.Throw<InvalidOperationException>(() =>
+        {
+            Task.Run(() => dispatcher.RunPending()).GetAwaiter().GetResult();
+        })
+        .Message.ShouldBe("This method must be invoked from the thread that constructed the dispatcher.");
+    }
+
+    [Test]
+    public void RunPending_Completed()
+    {
+        using var dispatcher = new MainThreadDispatcher();
+
+        dispatcher.Complete();
+
+        dispatcher.RunPending();
+    }
+
+    [Test]
+    public void RunPending_Disposed()
+    {
+        using var dispatcher = new MainThreadDispatcher();
+
+        dispatcher.Dispose();
+
+        Should.Throw<ObjectDisposedException>(dispatcher.RunPending);
+    }
+
+    [Test]
+    public void RunPending_Ok()
+    {
+        using var dispatcher = new MainThreadDispatcher();
+
+        var invoked = false;
+
+        Task.Run(() => dispatcher.Post(() => invoked = true)).GetAwaiter().GetResult();
+
+        dispatcher.RunPending();
+
+        invoked.ShouldBeTrue();
+    }
+
+    [Test]
     public void Run_OnOtherThread()
     {
         using var dispatcher = new MainThreadDispatcher();
