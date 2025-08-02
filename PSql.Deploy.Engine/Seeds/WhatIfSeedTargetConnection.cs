@@ -13,9 +13,11 @@ internal class WhatIfSeedTargetConnection : WhatIfTargetConnection, ISeedTargetC
     public WhatIfSeedTargetConnection(ISeedTargetConnection connection)
         : base(connection) { }
 
+#if NEED_UNDERLYING_CONNECTION
     /// <inheritdoc cref="WhatIfTargetConnection.UnderlyingConnection"/>
     protected new ISeedTargetConnection UnderlyingConnection
         => (ISeedTargetConnection) base.UnderlyingConnection;
+#endif
 
     /// <inheritdoc/>
     public Task PrepareAsync(Guid runId, int workerId, CancellationToken cancellation = default)

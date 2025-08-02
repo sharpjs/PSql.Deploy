@@ -68,26 +68,15 @@ internal static class CmdletExtensions
         // Technique learned from PSv5+ Write-Host implementation, which works
         // by sending specially-marked messages to the information stream.
         //
-        // https://github.com/PowerShell/PowerShell/blob/v7.0.3/src/Microsoft.PowerShell.Commands.Utility/commands/utility/WriteConsoleCmdlet.cs
+        // https://github.com/PowerShell/PowerShell/blob/v7.5.2/src/Microsoft.PowerShell.Commands.Utility/commands/utility/WriteConsoleCmdlet.cs
 
         var data = new HostInformationMessage
         {
-            Message   = message ?? "",
-            NoNewLine = !newLine
+            Message         = message ?? "",
+            NoNewLine       = !newLine,
+            ForegroundColor = foregroundColor,
+            BackgroundColor = backgroundColor,
         };
-
-        if (foregroundColor.HasValue || backgroundColor.HasValue)
-        {
-            try
-            {
-                data.ForegroundColor = foregroundColor;
-                data.BackgroundColor = backgroundColor;
-            }
-            catch (HostException)
-            {
-                // Host is non-interactive or does not support colors.
-            }
-        }
 
         cmdlet.WriteInformation(data, HostTag);
     }

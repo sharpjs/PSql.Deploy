@@ -36,7 +36,8 @@ public class MigrationComparerTests
         var x = nameX is null ? null : new Migration(nameX);
         var y = nameY is null ? null : new Migration(nameY);
 
-        Sign(MigrationComparer.Instance.Compare(x, y)).ShouldBe(expected);
+        Sign(MigrationComparer.Instance.Compare(    x,     y)).ShouldBe(expected);
+        Sign(MigrationComparer.Instance.Compare(nameX, nameY)).ShouldBe(expected);
     }
 
     [TestCase("_Begin", -1)]
