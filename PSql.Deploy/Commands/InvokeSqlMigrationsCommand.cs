@@ -32,7 +32,7 @@ public class InvokeSqlMigrationsCommand : AsyncPSCmdlet
     ///   <b>-Path:</b>
     ///   Path to a directory containing migrations.
     /// </summary>
-    [Parameter()]
+    [Parameter]
     [Alias("PSPath", "SourcePath")]
     [ValidateNotNullOrEmpty]
     public string? Path { get; set; }
@@ -41,7 +41,7 @@ public class InvokeSqlMigrationsCommand : AsyncPSCmdlet
     ///   <b>-Phase:</b>
     ///   Deployment phases for which to run migrations.
     /// </summary>
-    [Parameter()]
+    [Parameter]
     [ValidateSet(nameof(Pre), nameof(Core), nameof(Post))]
     public MigrationPhase[]? Phase { get; set; }
 
@@ -49,7 +49,7 @@ public class InvokeSqlMigrationsCommand : AsyncPSCmdlet
     ///   <b>-MaximumMigrationName:</b>
     ///   Maximum name of migrations to invoke.
     /// </summary>
-    [Parameter()]
+    [Parameter]
     [ValidateNotNullOrEmpty]
     public string? MaximumMigrationName { get; set; }
 
@@ -57,7 +57,7 @@ public class InvokeSqlMigrationsCommand : AsyncPSCmdlet
     ///   <b>-AllowCorePhase:</b>
     ///   Allow migration content in the <c>Core</c> phase.
     /// </summary>
-    [Parameter()]
+    [Parameter]
     public SwitchParameter AllowContentInCorePhase { get; set; }
 
     /// <summary>
@@ -66,7 +66,7 @@ public class InvokeSqlMigrationsCommand : AsyncPSCmdlet
     ///   this value, the command attempts to cancel in-progress operations and
     ///   terminates early.
     /// </summary>
-    [Parameter()]
+    [Parameter]
     [ValidateRange(0, int.MaxValue)]
     public int MaxErrorCount { get; set; }
 
@@ -75,16 +75,16 @@ public class InvokeSqlMigrationsCommand : AsyncPSCmdlet
     /// <inheritdoc/>
     protected override void BeginProcessing()
     {
-        Assume.NotNull(Path);
-
         base.BeginProcessing();
+
+        var currentPath = this.GetCurrentPath();
 
         _session = new(
             GetOptions(),
-            new CmdletMigrationConsole(this, this.GetCurrentPath())
+            new CmdletMigrationConsole(this, currentPath)
         );
 
-        _session.DiscoverMigrations(Path, MaximumMigrationName);
+        _session.DiscoverMigrations(Path ?? currentPath, MaximumMigrationName);
     }
 
     /// <inheritdoc/>
@@ -145,9 +145,9 @@ public class InvokeSqlMigrationsCommand : AsyncPSCmdlet
 
     [Conditional("DEBUG")]
     [MemberNotNull(nameof(_session))]
-    private void AssumeBeginProcessingInvoked()
+    internal void AssumeBeginProcessingInvoked()
     {
         if (_session is null)
-            throw new InvalidCastException("BeginProcessing not invoked.");
+            throw new InvalidOperationException("BeginProcessing not invoked.");
     }
 }

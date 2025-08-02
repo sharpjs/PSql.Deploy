@@ -69,12 +69,11 @@ public sealed class GetSqlMigrationsCommand : AsyncPSCmdlet
 
     private async Task ProcessRecordAsync()
     {
-        var migrations
-            = Path   is { } path   ?       GetMigrations     (path)
-            : Target is { } target ? await GetMigrationsAsync(target)
-            : throw new InvalidOperationException(
-                "Either the Path or the Target parameter must be given."
-            );
+        var migrations = ParameterSetName switch
+        {
+            "Path" => GetMigrations(Path!),
+            _      => await GetMigrationsAsync(Target!),
+        };
 
 #if INCLUDE_CONTENT
         if (IncludeContent.IsPresent)

@@ -4,14 +4,14 @@
 namespace PSql.Deploy.Commands;
 
 [TestFixture]
-public class InvokeSqlMigrationsCommandTests
+public class InvokeSqlSeedCommandTests
 {
-    // More tests in InvokeSqlMigrationsCommandIntegrationTests
+    // More tests in InvokeSqlSeedCommandIntegrationTests
 
     [Test]
     public void Dispose_BeforeBeginProcessing()
     {
-        using var command = new InvokeSqlMigrationsCommand();
+        using var command = new InvokeSqlSeedCommand();
 
         // Test both Dispose before BeginProcessing and multiple disposal
         command.Dispose();
@@ -20,7 +20,7 @@ public class InvokeSqlMigrationsCommandTests
     [Test]
     public void AssumeBeginProcessingInvoked()
     {
-        using var command = new InvokeSqlMigrationsCommand();
+        using var command = new InvokeSqlSeedCommand();
 
 #if DEBUG
         Should.Throw<InvalidOperationException>(() => command.AssumeBeginProcessingInvoked());

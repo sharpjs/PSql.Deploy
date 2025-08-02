@@ -30,7 +30,7 @@ public class InvokeSqlSeedCommand : AsyncPSCmdlet
     ///   <b>-Seed:</b>
     ///   Names of seeds to apply.
     /// </summary>
-    [Parameter]
+    [Parameter(Position = 1, Mandatory = true, ValueFromPipeline = true)]
     [ValidateNotNullOrEmpty]
     public string[]? Seed { get; set; }
 
@@ -47,7 +47,7 @@ public class InvokeSqlSeedCommand : AsyncPSCmdlet
     ///   <b>-Path:</b>
     ///   Path to a directory containing seeds.
     /// </summary>
-    [Parameter()]
+    [Parameter]
     [Alias("PSPath", "SourcePath")]
     [ValidateNotNullOrEmpty]
     public string? Path { get; set; }
@@ -66,17 +66,18 @@ public class InvokeSqlSeedCommand : AsyncPSCmdlet
 
     protected override void BeginProcessing()
     {
-        Assume.NotNull(Path);
         Assume.NotNull(Seed);
 
         base.BeginProcessing();
 
+        var currentPath = this.GetCurrentPath();
+
         _session = new(
             GetOptions(),
-            new CmdletSeedConsole(this, this.GetCurrentPath())
+            new CmdletSeedConsole(this, currentPath)
         );
 
-        _session.DiscoverSeeds(Path, Seed);
+        _session.DiscoverSeeds(Path ?? currentPath, Seed);
     }
 
     protected override void ProcessRecord()
@@ -128,7 +129,7 @@ public class InvokeSqlSeedCommand : AsyncPSCmdlet
 
         foreach (DictionaryEntry entry in Define)
         {
-            var key   = entry.Key  ?.ToString() ?? throw OnNullOrEmptyDefineKey();
+            var key   = entry.Key   .ToString() ?? throw OnNullOrEmptyDefineKey();
             var value = entry.Value?.ToString() ?? "";
 
             builder.Add((key, value));
@@ -156,9 +157,9 @@ public class InvokeSqlSeedCommand : AsyncPSCmdlet
 
     [Conditional("DEBUG")]
     [MemberNotNull(nameof(_session))]
-    private void AssumeBeginProcessingInvoked()
+    internal void AssumeBeginProcessingInvoked()
     {
         if (_session is null)
-            throw new InvalidCastException("BeginProcessing not invoked.");
+            throw new InvalidOperationException("BeginProcessing not invoked.");
     }
 }

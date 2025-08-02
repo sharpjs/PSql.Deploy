@@ -17,6 +17,9 @@ internal static class ScriptExecutor
     private static readonly InitialSessionState
         InitialState = CreateInitialSessionState();
 
+    private static readonly PSInvocationSettings
+        Settings = new() { ErrorActionPreference = ActionPreference.Stop };
+
     private static InitialSessionState CreateInitialSessionState()
     {
         var state = InitialSessionState.CreateDefault();
@@ -32,18 +35,26 @@ internal static class ScriptExecutor
 
     internal static (IReadOnlyList<PSObject?>, Exception?) Execute(string script)
     {
+        return Execute(null, script);
+    }
+
+    internal static (IReadOnlyList<PSObject?>, Exception?) Execute(Action<InitialSessionState>? setup, string script)
+    {
         if (script is null)
             throw new ArgumentNullException(nameof(script));
 
-        var settings = new PSInvocationSettings
+        var state = InitialState;
+
+        if (setup is not null)
         {
-            ErrorActionPreference = ActionPreference.Stop,
-        };
+            state = state.Clone();
+            setup(state);
+        }
 
         var output    = new List<PSObject?>();
         var exception = null as Exception;
 
-        using var shell = PowerShell.Create(InitialState);
+        using var shell = PowerShell.Create(state);
 
         Redirect(shell.Streams, output);
 
@@ -53,7 +64,7 @@ internal static class ScriptExecutor
 
         try
         {
-            shell.Invoke(input: null, output, settings);
+            shell.Invoke(input: null, output, Settings);
         }
         catch (Exception e)
         {
