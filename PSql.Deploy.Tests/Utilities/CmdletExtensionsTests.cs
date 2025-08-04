@@ -34,7 +34,7 @@ public class CmdletExtensionsTests
     }
 
     [Test]
-    public void WriteHost_EmptyString()
+    public void WriteHost_Null()
     {
         var cmdlet = new TestCommand();
 
@@ -46,11 +46,9 @@ public class CmdletExtensionsTests
 
         Should.Throw<NotImplementedException>(() =>
         {
-            cmdlet.WriteHost(string.Empty);
+            cmdlet.WriteHost(null);
         });
     }
 
-    private class TestCommand : PSCmdlet
-    {
-    }
+    private class TestCommand : PSCmdlet { }
 }

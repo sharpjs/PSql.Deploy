@@ -78,8 +78,33 @@ internal static class ScriptExecutor
 
     private static void Redirect(PSDataStreams streams, List<PSObject?> output)
     {
-        streams.Warning.DataAdding += (_, data) => StoreWarning (data, output);
-        streams.Error  .DataAdding += (_, data) => StoreError   (data, output);
+        streams.Debug      .DataAdding += (_, data) => StoreDebug       (data, output);
+        streams.Verbose    .DataAdding += (_, data) => StoreVerbose     (data, output);
+        streams.Information.DataAdding += (_, data) => StoreInformation (data, output);
+        streams.Warning    .DataAdding += (_, data) => StoreWarning     (data, output);
+        streams.Error      .DataAdding += (_, data) => StoreError       (data, output);
+        streams.Progress   .DataAdding += (_, data) => StoreProgress    (data, output);
+    }
+
+    private static void StoreDebug(DataAddingEventArgs data, List<PSObject?> output)
+    {
+        var written = (DebugRecord) data.ItemAdded;
+        var message = new PSDebug(written.Message);
+        output.Add(new PSObject(message));
+    }
+
+    private static void StoreVerbose(DataAddingEventArgs data, List<PSObject?> output)
+    {
+        var written = (VerboseRecord) data.ItemAdded;
+        var message = new PSVerbose(written.Message);
+        output.Add(new PSObject(message));
+    }
+
+    private static void StoreInformation(DataAddingEventArgs data, List<PSObject?> output)
+    {
+        var written = (InformationRecord) data.ItemAdded;
+        var message = new PSInformation(written.ToString());
+        output.Add(new PSObject(message));
     }
 
     private static void StoreWarning(DataAddingEventArgs data, List<PSObject?> output)
@@ -95,7 +120,18 @@ internal static class ScriptExecutor
         var message = new PSError(written.Exception.Message);
         output.Add(new PSObject(message));
     }
+
+    private static void StoreProgress(DataAddingEventArgs data, List<PSObject?> output)
+    {
+        var written = (ProgressRecord) data.ItemAdded;
+        var message = new PSProgress(written.ToString());
+        output.Add(new PSObject(message));
+    }
 }
 
-internal readonly record struct PSWarning (string Message);
-internal readonly record struct PSError   (string Message);
+internal readonly record struct PSDebug       (string Message);
+internal readonly record struct PSVerbose     (string Message);
+internal readonly record struct PSInformation (string Message);
+internal readonly record struct PSWarning     (string Message);
+internal readonly record struct PSError       (string Message);
+internal readonly record struct PSProgress    (string Message);

@@ -47,6 +47,7 @@
         'Invoke-SqlMigrations'
         'Invoke-SqlSeed'
         'New-SqlTargetDatabaseGroup'
+        if ($env:PSQL_DEPLOY_TESTING -eq "1") { 'Test-AsyncPSCmdlet' }
     )
 
     # Discoverability and URLs

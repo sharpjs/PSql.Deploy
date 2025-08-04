@@ -40,6 +40,7 @@
       LinkBase="deps\" CopyToOutputDirectory="PreserveNewest" Visible="false" />
   </ItemGroup>
 
+  <!-- TODO: Any better way to include these? -->
   <ItemGroup>
     <Compile Include="..\PSql.Deploy.Engine\Migrations\MigrationState.cs" LinkBase="Migrations" />
     <Compile Include="..\PSql.Deploy.Engine\Utilities\Assume.cs"          LinkBase="Utilities" />

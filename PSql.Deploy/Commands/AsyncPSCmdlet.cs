@@ -140,7 +140,6 @@ public abstract class AsyncPSCmdlet : PSCmdlet, ICmdlet, IDisposable
 
     private void BeginAsyncScope()
     {
-        _asyncScope?.Dispose();
         _asyncScope = new(_cancellation.Token);
     }
 
@@ -148,6 +147,9 @@ public abstract class AsyncPSCmdlet : PSCmdlet, ICmdlet, IDisposable
     {
         // Throws if invoked from non-main thread or if scope is disposed
         RequireAsyncScope().Complete();
+
+        _asyncScope.Dispose();
+        _asyncScope = null;
     }
 
     /// <inheritdoc/>
@@ -167,6 +169,7 @@ public abstract class AsyncPSCmdlet : PSCmdlet, ICmdlet, IDisposable
         _cancellation.Dispose();
     }
 
+    [MemberNotNull(nameof(_asyncScope))]
     private AsyncCmdletScope RequireAsyncScope()
     {
         return _asyncScope ?? throw new InvalidOperationException(
@@ -272,6 +275,9 @@ public abstract class AsyncPSCmdlet : PSCmdlet, ICmdlet, IDisposable
     }
 
     /// <inheritdoc/>
+    [ExcludeFromCodeCoverage(
+        Justification = "Throws in non-interactive test session; return statement unreachable."
+    )]
     public new bool ShouldContinue(string? query, string? caption)
     {
         static bool ShouldContinue((PSCmdlet cmdlet, string? query, string? caption) x)
@@ -281,6 +287,9 @@ public abstract class AsyncPSCmdlet : PSCmdlet, ICmdlet, IDisposable
     }
 
     /// <inheritdoc/>
+    [ExcludeFromCodeCoverage(
+        Justification = "Throws in non-interactive test session; return statement unreachable."
+    )]
     public new bool ShouldContinue(
         string?  query,
         string?  caption,
@@ -311,6 +320,9 @@ public abstract class AsyncPSCmdlet : PSCmdlet, ICmdlet, IDisposable
     }
 
     /// <inheritdoc/>
+    [ExcludeFromCodeCoverage(
+        Justification = "Throws in non-interactive test session; return statement unreachable."
+    )]
     public new bool ShouldContinue(
         string?  query,
         string?  caption,

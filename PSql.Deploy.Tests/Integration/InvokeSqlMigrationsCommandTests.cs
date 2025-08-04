@@ -47,12 +47,11 @@ public class InvokeSqlMigrationsCommandIntegrationTests
 
         exception.ShouldBeNull();
 
-        output.Count.ShouldBe(6);
+        output.Count.ShouldBeGreaterThanOrEqualTo(6);
 
-        var migrations = output
-            .Select(o => o.ShouldNotBeNull())
-            .Select(o => o.BaseObject.ShouldBeOfType<Migration>())
-            .ToList();
+        var migrations = output.Select(o => o?.BaseObject).OfType<Migration>().ToList();
+
+        migrations.Count.ShouldBe(6);
 
         // From Pre+Core run
         migrations[0].Name .ShouldBe("Migration0");
@@ -91,7 +90,7 @@ public class InvokeSqlMigrationsCommandIntegrationTests
     [Test]
     public void Invoke_DefaultPath()
     {
-        var (output, exception) = ScriptExecutor.Execute(
+        var (_, exception) = ScriptExecutor.Execute(
             """
             Join-Path TestDbs A | Set-Location
             $Target = New-SqlContext -DatabaseName PSqlDeployTestA
@@ -99,7 +98,6 @@ public class InvokeSqlMigrationsCommandIntegrationTests
             """
         );
 
-        output   .ShouldBeEmpty();
         exception.ShouldBeNull();
     }
 }

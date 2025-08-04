@@ -4,7 +4,10 @@
       "commandName": "Executable",
       "executablePath": "pwsh",
       "commandLineArgs": "-NoLogo -NoProfile -NoExit -Command \"Import-Module .\\PSql.Deploy.psd1; Set-PSReadLineOption -EditMode Emacs; function prompt { 'PS> ' }\"",
-      "workingDirectory": "$(OutDir)"
+      "workingDirectory": "$(OutDir)",
+      "environmentVariables": {
+        "PSQL_DEPLOY_TESTING": "1"
+      }
     }
   }
 }

@@ -15,7 +15,7 @@ public class InvokeSqlSeedCommandIntegrationTests
         File.Delete("..PSqlDeployTestA.Typical.log");
         File.Delete("..PSqlDeployTestB.Typical.log");
 
-        var (output, exception) = ScriptExecutor.Execute(
+        var (_, exception) = ScriptExecutor.Execute(
             """
             $TargetA = New-SqlContext -DatabaseName PSqlDeployTestA
             $TargetB = New-SqlContext -DatabaseName PSqlDeployTestB
@@ -32,7 +32,6 @@ public class InvokeSqlSeedCommandIntegrationTests
         );
 
         exception.ShouldBeNull();
-        output   .ShouldBeEmpty();
 
         File.ReadAllText("..PSqlDeployTestA.Typical.log").ShouldNotBeNullOrEmpty();
         File.ReadAllText("..PSqlDeployTestB.Typical.log").ShouldNotBeNullOrEmpty();
@@ -41,7 +40,7 @@ public class InvokeSqlSeedCommandIntegrationTests
     [Test]
     public void Invoke_DefaultPath()
     {
-        var (output, exception) = ScriptExecutor.Execute(
+        var (_, exception) = ScriptExecutor.Execute(
             """
             Join-Path TestDbs A | Set-Location
             $Target = New-SqlContext -DatabaseName PSqlDeployTestA
@@ -51,7 +50,6 @@ public class InvokeSqlSeedCommandIntegrationTests
         );
 
         exception.ShouldBeNull();
-        output   .ShouldBeEmpty();
     }
 
     [Test]
@@ -120,7 +118,7 @@ public class InvokeSqlSeedCommandIntegrationTests
     [Test]
     public void Invoke_DefineWithNullValue()
     {
-        var (output, exception) = ScriptExecutor.Execute(
+        var (_, exception) = ScriptExecutor.Execute(
             """
             Join-Path TestDbs A | Set-Location
             $Target = New-SqlContext -DatabaseName PSqlDeployTestA
@@ -130,6 +128,5 @@ public class InvokeSqlSeedCommandIntegrationTests
         );
 
         exception.ShouldBeNull();
-        output   .ShouldBeEmpty();
     }
 }
