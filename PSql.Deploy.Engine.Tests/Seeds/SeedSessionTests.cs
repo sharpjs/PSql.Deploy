@@ -409,27 +409,22 @@ public class SeedSessionTests : TestHarnessBase
         }
     }
 
+    // PSql.Deploy tests use CRLF line endings in SQL files so that file
+    // content is stable across platforms.
+    private const string Eol = "\r\n";
+
     private const string
-        TypicalSeed_InitialModule_Batch0 =
-            """
-            PRINT 'This is in the initial module.';
-
-            """,
-        TypicalSeed_ModuleA_Batch0 =
-            """
-            --# PROVIDES: x y
-            --# provides: y x
-            --# Provides:
-            PRINT 'This is in module a.';
-            PRINT 'The value of ''foo'' is bar.';
-
-            """,
-        TypicalSeed_ModuleB_Batch0 =
-            """
-            --# REQUIRES:  x  y
-            --# requires:  y  x
-            --# Requires:  
-            PRINT 'This is in module b.';
-
-            """;
+        TypicalSeed_InitialModule_Batch0
+            = "PRINT 'This is in the initial module.';" + Eol,
+        TypicalSeed_ModuleA_Batch0
+            = "--# PROVIDES: x y"                       + Eol
+            + "--# provides: y x"                       + Eol
+            + "--# Provides:"                           + Eol
+            + "PRINT 'This is in module a.';"           + Eol
+            + "PRINT 'The value of ''foo'' is bar.';"   + Eol,
+        TypicalSeed_ModuleB_Batch0
+            = "--# REQUIRES:  x  y"                     + Eol
+            + "--# requires:  y  x"                     + Eol
+            + "--# Requires:  "                         + Eol
+            + "PRINT 'This is in module b.';"           + Eol;
 }
