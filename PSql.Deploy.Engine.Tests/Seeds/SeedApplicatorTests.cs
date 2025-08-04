@@ -86,6 +86,12 @@ public class SeedApplicatorTests : TestHarnessBase
     }
 
     [Test]
+    public void ISeedApplication_Session_Get()
+    {
+        ((ISeedApplication) Applicator).Session.ShouldBeSameAs(_session.Object);
+    }
+
+    [Test]
     public void Console_Get()
     {
         Applicator.Console.ShouldBeSameAs(_console.Object);

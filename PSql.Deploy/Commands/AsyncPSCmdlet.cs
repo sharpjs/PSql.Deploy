@@ -276,7 +276,7 @@ public abstract class AsyncPSCmdlet : PSCmdlet, ICmdlet, IDisposable
 
     /// <inheritdoc/>
     [ExcludeFromCodeCoverage(
-        Justification = "Throws in non-interactive test session; return statement unreachable."
+        Justification = "Always throws in non-interactive test session; return statement unreachable."
     )]
     public new bool ShouldContinue(string? query, string? caption)
     {
@@ -287,9 +287,6 @@ public abstract class AsyncPSCmdlet : PSCmdlet, ICmdlet, IDisposable
     }
 
     /// <inheritdoc/>
-    [ExcludeFromCodeCoverage(
-        Justification = "Throws in non-interactive test session; return statement unreachable."
-    )]
     public new bool ShouldContinue(
         string?  query,
         string?  caption,
@@ -320,9 +317,6 @@ public abstract class AsyncPSCmdlet : PSCmdlet, ICmdlet, IDisposable
     }
 
     /// <inheritdoc/>
-    [ExcludeFromCodeCoverage(
-        Justification = "Throws in non-interactive test session; return statement unreachable."
-    )]
     public new bool ShouldContinue(
         string?  query,
         string?  caption,

@@ -285,43 +285,27 @@ public class AsyncPSCmdletTests
     [Test]
     public void ShouldContinue1()
     {
-        const string ExpectedMessage
-            = "A command that prompts the user failed because the host program "
-            + "or the command type does not support user interaction. The host "
-            + "was attempting to request confirmation with the following message: "
-            + "Continue?";
-
+        // This test passes yesToAll = true
         var (output, exception) = Execute(
             "Test-AsyncPSCmdlet -Case ShouldContinue1"
         );
 
-        exception.ShouldBeOfType<HostException>()
-            .Message.ShouldBe(ExpectedMessage);
+        exception.ShouldBeNull();
 
-        output.ShouldHaveSingleItem().ShouldNotBeNull()
-            .BaseObject.ShouldBeOfType<PSError>()
-            .Message.ShouldBe(ExpectedMessage);
+        output.ShouldBeEmpty();
     }
 
     [Test]
     public void ShouldContinue2()
     {
-        const string ExpectedMessage
-            = "A command that prompts the user failed because the host program "
-            + "or the command type does not support user interaction. The host "
-            + "was attempting to request confirmation with the following message: "
-            + "Continue?";
-
+        // This test passes noToAll = true
         var (output, exception) = Execute(
             "Test-AsyncPSCmdlet -Case ShouldContinue2"
         );
 
-        exception.ShouldBeOfType<HostException>()
-            .Message.ShouldBe(ExpectedMessage);
+        exception.ShouldBeNull();
 
-        output.ShouldHaveSingleItem().ShouldNotBeNull()
-            .BaseObject.ShouldBeOfType<PSError>()
-            .Message.ShouldBe(ExpectedMessage);
+        output.ShouldBeEmpty();
     }
 
     [Test]
@@ -374,6 +358,19 @@ public class AsyncPSCmdletTests
 
         output.ShouldHaveSingleItem().ShouldNotBeNull()
             .BaseObject.ShouldBe(new PSVerbose("Testing AsyncPSCmdlet."));
+    }
+
+    [Test]
+    public void StopProcessing()
+    {
+        var (output, exception) = Execute(
+            "Test-AsyncPSCmdlet -Case StopProcessing"
+        );
+
+        exception.ShouldBeNull();
+
+        output.ShouldHaveSingleItem().ShouldNotBeNull()
+            .BaseObject.ShouldBe(new PSInformation("Canceling..."));
     }
 
     [Test]

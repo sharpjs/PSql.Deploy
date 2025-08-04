@@ -19,7 +19,7 @@ public class TestAsyncPSCmdletCommand : AsyncPSCmdlet
         WriteWarning, WriteError, WriteProgress, WriteCommandDetail,
         ShouldContinue0, ShouldContinue1, ShouldContinue2,
         ShouldProcess0, ShouldProcess1, ShouldProcess2, ShouldProcess3,
-        ThrowTerminatingError, MultipleDispose, UnmanagedDispose,
+        StopProcessing, ThrowTerminatingError, MultipleDispose, UnmanagedDispose,
     }
 
     public enum TestMoment
@@ -94,6 +94,7 @@ public class TestAsyncPSCmdletCommand : AsyncPSCmdlet
             case TestCase.ShouldProcess1:                 TestShouldProcess1();                 break;
             case TestCase.ShouldProcess2:                 TestShouldProcess2();                 break;
             case TestCase.ShouldProcess3:                 TestShouldProcess3();                 break;
+            case TestCase.StopProcessing:                 TestStopProcessing();                 break;
             case TestCase.ThrowTerminatingError:          TestThrowTerminatingError();          break;
             case TestCase.MultipleDispose:                TestMultipleDispose();                break;
             case TestCase.UnmanagedDispose:               TestUnmanagedDispose();               break;
@@ -228,6 +229,9 @@ public class TestAsyncPSCmdletCommand : AsyncPSCmdlet
         WriteCommandDetail("This is a command detail message.");
     }
 
+    [ExcludeFromCodeCoverage(
+        Justification = "Always throws in non-interactive test session; end of method unreachable."
+    )]
     private void TestShouldContinue0()
     {
         ShouldContinue("Continue?", "Prompt");
@@ -235,14 +239,14 @@ public class TestAsyncPSCmdletCommand : AsyncPSCmdlet
 
     private void TestShouldContinue1()
     {
-        var (yesToAll, noToAll) = (false, false);
+        var (yesToAll, noToAll) = (true, false);
 
         ShouldContinue("Continue?", "Prompt", ref yesToAll, ref noToAll);
     }
 
     private void TestShouldContinue2()
     {
-        var (yesToAll, noToAll) = (false, false);
+        var (yesToAll, noToAll) = (false, true);
 
         ShouldContinue("Continue?", "Prompt", hasSecurityImpact: false, ref yesToAll, ref noToAll);
     }
@@ -274,6 +278,14 @@ public class TestAsyncPSCmdletCommand : AsyncPSCmdlet
             "Prompt",
             out var reason
         );
+    }
+
+    private void TestStopProcessing()
+    {
+        // Support StopProcessing running on any thread
+        Task.Run(StopProcessing);
+
+        CancellationToken.WaitHandle.WaitOne();
     }
 
     private void TestThrowTerminatingError()

@@ -68,6 +68,12 @@ public class MigrationApplicatorTests : TestHarnessBase
     }
 
     [Test]
+    public void IMigrationApplication_Session_Get()
+    {
+        ((IMigrationApplication) _applicator).Session.ShouldBeSameAs(_session.Object);
+    }
+
+    [Test]
     public void Console_Get()
     {
         _applicator.Console.ShouldBeSameAs(_console.Object);
