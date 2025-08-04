@@ -20,17 +20,9 @@ public static class IntegrationTestsSetup
     private static SqlServerContainer? _container;
     private static NetworkCredential?  _credential;
     private static string?             _setupConnectionString;
-    private static string?             _testDbAConnectionString;
-    private static string?             _testDbBConnectionString;
 
     public static string SetupConnectionString
         => _setupConnectionString ?? throw OnSetUpNotExecuted();
-
-    public static string TestDbAConnectionString
-        => _testDbAConnectionString ?? throw OnSetUpNotExecuted();
-
-    public static string TestDbBConnectionString
-        => _testDbBConnectionString ?? throw OnSetUpNotExecuted();
 
     public static NetworkCredential? Credential
         => _credential;
@@ -68,9 +60,7 @@ public static class IntegrationTestsSetup
             + "; Encrypt"          + " = false"
             + "; Application Name" + " = PSql.Deploy.Tests";
 
-        _setupConnectionString   = connectionString + "; Database = master";
-        _testDbAConnectionString = connectionString + "; Database = PSqlDeployTestA";
-        _testDbBConnectionString = connectionString + "; Database = PSqlDeployTestB";
+        _setupConnectionString = connectionString + "; Database = master";
 
         await CreateTestDatabasesAsync();
     }
@@ -130,16 +120,24 @@ public static class IntegrationTestsSetup
     }
 
     private static Task CreateDatabaseAsync(string name, CancellationToken cancellation = default)
-        => ExecuteAsync([GetDropDatabaseSql(name), GetCreateDatabaseSql(name)], cancellation);
+    {
+        return ExecuteAsync(
+            [GetDropDatabaseSql(name), GetCreateDatabaseSql(name)],
+            cancellation
+        );
+    }
 
     private static Task RemoveDatabaseAsync(string name, CancellationToken cancellation = default)
-        => ExecuteAsync([GetDropDatabaseSql(name)], cancellation);
+    {
+        return ExecuteAsync(
+            [GetDropDatabaseSql(name)],
+            cancellation
+        );
+    }
 
     private static async Task ExecuteAsync(string[] batches, CancellationToken cancellation = default)
     {
-        var credential = _credential is { } c
-            ? new SqlCredential(c.UserName, c.SecurePassword)
-            : null;
+        var credential = _credential?.ToSqlCredential();
 
         await using var connection = new SqlConnection(SetupConnectionString, credential);
         await using var command    = connection.CreateCommand();
@@ -154,6 +152,13 @@ public static class IntegrationTestsSetup
             command.CommandText = batch;
             await command.ExecuteNonQueryAsync(cancellation);
         }
+    }
+
+    private static SqlCredential ToSqlCredential(this NetworkCredential credential)
+    {
+        var password = credential.SecurePassword;
+        password.MakeReadOnly();
+        return new(credential.UserName, password);
     }
 
     private static string GetCreateDatabaseSql(string name)
