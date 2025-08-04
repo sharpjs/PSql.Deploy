@@ -40,7 +40,6 @@ jobs:
         image: mcr.microsoft.com/mssql/server:2022-latest
         ports:
           - 1433:1433
-          - 3341:1433
         env:
           ACCEPT_EULA: true
           MSSQL_SA_PASSWORD: ${{ secrets.MSSQL_SA_PASSWORD }}
@@ -55,15 +54,16 @@ jobs:
 
     steps:
       - name: Check Out Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         #url: https://github.com/actions/checkout
 
       - name: Configure .NET
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         #url: https://github.com/actions/setup-dotnet
         with:
           dotnet-version: |
             6.0.x
+            8.0.x
 
       - name: Stamp Version
         id: stamp
@@ -93,22 +93,20 @@ jobs:
         shell: pwsh
         run: |
           Set-PSRepository PSGallery -InstallationPolicy Trusted
-          Install-Module PSql     -Repository PSGallery -AllowPrerelease
-          Install-Module TaskHost -Repository PSGallery -AllowPrerelease
+          Install-Module PSql -Repository PSGallery -AllowPrerelease
 
       - name: Restore NuGet Packages
         run: dotnet restore
 
       - name: Build 1
         run: >
-          dotnet build PSql.Deploy.private --no-restore -c Release
+          dotnet build PSql.Deploy.Engine --no-restore -c Release
           -p:TreatWarningsAsErrors=true
 
       - name: Build 2
         run: >
           dotnet build --no-restore -c Release
           -p:TreatWarningsAsErrors=true
-          -p:GeneratePackageOnBuild=true
           -p:PackageOutputPath=${{ runner.temp }}/dist
 
       - name: Test
@@ -127,7 +125,6 @@ jobs:
           targetdir: ${{ runner.temp }}/coverage
           reporttypes: Html;MarkdownSummaryGithub;Badges
           verbosity: Warning
-          tag: null
 
       - name: Publish Coverage Summary
         run: >
@@ -136,7 +133,7 @@ jobs:
           REPORT_PATH: ${{ runner.temp }}/coverage/SummaryGithub.md
 
       - name: Save Coverage Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         #url: https://github.com/actions/upload-artifact
         with:
           name: Coverage Report
@@ -144,7 +141,7 @@ jobs:
           if-no-files-found: error
 
       - name: Save Module
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         #url: https://github.com/actions/upload-artifact
         with:
           name: Module
