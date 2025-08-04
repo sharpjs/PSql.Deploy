@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Copyright Subatomix Research Inc.
+    SPDX-License-Identifier: MIT
+  -->
+
+  <PropertyGroup>
+    <Description>PSql Deployment Engine</Description>
+    <RootNamespace>PSql.Deploy</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DependencyQueue" />
+    <PackageReference Include="Prequel" />
+    <PackageReference Include="Microsoft.Data.SqlClient" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Remove="System.Management.Automation" />
+    <Using Include="Microsoft.Data.SqlClient" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="**\*.sql" />
+    <EmbeddedResource Include="**\*.sql" />
+  </ItemGroup>
+
+</Project>

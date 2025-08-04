@@ -1,9 +1,7 @@
-// Copyright 2024 Subatomix Research Inc.
-// SPDX-License-Identifier: ISC
+// Copyright Subatomix Research Inc.
+// SPDX-License-Identifier: MIT
 
-using Subatomix.PowerShell.TaskHost;
-
-namespace PSql.Deploy.Utilities;
+namespace PSql.Deploy;
 
 using Void = ValueTuple;
 
@@ -12,6 +10,7 @@ using Void = ValueTuple;
 /// </summary>
 internal static class DispatcherExtensions
 {
+#if NEEDED
     /// <summary>
     ///   Invokes the specified action using the dispatcher and waits for the
     ///   action to complete.
@@ -33,12 +32,10 @@ internal static class DispatcherExtensions
         if (action is null)
             throw new ArgumentNullException(nameof(action));
 
-        var info = TaskInfo.Current;
         var task = new TaskCompletionSource<Void>();
 
         void Invoke()
         {
-            using var _ = info.Use();
             action();
             task.SetResult(default);
         }
@@ -47,6 +44,7 @@ internal static class DispatcherExtensions
 
         task.Task.GetAwaiter().GetResult();
     }
+#endif
 
     /// <summary>
     ///   Invokes the specified action using the dispatcher and waits for the
@@ -72,12 +70,10 @@ internal static class DispatcherExtensions
         if (action is null)
             throw new ArgumentNullException(nameof(action));
 
-        var info = TaskInfo.Current;
         var task = new TaskCompletionSource<Void>();
 
         void Invoke()
         {
-            using var _ = info.Use();
             action(arg);
             task.SetResult(default);
         }
@@ -87,6 +83,7 @@ internal static class DispatcherExtensions
         task.Task.GetAwaiter().GetResult();
     }
 
+#if NEEDED
     /// <summary>
     ///   Invokes the specified action using the dispatcher and waits for the
     ///   action to complete.
@@ -111,12 +108,10 @@ internal static class DispatcherExtensions
         if (action is null)
             throw new ArgumentNullException(nameof(action));
 
-        var info = TaskInfo.Current;
         var task = new TaskCompletionSource<TResult>();
 
         void Invoke()
         {
-            using var _ = info.Use();
             task.SetResult(action());
         }
 
@@ -124,6 +119,7 @@ internal static class DispatcherExtensions
 
         return task.Task.GetAwaiter().GetResult();
     }
+#endif
 
     /// <summary>
     ///   Invokes the specified action using the dispatcher and waits for the
@@ -152,22 +148,15 @@ internal static class DispatcherExtensions
         if (action is null)
             throw new ArgumentNullException(nameof(action));
 
-        var info = TaskInfo.Current;
         var task = new TaskCompletionSource<TResult>();
 
         void Invoke()
         {
-            using var _ = info.Use();
             task.SetResult(action(arg));
         }
 
         dispatcher.Post(Invoke);
 
         return task.Task.GetAwaiter().GetResult();
-    }
-
-    private static TaskScope? Use(this TaskInfo? info)
-    {
-        return info is null ? null : new TaskScope(info);
     }
 }

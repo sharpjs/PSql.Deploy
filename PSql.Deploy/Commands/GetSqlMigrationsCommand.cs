@@ -1,9 +1,12 @@
-// Copyright 2024 Subatomix Research Inc.
-// SPDX-License-Identifier: ISC
+// Copyright Subatomix Research Inc.
+// SPDX-License-Identifier: MIT
 
 using PSql.Deploy.Migrations;
 
 namespace PSql.Deploy.Commands;
+
+// Resolve ambiguity
+using AllowNullAttribute = System.Management.Automation.AllowNullAttribute;
 
 /// <summary>
 ///   The <c>Get-SqlMigrations</c> command.
@@ -19,30 +22,44 @@ public sealed class GetSqlMigrationsCommand : AsyncPSCmdlet
     ///   <b>-Path:</b> TODO
     /// </summary>
     [Parameter(
-        ParameterSetName = "Path",  ValueFromPipeline               = true,
-        Mandatory        = true,    ValueFromPipelineByPropertyName = true,
-        Position         = 0
+        ParameterSetName  = "Path",
+        Mandatory         = true,
+        Position          = 0,
+        ValueFromPipeline = true
     )]
     [Alias("PSPath")]
     [ValidateNotNullOrEmpty]
     public string? Path { get; set; }
 
+#if INCLUDE_CONTENT
     /// <summary>
-    ///   <b>-IncludeContent:</b> TODO
+    ///   <b>-IncludeContent:</b>
     /// </summary>
     [Parameter(ParameterSetName = "Path")]
     public SwitchParameter IncludeContent { get; set; }
+#endif
 
     /// <summary>
     ///   <b>-Target:</b> TODO
     /// </summary>
+    /// <remarks>
+    ///   Target | SqlContext | string
+    /// </remarks>
     [Parameter(
-        ParameterSetName = "Target", ValueFromPipeline               = true,
-        Mandatory        = true,     ValueFromPipelineByPropertyName = true,
-        Position         = 0
+        ParameterSetName  = "Target",
+        Mandatory         = true,
+        Position          = 0,
+        ValueFromPipeline = true
     )]
     [ValidateNotNullOrEmpty]
-    public SqlContext? Target { get; set; }
+    public SqlTargetDatabase? Target { get; set; }
+
+    /// <summary>
+    ///   <b>-MinimumName:</b> TODO
+    /// </summary>
+    [Parameter(ParameterSetName  = "Target")]
+    [AllowNull, AllowEmptyString]
+    public string? MinimumName { get; set; }
 
     protected override void ProcessRecord()
     {
@@ -52,32 +69,41 @@ public sealed class GetSqlMigrationsCommand : AsyncPSCmdlet
 
     private async Task ProcessRecordAsync()
     {
-        var migrations
-            = Path   is { } path   ? GetMigrations(path)
-            : Target is { } target ? await GetMigrationsAsync(target)
-            : throw new InvalidOperationException(
-                "Either the Path or the Target parameter must be given."
-            );
+        var migrations = ParameterSetName switch
+        {
+            "Path" => GetMigrations(Path!),
+            _      => await GetMigrationsAsync(Target!),
+        };
 
+#if INCLUDE_CONTENT
         if (IncludeContent.IsPresent)
             Parallel.ForEach(migrations, MigrationLoader.LoadContent);
+#endif
 
         foreach (var migration in migrations)
-            WriteObject(migration);
+            WriteObject(new Migration(migration));
     }
 
-    private static IReadOnlyList<Migration> GetMigrations(string path)
+    private static IReadOnlyList<M.Migration> GetMigrations(string path)
     {
-        return MigrationRepository.GetAll(path);
+        return M.MigrationDiscoverer.GetAll(path);
     }
 
-    private Task<IReadOnlyList<Migration>> GetMigrationsAsync(SqlContext target)
+    private async Task<IReadOnlyList<M.Migration>> GetMigrationsAsync(SqlTargetDatabase target)
     {
-        return MigrationRepository.GetAllAsync(
-            target,
-            minimumName: "",
-            new CmdletSqlMessageLogger(this),
-            CancellationToken
+        using var session = new M.MigrationSession(
+            new()
+            {
+                EnabledPhases = [M.MigrationPhase.Pre],
+                IsWhatIfMode  = true,
+            },
+            M.NullMigrationConsole.Instance
+        );
+
+        return await session.GetRegisteredMigrationsAsync(
+            target.InnerTarget,
+            MinimumName,
+            new CmdletSqlMessageLogger(this)
         );
     }
 }

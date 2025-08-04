@@ -1,7 +1,5 @@
-// Copyright 2023 Subatomix Research Inc.
-// SPDX-License-Identifier: ISC
-
-using PSql.Deploy.Utilities;
+// Copyright Subatomix Research Inc.
+// SPDX-License-Identifier: MIT
 
 namespace PSql.Deploy;
 
@@ -13,9 +11,10 @@ public class MainThreadDispatcherTests
     {
         using var dispatcher = new MainThreadDispatcher();
 
-        dispatcher
-            .Invoking(d => d.Post(null!))
-            .Should().Throw<ArgumentNullException>();
+        Should.Throw<ArgumentNullException>(() =>
+        {
+            dispatcher.Post(null!);
+        });
     }
 
     [Test]
@@ -27,7 +26,7 @@ public class MainThreadDispatcherTests
 
         dispatcher.Post(() => mainThreadId = CurrentThreadId);
 
-        mainThreadId.Should().Be(CurrentThreadId);
+        mainThreadId.ShouldBe(CurrentThreadId);
     }
 
     [Test]
@@ -48,8 +47,9 @@ public class MainThreadDispatcherTests
         dispatcher.Run();
         task.Wait();
 
-        mainThreadId.Should().Be(CurrentThreadId);
-        taskThreadId.Should().NotBe(CurrentThreadId).And.NotBe(0);
+        mainThreadId.ShouldBe(CurrentThreadId);
+        taskThreadId.ShouldNotBe(CurrentThreadId);
+        taskThreadId.ShouldNotBe(0);
     }
 
     [Test]
@@ -70,8 +70,9 @@ public class MainThreadDispatcherTests
         dispatcher.Run();
         task.Wait();
 
-        mainThreadId.Should().Be(CurrentThreadId);
-        taskThreadId.Should().NotBe(CurrentThreadId).And.NotBe(0);
+        mainThreadId.ShouldBe(CurrentThreadId);
+        taskThreadId.ShouldNotBe(CurrentThreadId);
+        taskThreadId.ShouldNotBe(0);
     }
 
     [Test]
@@ -85,7 +86,7 @@ public class MainThreadDispatcherTests
 
         dispatcher.Post(() => invoked = true);
 
-        invoked.Should().BeTrue();
+        invoked.ShouldBeTrue();
     }
 
     [Test]
@@ -99,13 +100,14 @@ public class MainThreadDispatcherTests
 
         Task.Run(() =>
         {
-            dispatcher
-                .Invoking(d => d.Post(() => invoked = true))
-                .Should().Throw<InvalidOperationException>();
+            Should.Throw<InvalidOperationException>(() =>
+            {
+                dispatcher.Post(() => invoked = true);
+            });
         })
         .GetAwaiter().GetResult();
 
-        invoked.Should().BeFalse();
+        invoked.ShouldBeFalse();
     }
 
     [Test]
@@ -119,7 +121,7 @@ public class MainThreadDispatcherTests
 
         dispatcher.Post(() => invoked = true);
 
-        invoked.Should().BeTrue();
+        invoked.ShouldBeTrue();
     }
 
     [Test]
@@ -133,13 +135,60 @@ public class MainThreadDispatcherTests
 
         Task.Run(() =>
         {
-            dispatcher
-                .Invoking(d => d.Post(() => invoked = true))
-                .Should().Throw<ObjectDisposedException>();
+            Should.Throw<ObjectDisposedException>(() =>
+            {
+                dispatcher.Post(() => invoked = true);
+            });
         })
         .GetAwaiter().GetResult();
 
-        invoked.Should().BeFalse();
+        invoked.ShouldBeFalse();
+    }
+
+    [Test]
+    public void RunPending_OnOtherThread()
+    {
+        using var dispatcher = new MainThreadDispatcher();
+
+        Should.Throw<InvalidOperationException>(() =>
+        {
+            Task.Run(() => dispatcher.RunPending()).GetAwaiter().GetResult();
+        })
+        .Message.ShouldBe("This method must be invoked from the thread that constructed the dispatcher.");
+    }
+
+    [Test]
+    public void RunPending_Completed()
+    {
+        using var dispatcher = new MainThreadDispatcher();
+
+        dispatcher.Complete();
+
+        dispatcher.RunPending();
+    }
+
+    [Test]
+    public void RunPending_Disposed()
+    {
+        using var dispatcher = new MainThreadDispatcher();
+
+        dispatcher.Dispose();
+
+        Should.Throw<ObjectDisposedException>(dispatcher.RunPending);
+    }
+
+    [Test]
+    public void RunPending_Ok()
+    {
+        using var dispatcher = new MainThreadDispatcher();
+
+        var invoked = false;
+
+        Task.Run(() => dispatcher.Post(() => invoked = true)).GetAwaiter().GetResult();
+
+        dispatcher.RunPending();
+
+        invoked.ShouldBeTrue();
     }
 
     [Test]
@@ -147,10 +196,11 @@ public class MainThreadDispatcherTests
     {
         using var dispatcher = new MainThreadDispatcher();
 
-        dispatcher
-            .Invoking(d => Task.Run(d.Run).GetAwaiter().GetResult())
-            .Should().Throw<InvalidOperationException>()
-            .WithMessage("This method must be invoked from the thread that constructed the dispatcher.");
+        Should.Throw<InvalidOperationException>(() =>
+        {
+            Task.Run(() => dispatcher.Run()).GetAwaiter().GetResult();
+        })
+        .Message.ShouldBe("This method must be invoked from the thread that constructed the dispatcher.");
     }
 
     [Test]
@@ -170,9 +220,7 @@ public class MainThreadDispatcherTests
 
         dispatcher.Dispose();
 
-        dispatcher
-            .Invoking(d => d.Run())
-            .Should().Throw<ObjectDisposedException>();
+        Should.Throw<ObjectDisposedException>(dispatcher.Run);
     }
 
     [Test]
@@ -182,9 +230,7 @@ public class MainThreadDispatcherTests
 
         dispatcher.Dispose();
 
-        dispatcher
-            .Invoking(d => d.Complete())
-            .Should().Throw<ObjectDisposedException>();
+        Should.Throw<ObjectDisposedException>(dispatcher.Complete);
     }
 
     private static int CurrentThreadId => Thread.CurrentThread.ManagedThreadId;

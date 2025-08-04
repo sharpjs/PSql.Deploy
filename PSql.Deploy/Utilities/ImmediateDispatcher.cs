@@ -1,7 +1,7 @@
-// Copyright 2023 Subatomix Research Inc.
-// SPDX-License-Identifier: ISC
+// Copyright Subatomix Research Inc.
+// SPDX-License-Identifier: MIT
 
-namespace PSql.Deploy.Commands;
+namespace PSql.Deploy;
 
 /// <summary>
 ///   A dispatcher that executes dispatched actions immediately.

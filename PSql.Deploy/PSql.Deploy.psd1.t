@@ -1,5 +1,5 @@
 # {Copyright}
-# SPDX-License-Identifier: ISC
+# SPDX-License-Identifier: MIT
 @{
     # Identity
     GUID          = '0d5df8dd-afcc-42cc-9175-a8dac81f779e'
@@ -27,28 +27,30 @@
             GUID          = 'd75e4bbd-4efd-4bb1-8324-b6d4ae0ed9a9'
         }
     )
-    RequiredAssemblies   = @('PSql.Deploy.Core.dll')
+    RequiredAssemblies   = @()
 
     # Initialization
     #ScriptsToProcess = @(...)
-    #TypesToProcess   = @(...)
+    TypesToProcess    = @('PSql.Deploy.types.ps1xml')
     #FormatsToProcess = @(...)
-    NestedModules     = @('PSql.Deploy.psm1')
+    #NestedModules    = @(...)
 
     # Exports
     # NOTE: Use empty arrays to indicate no exports.
     VariablesToExport    = @()
     AliasesToExport      = @()
     DscResourcesToExport = @()
+    FunctionsToExport    = @()
     CmdletsToExport      = @(
         'Get-SqlMigrations'
-        'Invoke-ForEachSqlContext'
+        #'Invoke-ForEachSqlContext'
         'Invoke-SqlMigrations'
         'Invoke-SqlSeed'
-        'New-SqlContextParallelSet'
-    )
-    FunctionsToExport    = @(
-        'Install-SqlMigrationSupport'
+        'New-SqlTargetDatabaseGroup'
+        if ($env:PSQL_DEPLOY_TESTING -eq "1") {
+            'Test-AsyncPSCmdlet'
+            'Test-CmdletExtensions'
+        }
     )
 
     # Discoverability and URLs
@@ -61,8 +63,8 @@
             LicenseUri   = 'https://github.com/sharpjs/PSql.Deploy/blob/master/LICENSE.txt'
             IconUri      = 'https://github.com/sharpjs/PSql.Deploy/blob/master/icon.png'
             Tags         = @(
-                "SQL", "Server", "Azure", "Migration", "Schema",
-                "PSEdition_Core", "Windows", "Linux", "MacOS"
+                'SQL', 'Server', 'Azure', 'Migration', 'Schema',
+                'PSEdition_Core', 'Windows', 'Linux', 'MacOS'
             )
         }
     }

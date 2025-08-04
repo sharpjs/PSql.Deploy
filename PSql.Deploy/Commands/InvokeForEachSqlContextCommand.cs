@@ -1,5 +1,6 @@
+#if CONVERTED
 // Copyright Subatomix Research Inc.
-// SPDX-License-Identifier: ISC
+// SPDX-License-Identifier: MIT
 
 using System.Collections;
 using System.Management.Automation.Runspaces;
@@ -140,3 +141,4 @@ public class InvokeForEachSqlContextCommand : PerSqlContextCommand
         WriteObject(output);
     }
 }
+#endif

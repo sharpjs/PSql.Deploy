@@ -1,9 +1,9 @@
-// Copyright 2024 Subatomix Research Inc.
-// SPDX-License-Identifier: ISC
+// Copyright Subatomix Research Inc.
+// SPDX-License-Identifier: MIT
 
 using System.Collections.Concurrent;
 
-namespace PSql.Deploy.Utilities;
+namespace PSql.Deploy;
 
 /// <summary>
 ///   A scope in which a cmdlet can invoke asynchronous code.
@@ -24,7 +24,7 @@ internal sealed class AsyncCmdletScope : IDisposable
     /// </param>
     public AsyncCmdletScope(CancellationToken cancellation = default)
     {
-        _tasks           = new();
+        _tasks           = [];
         _dispatcher      = new MainThreadDispatcher();
         _cancellation    = cancellation;
         _previousContext = SynchronizationContext.Current;

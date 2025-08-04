@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    Copyright 2023 Subatomix Research Inc.
-    SPDX-License-Identifier: ISC
+    Copyright Subatomix Research Inc.
+    SPDX-License-Identifier: MIT
   -->
 
   <PropertyGroup>
@@ -12,39 +12,38 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Subatomix.Build.Packaging.PowerShellModule"
-                      PrivateAssets="all" />
-
-    <PackageReference Include="System.Management.Automation"
-                      PrivateAssets="all" />
-
-    <ProjectReference Include="..\PSql.Deploy.Core\PSql.Deploy.Core.csproj" />
-
-    <ProjectReference Include="..\PSql.Deploy.private\PSql.Deploy.private.csproj"
-                      Private="false" PrivateAssets="all" />
-                      <!-- Copied to deps\ directory as None items below -->
-
-    <Reference Include="PSql" HintPath="$(PSqlDirectory)%(Identity).dll"
-               Private="false" />
-
-    <Reference Include="PSql.Core" HintPath="$(PSqlDirectory)%(Identity).dll"
-               Private="false" />
-
-    <Reference Include="Subatomix.PowerShell.TaskHost" HintPath="$(TaskHostDirectory)%(Identity).dll"
-               Private="false" />
+    <PackageReference Include="Subatomix.Build.Packaging.PowerShellModule" PrivateAssets="all" />
+    <PackageReference Include="System.Management.Automation"               PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="$(PowerShellItemIncludes)"
-             Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder)" />
+    <!-- copied to deps\ as None items below -->
+    <ProjectReference
+      Include="..\PSql.Deploy.Engine\PSql.Deploy.Engine.csproj"
+      Private="false" PrivateAssets="all" Aliases="Engine" />
+  </ItemGroup>
 
-    <!--
-      Isolate private dependencies into a subdirectory for consumption by a
-      private AssemblyLoadContext, preventing conflicts with other modules.
-      See: https://learn.microsoft.com/en-us/powershell/scripting/dev-cross-plat/resolving-dependency-conflicts
-    -->
-    <None Include="..\PSql.Deploy.private\bin\$(Configuration)\$(TargetFramework)\**"
-          LinkBase="deps\" CopyToOutputDirectory="PreserveNewest" Visible="true" />
+  <ItemGroup>
+    <Content
+      Include="$(PowerShellItemIncludes)"
+      Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder)" />
+  </ItemGroup>
+
+  <!--
+    Isolate private dependencies into a subdirectory for consumption by a
+    private AssemblyLoadContext, preventing conflicts with other modules.
+    See: https://learn.microsoft.com/en-us/powershell/scripting/dev-cross-plat/resolving-dependency-conflicts
+  -->
+  <ItemGroup>
+    <None
+      Include="..\PSql.Deploy.Engine\bin\$(Configuration)\$(TargetFramework)\**"
+      LinkBase="deps\" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
+
+  <!-- TODO: Any better way to include these? -->
+  <ItemGroup>
+    <Compile Include="..\PSql.Deploy.Engine\Migrations\MigrationState.cs" LinkBase="Migrations" />
+    <Compile Include="..\PSql.Deploy.Engine\Utilities\Assume.cs"          LinkBase="Utilities" />
   </ItemGroup>
 
 </Project>

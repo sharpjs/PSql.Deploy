@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    Copyright 2023 Subatomix Research Inc.
-    SPDX-License-Identifier: ISC
+    Copyright Subatomix Research Inc.
+    SPDX-License-Identifier: MIT
   -->
 
   <PropertyGroup>
@@ -11,33 +11,25 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="DotStuff" />
     <PackageReference Include="Microsoft.PowerShell.SDK" />
     <PackageReference Include="Subatomix.Testing" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\PSql.Deploy\PSql.Deploy.csproj" />
-    
-    <ProjectReference Include="..\PSql.Deploy.private\PSql.Deploy.private.csproj"
-                      Private="false" PrivateAssets="all" />
+    <ProjectReference Include="..\PSql.Deploy.Engine\PSql.Deploy.Engine.csproj" Private="false" PrivateAssets="all" Aliases="Engine" />
+    <ProjectReference Include="..\PSql.Deploy.Tests.FakePSql0\PSql.Deploy.Tests.FakePSql0.csproj" Aliases="FakePSql0" />
+    <ProjectReference Include="..\PSql.Deploy.Tests.FakePSql1\PSql.Deploy.Tests.FakePSql1.csproj" Aliases="FakePSql1" />
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="PSql" HintPath="$(PSqlDirectory)PSql.dll"
-               Private="false" />
-
-    <Reference Include="PSql.Core" HintPath="$(PSqlDirectory)PSql.Core.dll"
-               Private="false" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <Using Remove="FluentAssertions" />
     <Using Include="Subatomix.Testing" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="TestDbs\**" CopyToOutputDirectory="PreserveNewest" />
-
-    <None Include="$(PSqlDirectory)**" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+    <None Include="..\TestDbs\**" LinkBase="TestDbs" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

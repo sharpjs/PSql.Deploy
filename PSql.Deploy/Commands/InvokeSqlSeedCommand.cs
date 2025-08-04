@@ -1,10 +1,8 @@
-// Copyright 2024 Subatomix Research Inc.
-// SPDX-License-Identifier: ISC
+// Copyright Subatomix Research Inc.
+// SPDX-License-Identifier: MIT
 
-using System.Collections;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using PSql.Deploy.Seeding;
+using PSql.Deploy.Seeds;
 
 namespace PSql.Deploy.Commands;
 
@@ -14,26 +12,27 @@ namespace PSql.Deploy.Commands;
 /// <remarks>
 ///   Invokes database content seeds against sets of target databases.
 /// </remarks>
-[Cmdlet(
-    VerbsLifecycle.Invoke, "SqlSeed",
-    DefaultParameterSetName = ContextParameterSetName,
-    SupportsShouldProcess   = true, // -Confirm and -WhatIf
-    ConfirmImpact           = ConfirmImpact.High
+[Cmdlet(VerbsLifecycle.Invoke, "SqlSeed",
+    SupportsShouldProcess = true, // -Confirm and -WhatIf
+    ConfirmImpact         = ConfirmImpact.High
 )]
-public class InvokeSqlSeedCommand : PerSqlContextCommand
+public class InvokeSqlSeedCommand : AsyncPSCmdlet
 {
+    /// <summary>
+    ///   <b>-Target:</b>
+    ///   Objects specifying how to connect to the databases in the target set.
+    /// </summary>
+    [Parameter(Position = 0, Mandatory = true, ValueFromPipeline = true)]
+    [ValidateNotNullOrEmpty]
+    public SqlTargetDatabaseGroup[]? Target { get; set; }
+
     /// <summary>
     ///   <b>-Seed:</b>
     ///   Names of seeds to apply.
     /// </summary>
-    [Parameter]
+    [Parameter(Position = 1, Mandatory = true, ValueFromPipeline = true)]
     [ValidateNotNullOrEmpty]
-    public string[] Seed
-    {
-        get => _seed ??= Array.Empty<string>();
-        set => _seed   = value.Sanitize();
-    }
-    private string[]? _seed;
+    public string[]? Seed { get; set; }
 
     /// <summary>
     ///   <b>-Define:</b>
@@ -44,44 +43,123 @@ public class InvokeSqlSeedCommand : PerSqlContextCommand
     [AllowEmptyCollection]
     public Hashtable? Define { get; set; }
 
-    internal SeedSession.Factory
-        SeedSessionFactory { get; set; } = SeedSession.DefaultFactory;
+    /// <summary>
+    ///   <b>-Path:</b>
+    ///   Path to a directory containing seeds.
+    /// </summary>
+    [Parameter]
+    [Alias("PSPath", "SourcePath")]
+    [ValidateNotNullOrEmpty]
+    public string? Path { get; set; }
 
-    private ISeedSessionControl? _session;
+    /// <summary>
+    ///   <b>-MaxErrorCount:</b>
+    ///   Maximum count of errors to allow.  If the count of errors exceeds
+    ///   this value, the command attempts to cancel in-progress operations and
+    ///   terminates early.
+    /// </summary>
+    [Parameter()]
+    [ValidateRange(0, int.MaxValue)]
+    public int MaxErrorCount { get; set; }
 
-    /// <inheritdoc/>
-    protected override void BeginProcessingCore()
+    private S.SeedSession? _session;
+
+    protected override void BeginProcessing()
     {
-        var path    = this.GetCurrentPath();
-        var console = new SeedConsole(this);
+        Assume.NotNull(Seed);
 
-        _session                = SeedSessionFactory.Invoke(console, path, CancellationToken);
-        _session.IsWhatIfMode   = this.IsWhatIf();
-        _session.MaxParallelism = MaxParallelism; // PerDatabase
-        _session.DiscoverSeeds(path, Seed);
+        base.BeginProcessing();
 
-        base.BeginProcessingCore();
+        var currentPath = this.GetCurrentPath();
+
+        _session = new(
+            GetOptions(),
+            new CmdletSeedConsole(this, currentPath)
+        );
+
+        _session.DiscoverSeeds(Path ?? currentPath, Seed);
     }
 
-    /// <inheritdoc/>
-    protected override Task ProcessWorkAsync(SqlContextWork work)
+    protected override void ProcessRecord()
     {
-        AssertInitialized();
+        AssumeBeginProcessingInvoked();
 
-        return _session.ApplyAsync(work);
+        if (Target is not null)
+            foreach (var group in Target)
+                if (ShouldProcess(group))
+                    _session.BeginApplying(group.InnerGroup);
     }
 
-    /// <inheritdoc/>
-    protected override Exception Transform(Exception exception)
+    protected override void EndProcessing()
     {
-        return exception as SeedException
-            ?? new SeedException(null, exception);
+        AssumeBeginProcessingInvoked();
+
+        Run(() => _session.CompleteApplyingAsync(CancellationToken));
+
+        base.EndProcessing();
+    }
+
+    protected override void Dispose(bool managed)
+    {
+        if (managed)
+        {
+            _session?.Dispose();
+            _session = null;
+        }
+
+        base.Dispose(managed);
+    }
+
+    private S.SeedSessionOptions GetOptions()
+    {
+        return new S.SeedSessionOptions
+        {
+            Defines       = GetDefines(),
+            IsWhatIfMode  = this.IsWhatIf(),
+            MaxErrorCount = MaxErrorCount,
+        };
+    }
+
+    private IEnumerable<(string, string)>? GetDefines()
+    {
+        if (Define is null || Define.Count is 0)
+            return [];
+
+        var builder = ImmutableArray.CreateBuilder<(string, string)>(Define.Count);
+
+        foreach (DictionaryEntry entry in Define)
+        {
+            var key   = entry.Key   .ToString() ?? throw OnNullOrEmptyDefineKey();
+            var value = entry.Value?.ToString() ?? "";
+
+            builder.Add((key, value));
+        }
+
+        return builder.MoveToImmutable();
+    }
+
+    private Exception OnNullOrEmptyDefineKey()
+    {
+        return new ArgumentException(
+            "Key must be non-null and must convert to a non-empty string.",
+            nameof(Define)
+        );
+    }
+
+    private bool ShouldProcess(SqlTargetDatabaseGroup group)
+    {
+        var action   = $"Applying seed(s) to {group}.";
+        var question = $"Apply seed(s) to {group}?";
+
+        return ShouldProcess(action, question, null, out var whyNot)
+            || whyNot is ShouldProcessReason.WhatIf;
     }
 
     [Conditional("DEBUG")]
     [MemberNotNull(nameof(_session))]
-    private void AssertInitialized()
+    internal void AssumeBeginProcessingInvoked()
     {
-        Debug.Assert(_session != null);
+        if (_session is null)
+            throw new InvalidOperationException("BeginProcessing not invoked.");
     }
 }

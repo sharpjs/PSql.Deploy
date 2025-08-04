@@ -5,8 +5,8 @@
 .DESCRIPTION
     This script is similar to a makefile.
 
-    Copyright 2023 Subatomix Research Inc.
-    SPDX-License-Identifier: ISC
+    Copyright Subatomix Research Inc.
+    SPDX-License-Identifier: MIT
 #>
 [CmdletBinding(DefaultParameterSetName="Test")]
 param (
@@ -25,6 +25,10 @@ param (
     # Build, run tests, produce code coverage report.
     [Parameter(Mandatory, ParameterSetName="Coverage")]
     [switch] $Coverage
+,
+    # Show the coverage report in the defualt browser.
+    [Parameter(ParameterSetName="Coverage")]
+    [switch] $Show
 ,
     # Do not build before running tests.
     [Parameter(ParameterSetName="Test")]
@@ -102,8 +106,8 @@ function Invoke-Clean {
 
 function Invoke-Build {
     Write-Phase "Build"
-    Invoke-DotNet build PSql.Deploy.private --configuration:$Configuration
-    Invoke-DotNet build                     --configuration:$Configuration
+    Invoke-DotNet build PSql.Deploy.Engine --configuration:$Configuration
+    Invoke-DotNet build                    --configuration:$Configuration
 }
 
 function Invoke-Test {
@@ -142,6 +146,9 @@ function Export-CoverageReport {
     ) | Write-Host
     if ($Summary.methodcoverage + $Summary.linecoverage + $Summary.branchcoverage -lt 300) {
         Write-Warning "Coverage is below 100%."
+    }
+    if ($Show) {
+        Start-Process (Join-Path $PSScriptRoot coverage index.html)
     }
 }
 

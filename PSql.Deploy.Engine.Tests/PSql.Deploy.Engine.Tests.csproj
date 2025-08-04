@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Tests for PSql.Deploy.Engine</Description>
+    <RootNamespace>PSql.Deploy</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DotStuff" />
+    <PackageReference Include="Subatomix.Testing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PSql.Deploy.Engine\PSql.Deploy.Engine.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Remove="FluentAssertions" />
+    <Using Remove="System.Management.Automation" />
+    <Using Include="Microsoft.Data.SqlClient" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\TestDbs\**" LinkBase="TestDbs" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="**\*.dat" />
+    <EmbeddedResource Include="**\*.dat" />
+  </ItemGroup>
+
+</Project>

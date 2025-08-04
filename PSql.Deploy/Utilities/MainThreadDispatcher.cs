@@ -1,9 +1,9 @@
-// Copyright 2023 Subatomix Research Inc.
-// SPDX-License-Identifier: ISC
+// Copyright Subatomix Research Inc.
+// SPDX-License-Identifier: MIT
 
 using System.Collections.Concurrent;
 
-namespace PSql.Deploy.Utilities;
+namespace PSql.Deploy;
 
 /// <summary>
 ///   A dispatcher that executes dispatched actions on the main thread.
@@ -19,11 +19,11 @@ internal sealed class MainThreadDispatcher : IDispatcher, IDisposable
     /// </summary>
     public MainThreadDispatcher()
     {
-        _queue        = new();
+        _queue        = [];
         _mainThreadId = CurrentThreadId;
     }
 
-    private static int CurrentThreadId => Thread.CurrentThread.ManagedThreadId;
+    private static int CurrentThreadId => Environment.CurrentManagedThreadId;
 
     /// <summary>
     ///   Dispatches the specified action to the main thread.

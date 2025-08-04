@@ -16,6 +16,6 @@ Future release.
 - Change: PSql.Deploy is now a binary module.
 
 <!--
-  Copyright 2023 Subatomix Research Inc.
-  SPDX-License-Identifier: ISC
+  Copyright Subatomix Research Inc.
+  SPDX-License-Identifier: MIT
 -->

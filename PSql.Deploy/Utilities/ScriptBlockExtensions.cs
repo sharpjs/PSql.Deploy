@@ -1,5 +1,6 @@
-﻿// Copyright Subatomix Research Inc.
-// SPDX-License-Identifier: ISC
+#if CONVERTED
+// Copyright Subatomix Research Inc.
+// SPDX-License-Identifier: MIT
 
 using System.Management.Automation.Language;
 
@@ -15,3 +16,4 @@ internal static class ScriptBlockExtensions
         return ((ScriptBlockAst) scriptBlock.Ast).GetScriptBlock();
     }
 }
+#endif

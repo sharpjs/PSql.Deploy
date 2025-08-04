@@ -1,0 +1,305 @@
+// Copyright Subatomix Research Inc.
+// SPDX-License-Identifier: MIT
+
+using System.Collections.ObjectModel;
+using Moq.Protected;
+
+namespace PSql.Deploy;
+
+[TestFixture]
+public class DeploymentSessionTests : TestHarnessBase
+{
+    private Mock<DeploymentSession>? _session;
+
+    private readonly DeploymentSessionOptions
+        _options = new TestDeploymentSessionOptions();
+
+    private Mock<DeploymentSession> SessionMock
+        => _session ??= CreateSession();
+
+    private DeploymentSession Session
+        => SessionMock.Object;
+
+    private IDeploymentSessionInternal SessionInternal
+        => SessionMock.Object;
+
+    private static readonly Target
+        TargetA = new Target("Server=sql.example.com;Database=a"),
+        TargetB = new Target("Server=sql.example.com;Database=b"),
+        TargetC = new Target("Server=sql.example.com;Database=c");
+
+    [Test]
+    public void Construct_NullOptions()
+    {
+        Should.Throw<ArgumentNullException>(() =>
+        {
+            _ = new TestDeploymentSession(null!);
+        });
+    }
+
+    [Test]
+    public void MaxErrorCount_Get()
+    {
+        _options.MaxErrorCount = 3;
+
+        Session.MaxErrorCount.ShouldBe(3);
+    }
+
+    [Test]
+    public void HasErrors_Initial()
+    {
+        Session.HasErrors.ShouldBeFalse();
+    }
+
+    [Test]
+    public void BeginApplying_Target_NullTarget()
+    {
+        Should.Throw<ArgumentNullException>(() =>
+        {
+            Session.BeginApplying(target: null!);
+        });
+    }
+
+    [Test]
+    public void BeginApplying_Target_NegativeParallelism()
+    {
+        Should.Throw<ArgumentOutOfRangeException>(() =>
+        {
+            Session.BeginApplying(TargetA, maxParallelism: -1);
+        });
+    }
+
+    [Test]
+    public void BeginApplying_Group_NullTarget()
+    {
+        Should.Throw<ArgumentNullException>(() =>
+        {
+            Session.BeginApplying(group: null!);
+        });
+    }
+
+    [Test]
+    public async Task Apply_Target_Ok()
+    {
+        ExpectApplyCore(TargetA, maxParallelism: 4);
+
+        Session.BeginApplying(TargetA, maxParallelism: 4);
+
+        await Session.CompleteApplyingAsync(Cancellation.Token);
+    }
+
+    [Test]
+    public async Task Apply_Group_Ok()
+    {
+        var group = new TargetGroup(
+            [TargetA, TargetB],
+            maxParallelism:          8,
+            maxParallelismPerTarget: 2
+        );
+
+        ExpectApplyCore(TargetA, maxParallelism: 2);
+        ExpectApplyCore(TargetB, maxParallelism: 2);
+
+        Session.BeginApplying(group);
+
+        await Session.CompleteApplyingAsync(Cancellation.Token);
+    }
+
+    [Test]
+    public async Task Apply_Any_Cancellation()
+    {
+        ExpectApplyCore(TargetA, maxParallelism: 1, cancel: true);  // cancels session
+        //pectApplyCore(TargetB, maxParallelism: 1);                // never happens
+
+        Session.BeginApplying(TargetA, maxParallelism: 1);
+        await WaitForSessionCancellationAsync(); // because count of errors exceeded max (default 0)
+        Session.BeginApplying(TargetB, maxParallelism: 1); // never happens
+
+        var thrown = await Should.ThrowAsync<OperationCanceledException>(() =>
+        {
+            return Session.CompleteApplyingAsync(Cancellation.Token);
+        });
+
+        SessionInternal.CancellationToken.IsCancellationRequested.ShouldBeTrue();
+    }
+
+    [Test]
+    public async Task Apply_Any_Exception_UpToMax()
+    {
+        _options.MaxErrorCount = 1;
+        var exception  = new Exception("Oops!");
+
+        ExpectApplyCore(TargetA, maxParallelism: 1, exception); // error tolerated
+        ExpectApplyCore(TargetB, maxParallelism: 1);            // succeeds
+        ExpectApplyCore(TargetC, maxParallelism: 1);            // succeeds
+
+        Session.BeginApplying(TargetA, maxParallelism: 1);
+        await WaitForSessionToHaveErrorsAsync();
+        Session.BeginApplying(TargetB, maxParallelism: 1);
+        Session.BeginApplying(TargetC, maxParallelism: 1);
+
+        var thrown = await Should.ThrowAsync<Exception>(() =>
+        {
+            return Session.CompleteApplyingAsync(Cancellation.Token);
+        });
+
+        thrown                     .ShouldBeSameAs(exception);
+        thrown.Data[nameof(Target)].ShouldBe(TargetA.FullDisplayName);
+    }
+
+    [Test]
+    public async Task Apply_Any_Exception_OverMax()
+    {
+        _options.MaxErrorCount = 1;
+        var exceptionA = new Exception("Bam!");
+        var exceptionB = new Exception("Pow!");
+
+        ExpectApplyCore(TargetA, maxParallelism: 1, exceptionA); // error tolerated
+        ExpectApplyCore(TargetB, maxParallelism: 1, exceptionB); // error cancels session
+        //pectApplyCore(TargetC, maxParallelism: 1);             // never happens
+
+        Session.BeginApplying(TargetA, maxParallelism: 1);
+        await WaitForSessionToHaveErrorsAsync();
+        Session.BeginApplying(TargetB, maxParallelism: 1);
+        await WaitForSessionCancellationAsync(); // because count of errors exceeded max
+        Session.BeginApplying(TargetC, maxParallelism: 1);
+
+        var thrown = await Should.ThrowAsync<AggregateException>(() =>
+        {
+            return Session.CompleteApplyingAsync(Cancellation.Token);
+        });
+
+        thrown.InnerExceptions.Count.ShouldBe(2);
+        thrown.InnerExceptions[0]   .AssignTo(out var inner0);
+        thrown.InnerExceptions[1]   .AssignTo(out var inner1);
+
+        inner0                      .ShouldBeSameAs(exceptionA);
+        inner0.Data[nameof(Target)] .ShouldBe(TargetA.FullDisplayName);
+
+        inner1                      .ShouldBeSameAs(exceptionB);
+        inner1.Data[nameof(Target)] .ShouldBe(TargetB.FullDisplayName);
+    }
+
+    [Test]
+    public async Task Apply_Any_Exception_ReadOnlyData()
+    {
+        var data = new ReadOnlyDictionary<string, object?>(new Dictionary<string, object?>());
+
+        var exception = new ExceptionWithData(data);
+
+        ExpectApplyCore(TargetA, maxParallelism: 1, exception);
+
+        Session.BeginApplying(TargetA, maxParallelism: 1);
+
+        var thrown = await Should.ThrowAsync<ExceptionWithData>(() =>
+        {
+            return Session.CompleteApplyingAsync(Cancellation.Token);
+        });
+
+        thrown.ShouldBeSameAs(exception);
+    }
+
+    [Test]
+    public async Task Apply_Any_Exception_NullData()
+    {
+        var exception = new ExceptionWithData(data: null);
+
+        ExpectApplyCore(TargetA, maxParallelism: 1, exception);
+
+        Session.BeginApplying(TargetA, maxParallelism: 1);
+
+        var thrown = await Should.ThrowAsync<ExceptionWithData>(() =>
+        {
+            return Session.CompleteApplyingAsync(Cancellation.Token);
+        });
+
+        thrown.ShouldBeSameAs(exception);
+    }
+
+    private void ExpectApplyCore(Target target, int maxParallelism)
+    {
+        SessionMock
+            .Protected()
+            .Setup<Task>("ApplyCoreAsync", target, maxParallelism)
+            .Returns(Task.CompletedTask)
+            .Verifiable();
+    }
+
+    private void ExpectApplyCore(Target target, int maxParallelism, bool cancel)
+    {
+        SessionMock
+            .Protected()
+            .Setup<Task>("ApplyCoreAsync", target, maxParallelism)
+            .Callback(Session.Cancel)
+            .ThrowsAsync(new OperationCanceledException())
+            .Verifiable();
+    }
+
+    private void ExpectApplyCore(Target target, int maxParallelism, Exception exception)
+    {
+        SessionMock
+            .Protected()
+            .Setup<Task>("ApplyCoreAsync", target, maxParallelism)
+            .ThrowsAsync(exception)
+            .Verifiable();
+    }
+
+    private Mock<DeploymentSession> CreateSession()
+    {
+        var session = Mocks.Create<DeploymentSession>(MockBehavior.Loose, _options);
+
+        session.CallBase = true;
+
+        return session;
+    }
+
+    private async Task WaitForSessionCancellationAsync()
+    {
+        var cancelled = new TaskCompletionSource();
+
+        await using var _ = Session.CancellationToken.Register(cancelled.SetResult);
+
+        await cancelled.Task.WaitAsync(TimeSpan.FromSeconds(10));
+    }
+
+    private async Task WaitForSessionToHaveErrorsAsync()
+    {
+        async Task WaitCoreAsync()
+        {
+            while (!Session.HasErrors)
+                await Task.Delay(TimeSpan.FromMilliseconds(5));
+        }
+
+        await WaitCoreAsync().WaitAsync(TimeSpan.FromSeconds(10));
+    }
+
+    protected override void CleanUp(bool managed)
+    {
+        _session?.Object.Dispose();
+
+        base.CleanUp(managed);
+    }
+
+    private class TestDeploymentSessionOptions : DeploymentSessionOptions { }
+
+    private class TestDeploymentSession : DeploymentSession
+    {
+        public TestDeploymentSession(TestDeploymentSessionOptions options)
+            : base(options) { }
+
+        protected override Task ApplyCoreAsync(Target target, int maxParallelism)
+            => Task.CompletedTask;
+    }
+
+    private class ExceptionWithData : Exception
+    {
+        public ExceptionWithData(IDictionary? data)
+        {
+            // This is a violation of Exception.Data's informal contract, but
+            // the code under test checks for null as a defensive measure
+            Data = data!;
+        }
+
+        public override IDictionary Data { get; }
+    }
+}

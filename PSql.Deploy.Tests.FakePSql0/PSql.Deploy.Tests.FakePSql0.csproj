@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Copyright Subatomix Research Inc.
+    SPDX-License-Identifier: MIT
+  -->
+
+  <PropertyGroup>
+    <Description>Fake PSql for PSql.Deploy Testing</Description>
+    <RootNamespace>PSql</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Using Remove="System.Management.Automation" />
+  </ItemGroup>
+
+</Project>
