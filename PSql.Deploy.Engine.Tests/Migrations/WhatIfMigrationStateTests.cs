@@ -114,7 +114,7 @@ public class WhatIfMigrationStateTests
     }
 
     [Test]
-    public void OnApplied_AlreadyApplied()
+    public void OnApplied_AlreadyAppliedInSameOrLaterPhase()
     {
         var state     = new WhatIfMigrationState();
         var target    = new Target("Server=.;Database=A");
@@ -124,5 +124,28 @@ public class WhatIfMigrationStateTests
         {
             state.OnApplied(target, migration, MigrationPhase.Core);
         });
+    }
+
+    [Test]
+    public void OnApplied_AlreadyAppliedInEarlierPhase()
+    {
+        var state    = new WhatIfMigrationState();
+        var target   = new Target("Server=.;Database=A");
+        var applied0 = new Migration("A") { Hash = "123", State = MigrationState.NotApplied };
+        var applied1 = new Migration("A") { Hash = "123", State = MigrationState.AppliedPre };
+
+        state.OnApplied(target, applied0, MigrationPhase.Pre);
+
+        state.Get(target, []).ShouldHaveSingleItem().AssignTo(out var returned);
+        returned     .ShouldNotBeSameAs(applied0);
+        returned.Name.ShouldBeSameAs(applied0.Name);
+        returned.Hash.ShouldBeSameAs(applied0.Hash);
+
+        state.OnApplied(target, applied1, MigrationPhase.Core);
+
+        state.Get(target, []).ShouldHaveSingleItem().AssignTo(out returned);
+        returned     .ShouldNotBeSameAs(applied1);
+        returned.Name.ShouldBeSameAs(applied1.Name);
+        returned.Hash.ShouldBeSameAs(applied1.Hash);
     }
 }

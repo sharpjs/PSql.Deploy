@@ -6,7 +6,7 @@ using PSql.Deploy.Migrations;
 namespace PSql.Deploy.Commands;
 
 // Resolve ambiguity
-using AllowNull = System.Management.Automation.AllowNullAttribute;
+using AllowNullAttribute = System.Management.Automation.AllowNullAttribute;
 
 /// <summary>
 ///   The <c>Get-SqlMigrations</c> command.

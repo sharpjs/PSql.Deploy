@@ -1,8 +1,6 @@
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
-using System.Management.Automation.Host;
-
 namespace PSql.Deploy;
 
 /// <summary>
@@ -15,10 +13,9 @@ internal static class CmdletExtensions
         if (cmdlet is null)
             throw new ArgumentNullException(nameof(cmdlet));
 
-        return cmdlet.GetVariableValue("WhatIfPreference") is not (null or false)
-            || cmdlet.MyInvocation.BoundParameters.TryGetValue("WhatIf", out var whatIf)
-                && whatIf is SwitchParameter { IsPresent: true }
-            ;
+        return cmdlet.MyInvocation.BoundParameters.TryGetValue("WhatIf", out var whatIf)
+            ? whatIf is (SwitchParameter { IsPresent: true } or true)
+            : cmdlet.GetVariableValue("WhatIfPreference") is true;
     }
 
     public static string GetCurrentPath(this PSCmdlet cmdlet)

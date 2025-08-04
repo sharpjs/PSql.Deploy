@@ -9,13 +9,17 @@ namespace PSql.Deploy;
 internal static class ScriptExecutor
 {
     private const string
-        ModuleFileName = "PSql.Deploy.psd1";
+        ModuleFileName      = "PSql.Deploy.psd1",
+        TestingVariableName = "PSQL_DEPLOY_TESTING";
 
     private static string
         TestPath => TestContext.CurrentContext.TestDirectory;
 
     private static readonly InitialSessionState
         InitialState = CreateInitialSessionState();
+
+    private static readonly SessionStateVariableEntry
+        TestingVariable = new(TestingVariableName, "1", null);
 
     private static readonly PSInvocationSettings
         Settings = new() { ErrorActionPreference = ActionPreference.Stop };
@@ -31,6 +35,11 @@ internal static class ScriptExecutor
         state.ImportPSModule(Path.Combine(TestPath, ModuleFileName));
 
         return state;
+    }
+
+    public static void WithTestingVariable(InitialSessionState state)
+    {
+        state.EnvironmentVariables.Add(TestingVariable);
     }
 
     internal static (IReadOnlyList<PSObject?>, Exception?) Execute(string script)

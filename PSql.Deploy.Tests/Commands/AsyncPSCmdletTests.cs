@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: MIT
 
 using System.Management.Automation.Host;
-using System.Management.Automation.Runspaces;
 
 namespace PSql.Deploy.Commands;
 
@@ -12,12 +11,6 @@ using static TestAsyncPSCmdletCommand.TestMoment;
 [TestFixture]
 public class AsyncPSCmdletTests
 {
-    private const string
-        TestingVariableName = "PSQL_DEPLOY_TESTING";
-
-    private static readonly SessionStateVariableEntry
-        TestingVariable = new(TestingVariableName, "1", null);
-
     [Test]
     [TestCase(BeforeProcessing,      typeof(ImmediateDispatcher ))]
     [TestCase(DuringProcessing,      typeof(MainThreadDispatcher))]
@@ -422,13 +415,8 @@ public class AsyncPSCmdletTests
         output.ShouldBeEmpty();
     }
 
-    private static (IReadOnlyList<PSObject?> output, Exception? exception) Execute(string command)
+    private static (IReadOnlyList<PSObject?>, Exception?) Execute(string command)
     {
-        return ScriptExecutor.Execute(SetUpSessionState, command);
-    }
-
-    private static void SetUpSessionState(InitialSessionState state)
-    {
-        state.EnvironmentVariables.Add(TestingVariable);
+        return ScriptExecutor.Execute(ScriptExecutor.WithTestingVariable, command);
     }
 }
