@@ -5,6 +5,8 @@ using System.Diagnostics;
 
 namespace PSql.Deploy;
 
+using static SqlMessageConstants;
+
 internal class TestSqlLogger : ISqlMessageLogger
 {
     public static TestSqlLogger Instance { get; } = new();
@@ -14,7 +16,11 @@ internal class TestSqlLogger : ISqlMessageLogger
         message = $"{procedure}:{line}: E{number}:{severity}: {message}";
 
         Debug.WriteLine(message);
-        TestContext.WriteLine(message);
-        Console.WriteLine(message);
+
+        if (severity > MaxInformationalSeverity)
+        {
+            TestContext.WriteLine(message);
+            Console    .WriteLine(message);
+        }
     }
 }
