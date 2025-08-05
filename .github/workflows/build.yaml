@@ -92,8 +92,8 @@ jobs:
       - name: Restore PowerShell Modules
         shell: pwsh
         run: |
-          Set-PSRepository PSGallery -InstallationPolicy Trusted
-          Install-Module PSql -Repository PSGallery -AllowPrerelease
+          Set-PSRepository PSGallery -InstallationPolicy Trusted -Verbose
+          Install-Module PSql -Repository PSGallery -AllowPrerelease -Verbose -PassThru
 
       - name: Restore NuGet Packages
         run: dotnet restore

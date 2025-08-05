@@ -43,7 +43,7 @@
     FunctionsToExport    = @()
     CmdletsToExport      = @(
         'Get-SqlMigrations'
-        #'Invoke-ForEachSqlContext'
+        #'Invoke-ForEachSqlTargetDatabase' # FUTURE: Provide this cmdlet
         'Invoke-SqlMigrations'
         'Invoke-SqlSeed'
         'New-SqlTargetDatabaseGroup'
