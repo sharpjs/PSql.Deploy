@@ -80,14 +80,19 @@ public class SqlTargetDatabase
     ///   <paramref name="connectionString"/> is <see langword="null"/>.
     /// </exception>
     public SqlTargetDatabase(
-        string             connectionString,
-        NetworkCredential? credential          = null,
-        string?            serverDisplayName   = null,
-        string?            databaseDisplayName = null)
+        string        connectionString,
+        PSCredential? credential          = null,
+        string?       serverDisplayName   = null,
+        string?       databaseDisplayName = null)
     {
         // Null checked by inner Target constructor
 
-        _target = new(connectionString, credential, serverDisplayName, databaseDisplayName);
+        _target = new(
+            connectionString,
+            credential?.GetNetworkCredential(),
+            serverDisplayName,
+            databaseDisplayName
+        );
 
         Credential = credential;
     }
@@ -107,7 +112,7 @@ public class SqlTargetDatabase
     ///   if a credential is required and not present in the
     ///   <see cref="ConnectionString"/>.
     /// </summary>
-    public NetworkCredential? Credential { get; }
+    public PSCredential? Credential { get; }
 
     /// <summary>
     ///   Gets a display name for the database server.  This name might be a
@@ -139,13 +144,16 @@ public class SqlTargetDatabase
             && name.EndsWith  ("SqlContext", StringComparison.Ordinal);
     }
 
-    private static (E.Target, NetworkCredential?) InterpretSqlContext(ObjectTypePair source)
+    private static (E.Target, PSCredential?) InterpretSqlContext(ObjectTypePair source)
     {
         return TryGetConnectionString  (source, out var connectionString)  // string
             && TryGetCredential        (source, out var credential)        // NetworkCredential?
             && TryGetServerResourceName(source, out var serverDisplayName) // string?
-            ?  (new(connectionString, credential, serverDisplayName), credential)
-            :  throw new ArgumentException(
+            ? (
+                new(connectionString, credential?.GetNetworkCredential(), serverDisplayName),
+                credential
+            )
+            : throw new ArgumentException(
                 "The object does not conform to the expected API surface of PSql.SqlContext."
             );
     }
@@ -189,7 +197,7 @@ public class SqlTargetDatabase
         return true;
     }
 
-    private static bool TryGetCredential(ObjectTypePair source, out NetworkCredential? value)
+    private static bool TryGetCredential(ObjectTypePair source, out PSCredential? value)
     {
         const string PropertyName = "Credential";
 
@@ -204,7 +212,7 @@ public class SqlTargetDatabase
         if (property.GetValue(source.Object) is not { } objectValue)
             return true; // property value is null; normal when credential is not required
 
-        if (objectValue is not NetworkCredential typedValue)
+        if (objectValue is not PSCredential typedValue)
             return false; // property value is of wrong type
 
         value = typedValue;

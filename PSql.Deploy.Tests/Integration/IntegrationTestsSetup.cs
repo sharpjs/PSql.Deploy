@@ -1,6 +1,7 @@
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
+using System.Management.Automation.Runspaces;
 using System.Net;
 using System.Net.Sockets;
 using Microsoft.Data.SqlClient;
@@ -30,7 +31,10 @@ public static class IntegrationTestsSetup
     [OneTimeSetUp]
     public static async Task SetUp()
     {
-        var connectionString = "Server = .";
+        var connectionString
+            =   "Server"           + " = ."
+            + "; Encrypt"          + " = false"
+            + "; Application Name" + " = PSql.Deploy.Tests";
 
         if (Environment.GetEnvironmentVariable(PasswordName) is { Length: > 0 } password)
         {
@@ -56,10 +60,6 @@ public static class IntegrationTestsSetup
             _credential = _container.Credential;
         }
 
-        connectionString = connectionString
-            + "; Encrypt"          + " = false"
-            + "; Application Name" + " = PSql.Deploy.Tests";
-
         _setupConnectionString = connectionString + "; Database = master";
 
         await CreateTestDatabasesAsync();
@@ -78,6 +78,21 @@ public static class IntegrationTestsSetup
             _container.Dispose();
             _container = null;
         }
+    }
+
+    public static void WithIntegrationTestDefaults(InitialSessionState state)
+    {
+        if (!(Credential is { } c))
+            return;
+
+        state.Variables.Add(new SessionStateVariableEntry(
+            "PSDefaultParameterValues",
+            new DefaultParameterDictionary
+            {
+                ["New-SqlContext:Credential"] = new PSCredential(c.UserName, c.SecurePassword),
+            },
+            null
+        ));
     }
 
     private static bool IsLocalSqlServerListening()

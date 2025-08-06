@@ -15,7 +15,7 @@ public class TestSqlContext
 {
     public string? ConnectionString { get; set; }
 
-    public NetworkCredential? Credential { get; set; }
+    public PSCredential? Credential { get; set; }
 
     public string GetConnectionString(
         string?          db,    // actual name in PSql: databaseName   \  To test that

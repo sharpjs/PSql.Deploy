@@ -15,7 +15,7 @@ public class InvokeSqlSeedCommandIntegrationTests
         File.Delete("..PSqlDeployTestA.Typical.log");
         File.Delete("..PSqlDeployTestB.Typical.log");
 
-        var (_, exception) = ScriptExecutor.Execute(
+        var (_, exception) = Execute(
             """
             $TargetA = New-SqlContext -DatabaseName PSqlDeployTestA
             $TargetB = New-SqlContext -DatabaseName PSqlDeployTestB
@@ -40,7 +40,7 @@ public class InvokeSqlSeedCommandIntegrationTests
     [Test]
     public void Invoke_DefaultPath()
     {
-        var (_, exception) = ScriptExecutor.Execute(
+        var (_, exception) = Execute(
             """
             Join-Path TestDbs A | Set-Location
             $Target = New-SqlContext -DatabaseName PSqlDeployTestA
@@ -57,7 +57,7 @@ public class InvokeSqlSeedCommandIntegrationTests
     {
         // NOTE: The test seed 'Typical' requires a SqlCmd variable 'foo'.
 
-        var (_, exception) = ScriptExecutor.Execute(
+        var (_, exception) = Execute(
             """
             Join-Path TestDbs A | Set-Location
             $Target = New-SqlContext -DatabaseName PSqlDeployTestA
@@ -76,7 +76,7 @@ public class InvokeSqlSeedCommandIntegrationTests
     {
         // NOTE: The test seed 'Typical' requires a SqlCmd variable 'foo'.
 
-        var (_, exception) = ScriptExecutor.Execute(
+        var (_, exception) = Execute(
             """
             Join-Path TestDbs A | Set-Location
             $Target = New-SqlContext -DatabaseName PSqlDeployTestA
@@ -100,7 +100,11 @@ public class InvokeSqlSeedCommandIntegrationTests
         );
 
         var (_, exception) = ScriptExecutor.Execute(
-            state => state.Variables.Add(variable),
+            state =>
+            {
+                IntegrationTestsSetup.WithIntegrationTestDefaults(state);
+                state.Variables.Add(variable);
+            },
             """
             Join-Path TestDbs A | Set-Location
             $Target = New-SqlContext -DatabaseName PSqlDeployTestA
@@ -118,7 +122,7 @@ public class InvokeSqlSeedCommandIntegrationTests
     [Test]
     public void Invoke_DefineWithNullValue()
     {
-        var (_, exception) = ScriptExecutor.Execute(
+        var (_, exception) = Execute(
             """
             Join-Path TestDbs A | Set-Location
             $Target = New-SqlContext -DatabaseName PSqlDeployTestA
@@ -128,5 +132,13 @@ public class InvokeSqlSeedCommandIntegrationTests
         );
 
         exception.ShouldBeNull();
+    }
+
+    private static (IReadOnlyList<PSObject?>, Exception?) Execute(string script)
+    {
+        return ScriptExecutor.Execute(
+            IntegrationTestsSetup.WithIntegrationTestDefaults,
+            script
+        );
     }
 }

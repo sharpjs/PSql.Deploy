@@ -28,7 +28,7 @@ public class SqlTargetDatabaseTests
     [Test]
     public void Construct_WithValues()
     {
-        var credential = new NetworkCredential("sa", "secret");
+        var credential = MakePSCredential("sa", "secret");
 
         var target = new SqlTargetDatabase(
             "Server = localhost; Database = Test",
@@ -77,7 +77,7 @@ public class SqlTargetDatabaseTests
     {
         var source = new SqlTargetDatabase(
             "Server = localhost; Database = Test",
-            new NetworkCredential("sa", "secret"),
+            MakePSCredential("sa", "secret"),
             "My Server",
             "My Database"
         );
@@ -106,7 +106,7 @@ public class SqlTargetDatabaseTests
         var source = new TestSqlContext
         {
             ConnectionString = "Server = localhost; Database = Test",
-            Credential       = new("sa", "secret"),
+            Credential       = MakePSCredential("sa", "secret"),
         };
 
         var actual = MakeSqlTargetDatabase(source);
@@ -140,7 +140,7 @@ public class SqlTargetDatabaseTests
         {
             ServerResourceName = "example",
             ConnectionString   = "Server = example.database.windows.net; Database = Test",
-            Credential         = new("sa", "secret"),
+            Credential         = MakePSCredential("sa", "secret"),
         };
 
         var actual = MakeSqlTargetDatabase(source);
@@ -157,7 +157,7 @@ public class SqlTargetDatabaseTests
         var source = new TestAzureSqlContext
         {
             ConnectionString   = "Server = example.database.windows.net; Database = Test",
-            Credential         = new("sa", "secret"),
+            Credential         = MakePSCredential("sa", "secret"),
         };
 
         var actual = MakeSqlTargetDatabase(source);
@@ -223,7 +223,7 @@ public class SqlTargetDatabaseTests
             new TestSqlContext
             {
                 ConnectionString = null,
-                Credential       = new("sa", "secret"),
+                Credential       = MakePSCredential("sa", "secret"),
             }
         );
     }
@@ -285,4 +285,14 @@ public class SqlTargetDatabaseTests
 
     private SqlTargetDatabase MakeSqlTargetDatabase(object obj)
         => new SqlTargetDatabase(_wrap(obj));
+
+    private PSCredential MakePSCredential(string userName, string password)
+    {
+        var networkCredential = new NetworkCredential(userName, password);
+
+        return new(
+            networkCredential.UserName,
+            networkCredential.SecurePassword
+        );
+    }
 }

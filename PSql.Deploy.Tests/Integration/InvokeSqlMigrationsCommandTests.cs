@@ -19,7 +19,7 @@ public class InvokeSqlMigrationsCommandIntegrationTests
         File.Delete("..PSqlDeployTestB.1_Core.log");
         File.Delete("..PSqlDeployTestB.2_Post.log");
 
-        var (output, exception) = ScriptExecutor.Execute(
+        var (output, exception) = Execute(
             """
             $TargetA = New-SqlContext -DatabaseName PSqlDeployTestA
             $TargetB = New-SqlContext -DatabaseName PSqlDeployTestB
@@ -90,7 +90,7 @@ public class InvokeSqlMigrationsCommandIntegrationTests
     [Test]
     public void Invoke_DefaultPath()
     {
-        var (_, exception) = ScriptExecutor.Execute(
+        var (_, exception) = Execute(
             """
             Join-Path TestDbs A | Set-Location
             $Target = New-SqlContext -DatabaseName PSqlDeployTestA
@@ -99,5 +99,13 @@ public class InvokeSqlMigrationsCommandIntegrationTests
         );
 
         exception.ShouldBeNull();
+    }
+
+    private static (IReadOnlyList<PSObject?>, Exception?) Execute(string script)
+    {
+        return ScriptExecutor.Execute(
+            IntegrationTestsSetup.WithIntegrationTestDefaults,
+            script
+        );
     }
 }
