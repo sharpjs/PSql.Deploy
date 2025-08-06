@@ -26,16 +26,23 @@ public class PrivateAssemblyLoadContextTests
     [Test]
     public void LoadUnmanagedDll_Found()
     {
-        PrivateAssemblyLoadContext
-            .Instance
-            .SimulateLoadUnmanagedDll("Microsoft.Data.SqlClient.SNI")
-            .ShouldNotBe(IntPtr.Zero);
+        if (OperatingSystem.IsWindows())
+        {
+            PrivateAssemblyLoadContext
+                .Instance
+                .SimulateLoadUnmanagedDll("Microsoft.Data.SqlClient.SNI")
+                .ShouldNotBe(IntPtr.Zero);
 
-        // Exercise caching
-        PrivateAssemblyLoadContext
-            .Instance
-            .SimulateLoadUnmanagedDll("Microsoft.Data.SqlClient.SNI")
-            .ShouldNotBe(IntPtr.Zero);
+            // Exercise caching
+            PrivateAssemblyLoadContext
+                .Instance
+                .SimulateLoadUnmanagedDll("Microsoft.Data.SqlClient.SNI")
+                .ShouldNotBe(IntPtr.Zero);
+        }
+        else
+        {
+            Assert.Pass("This product ships no native libraries for non-Windows platforms.");
+        }
     }
 
     [Test]
