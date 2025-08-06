@@ -157,6 +157,9 @@ public class InvokeSqlSeedCommand : AsyncPSCmdlet
 
     [Conditional("DEBUG")]
     [MemberNotNull(nameof(_session))]
+#if !DEBUG
+    [ExcludeFromCodeCoverage(Justification = "Uninvokable due to ConditionalAttribute.")]
+#endif
     internal void AssumeBeginProcessingInvoked()
     {
         if (_session is null)

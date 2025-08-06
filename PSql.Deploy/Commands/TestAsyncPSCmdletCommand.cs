@@ -97,7 +97,7 @@ public class TestAsyncPSCmdletCommand : AsyncPSCmdlet
             case TestCase.StopProcessing:                 TestStopProcessing();                 break;
             case TestCase.ThrowTerminatingError:          TestThrowTerminatingError();          break;
             case TestCase.MultipleDispose:                TestMultipleDispose();                break;
-            case TestCase.UnmanagedDispose:               TestUnmanagedDispose();               break;
+            default:   /* UnmanagedDispose: */            TestUnmanagedDispose();               break;
         }
     }
 

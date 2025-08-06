@@ -1,12 +1,25 @@
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
+using System.Runtime.Loader;
+
 namespace PSql.Deploy.Internal;
 
 [TestFixture]
 public class PrivateAssemblyLoadContextTests
 {
     // This test class contains additional tests to achieve 100% code coverage.
+
+    [Test]
+    public void HandleResolvingInDefaultLoadContext_NotPrivate()
+    {
+        PrivateAssemblyLoadContext
+            .HandleResolvingInDefaultLoadContext(
+                AssemblyLoadContext.Default,
+                new("NotThePrivateAssembly")
+            )
+            .ShouldBeNull();
+    }
 
     [Test]
     public void Load_Empty()

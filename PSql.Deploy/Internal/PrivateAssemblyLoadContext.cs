@@ -74,6 +74,9 @@ internal sealed class PrivateAssemblyLoadContext : AssemblyLoadContext
         return _loadedNative.GetOrAdd(unmanagedDllName, LoadUnmanagedDllCore);
     }
 
+    [ExcludeFromCodeCoverage(
+        Justification = "This product ships no unmanaged library for non-Windows platforms."
+    )]
     private IntPtr LoadUnmanagedDllCore(string name)
     {
         // Try to resolve and load

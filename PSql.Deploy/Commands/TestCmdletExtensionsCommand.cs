@@ -40,7 +40,7 @@ public class TestCmdletExtensionsCommand : PSCmdlet
                 WriteObject(this.GetCurrentPath());
                 break;
 
-            case TestCase.WriteHost:
+            default: // case TestCase.WriteHost:
                 this.WriteHost(Message);
                 break;
         }
