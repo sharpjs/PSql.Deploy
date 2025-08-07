@@ -77,14 +77,12 @@ public class InvokeSqlMigrationsCommand : AsyncPSCmdlet
     {
         base.BeginProcessing();
 
-        var currentPath = this.GetCurrentPath();
-
         _session = new(
             GetOptions(),
-            new CmdletMigrationConsole(this, currentPath)
+            new CmdletMigrationConsole(this, this.GetCurrentPath())
         );
 
-        _session.DiscoverMigrations(Path ?? currentPath, MaximumMigrationName);
+        _session.DiscoverMigrations(this.GetFullPath(Path), MaximumMigrationName);
     }
 
     /// <inheritdoc/>

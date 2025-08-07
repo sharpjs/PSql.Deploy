@@ -84,8 +84,10 @@ public sealed class GetSqlMigrationsCommand : AsyncPSCmdlet
             WriteObject(new Migration(migration));
     }
 
-    private static IReadOnlyList<M.Migration> GetMigrations(string path)
+    private IReadOnlyList<M.Migration> GetMigrations(string path)
     {
+        path = this.GetFullPath(path);
+
         return M.MigrationDiscoverer.GetAll(path);
     }
 

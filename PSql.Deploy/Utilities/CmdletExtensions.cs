@@ -10,8 +10,7 @@ internal static class CmdletExtensions
 {
     public static bool IsWhatIf(this PSCmdlet cmdlet)
     {
-        if (cmdlet is null)
-            throw new ArgumentNullException(nameof(cmdlet));
+        ArgumentNullException.ThrowIfNull(cmdlet);
 
         return cmdlet.MyInvocation.BoundParameters.TryGetValue("WhatIf", out var whatIf)
             ? whatIf is (SwitchParameter { IsPresent: true } or true)
@@ -20,13 +19,21 @@ internal static class CmdletExtensions
 
     public static string GetCurrentPath(this PSCmdlet cmdlet)
     {
-        if (cmdlet is null)
-            throw new ArgumentNullException(nameof(cmdlet));
+        ArgumentNullException.ThrowIfNull(cmdlet);
 
         return cmdlet.SessionState.Path.CurrentFileSystemLocation.Path;
     }
 
-    private static readonly string[] HostTag = ["PSHOST"];
+    public static string GetFullPath(this PSCmdlet cmdlet, string? path = null)
+    {
+        ArgumentNullException.ThrowIfNull(cmdlet);
+
+        path ??= "";
+
+        return Path.IsPathFullyQualified(path)
+            ? path
+            : Path.GetFullPath(path, basePath: cmdlet.GetCurrentPath());
+    }
 
     /// <summary>
     ///   Writes the specified message as a host information message.
@@ -77,4 +84,6 @@ internal static class CmdletExtensions
 
         cmdlet.WriteInformation(data, HostTag);
     }
+
+    private static readonly string[] HostTag = ["PSHOST"];
 }

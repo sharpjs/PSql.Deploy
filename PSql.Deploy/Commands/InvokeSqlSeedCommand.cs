@@ -70,14 +70,12 @@ public class InvokeSqlSeedCommand : AsyncPSCmdlet
 
         base.BeginProcessing();
 
-        var currentPath = this.GetCurrentPath();
-
         _session = new(
             GetOptions(),
-            new CmdletSeedConsole(this, currentPath)
+            new CmdletSeedConsole(this, this.GetCurrentPath())
         );
 
-        _session.DiscoverSeeds(Path ?? currentPath, Seed);
+        _session.DiscoverSeeds(this.GetFullPath(Path), Seed);
     }
 
     protected override void ProcessRecord()
