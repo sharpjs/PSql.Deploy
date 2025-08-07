@@ -234,8 +234,17 @@ public abstract class AsyncPSCmdlet : PSCmdlet, ICmdlet, IDisposable
         ConsoleColor? foregroundColor = null,
         ConsoleColor? backgroundColor = null)
     {
-        // This will invoke WriteInformation below
-        ((PSCmdlet) this).WriteHost(text!, newLine, foregroundColor, backgroundColor);
+        static void WriteHost((
+            PSCmdlet      cmdlet,
+            string?       text,
+            bool          newLine,
+            ConsoleColor? foregroundColor,
+            ConsoleColor? backgroundColor) x)
+            => x.cmdlet.WriteHost(x.text, x.newLine, x.foregroundColor, x.backgroundColor);
+
+        Dispatcher.Invoke(
+            WriteHost, ((PSCmdlet) this, text, newLine, foregroundColor, backgroundColor)
+        );
     }
 
     /// <inheritdoc/>
