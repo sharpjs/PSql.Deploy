@@ -7,6 +7,8 @@ using System.Runtime.Serialization;
 
 namespace PSql.Deploy.Migrations;
 
+using static ExceptionHelpers;
+
 /// <summary>
 ///   Represents an error that occurred during database schema migration.
 /// </summary>
@@ -30,7 +32,7 @@ public class MigrationException : Exception
 
     /// <inheritdoc/>
     public MigrationException(string? message, Exception? innerException)
-        : base(message ?? DefaultMessage, innerException)
+        : base(GetCompoundMessage(message ?? DefaultMessage, innerException), innerException)
     { }
 
 #if !NET8_0_OR_GREATER

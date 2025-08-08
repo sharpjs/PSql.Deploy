@@ -7,6 +7,8 @@ using System.Runtime.Serialization;
 
 namespace PSql.Deploy.Seeds;
 
+using static ExceptionHelpers;
+
 /// <summary>
 ///   Represents an error that occurred during database seed application.
 /// </summary>
@@ -30,7 +32,7 @@ public class SeedException : Exception
 
     /// <inheritdoc/>
     public SeedException(string? message, Exception? innerException)
-        : base(message ?? DefaultMessage, innerException)
+        : base(GetCompoundMessage(message ?? DefaultMessage, innerException), innerException)
     { }
 
 #if !NET8_0_OR_GREATER
