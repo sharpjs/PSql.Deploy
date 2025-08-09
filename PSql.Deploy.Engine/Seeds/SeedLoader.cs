@@ -88,11 +88,11 @@ internal class SeedLoader
             index = match.Index + match.Length;
 
             // All tokens except magic comment are inert
-            if (match.Value[0] != '-')
+            if (text[match.Index] is not '-')
                 continue;
 
-            // Recognized a magic comment
-            start = HandleMagicComment(text, start, index, match);
+            // Recognized a potentially magic comment
+            start = HandleComment(text, start, index, match);
         }
     }
 
@@ -103,10 +103,13 @@ internal class SeedLoader
         return _modules.ToImmutable();
     }
 
-    private int HandleMagicComment(string text, int start, int index, Match match)
+    private int HandleComment(string text, int start, int index, Match match)
     {
         // Decode
-        var command   = match.Groups["cmd"];
+        var command = match.Groups["cmd"];
+        if (!command.Success)
+            return start; // skip non-magic comment
+
         var arguments = match.Groups["arg"].Captures;
 
         // Dispatch
@@ -233,7 +236,8 @@ internal class SeedLoader
         ^--\# [ \t]* (?<cmd> MODULE | PROVIDES | REQUIRES | WORKER) :        # magic comment
               [ \t]* (                                                       #   followed by
                 (?<arg> ( [^ \t\r\n] | \r(?!\n) )+ ) [ \t]*                  #   arguments
-              )*                                            ( \r?\n | \z )
+              )*                                            ( \r?\n | \z ) | #
+        --    ( [^\r\n] | \r(?!\n) )*                       ( \r?\n | \z )   # line comment
         """,
         IgnoreCase              |
         IgnorePatternWhitespace |
