@@ -11,16 +11,26 @@ public class SeedModuleTests
     {
         Should.Throw<ArgumentNullException>(() =>
         {
-            _ = new SeedModule(null!, default, default, default);
+            _ = new SeedModule(null!, false, default, default, default);
         });
     }
 
     [Test]
     public void Name_Get()
     {
-        var module = new SeedModule("a", default, default, default);
+        var module = new SeedModule("a", false, default, default, default);
 
         module.Name.ShouldBe("a");
+    }
+
+    [Test]
+    [TestCase(false)]
+    [TestCase(true )]
+    public void AllWorkers_Get(bool value)
+    {
+        var module = new SeedModule("a", value, default, default, default);
+
+        module.AllWorkers.ShouldBe(value);
     }
 
     [Test]
@@ -28,7 +38,7 @@ public class SeedModuleTests
     {
         var items = ImmutableArray.Create("b");
 
-        var module = new SeedModule("a", items, default, default);
+        var module = new SeedModule("a", false, items, default, default);
 
         module.Batches.ShouldBe(items);
     }
@@ -38,7 +48,7 @@ public class SeedModuleTests
     {
         var items = ImmutableArray.Create("b");
 
-        var module = new SeedModule("a", default, items, default);
+        var module = new SeedModule("a", false, default, items, default);
 
         module.Provides.ShouldBe(items);
     }
@@ -48,7 +58,7 @@ public class SeedModuleTests
     {
         var items = ImmutableArray.Create("b");
 
-        var module = new SeedModule("a", default, default, items);
+        var module = new SeedModule("a", false, default, default, items);
 
         module.Requires.ShouldBe(items);
     }

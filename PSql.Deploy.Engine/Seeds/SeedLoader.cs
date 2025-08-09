@@ -23,6 +23,7 @@ internal class SeedLoader
     private const string InitialModuleName = "(init)";
 
     private string _moduleName = InitialModuleName;
+    private bool   _allWorkers = false;
 
     private SeedLoader()
     {
@@ -131,6 +132,12 @@ internal class SeedLoader
             case 'r':
                 AddRequires(arguments);
                 break;
+
+            // WORKER
+            case 'W':
+            case 'w':
+                SetWorker(arguments);
+                break;
         }
 
         return start;
@@ -159,6 +166,21 @@ internal class SeedLoader
             _requires.Add(argument.Value);
     }
 
+    private void SetWorker(CaptureCollection arguments)
+    {
+        if (arguments.Count != 1)
+            throw new FormatException("The WORKER magic comment expects exactly one argument.");
+
+        var argument = arguments[0].Value;
+
+        _allWorkers
+            =  InterpretWorkerArgument(argument)
+            ?? throw new FormatException(
+                "The WORKER magic comment argument must be 'all' or 'any', " +
+                "case-insensitive, without quotes."
+            );
+    }
+
     private void AddBatch(string text, int start)
     {
         text = text[start..];
@@ -179,15 +201,28 @@ internal class SeedLoader
     {
         _modules.Add(new(
             _moduleName,
+            _allWorkers,
             _batches .ToImmutable(),
             _provides.ToImmutableArray(),
             _requires.ToImmutableArray()
         ));
 
         _moduleName = InitialModuleName;
+        _allWorkers = false;
         _batches .Clear();
         _provides.Clear();
         _requires.Clear();
+    }
+
+    private static bool? InterpretWorkerArgument(string argument)
+    {
+        if (argument.Equals("all", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (argument.Equals("any", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        return null;
     }
 
     private static readonly Regex TokenRegex = new(
@@ -195,7 +230,7 @@ internal class SeedLoader
         '     ( [^']  | ''   )*                             ( '     | \z ) | # string
         \[    ( [^\]] | \]\] )*                             ( \]    | \z ) | # quoted identifier
         /\*   ( .     | \n   )*?                            ( \*/   | \z ) | # block comment
-        ^--\# [ \t]* (?<cmd> MODULE | PROVIDES | REQUIRES ) :                # magic comment
+        ^--\# [ \t]* (?<cmd> MODULE | PROVIDES | REQUIRES | WORKER) :        # magic comment
               [ \t]* (                                                       #   followed by
                 (?<arg> ( [^ \t\r\n] | \r(?!\n) )+ ) [ \t]*                  #   arguments
               )*                                            ( \r?\n | \z )

@@ -242,14 +242,16 @@ public class SeedApplicatorTests : TestHarnessBase
     private static SeedModule MakeModule(
         string    name,
         string[]  batches,
-        string[]? provides = null,
-        string[]? requires = null)
+        string[]? provides   = null,
+        string[]? requires   = null,
+        bool      allWorkers = false)
     {
         provides ??= [];
         requires ??= [];
 
         return new(
             name,
+            allWorkers,
             batches .ToImmutableArray(),
             provides.ToImmutableArray(),
             requires.ToImmutableArray()

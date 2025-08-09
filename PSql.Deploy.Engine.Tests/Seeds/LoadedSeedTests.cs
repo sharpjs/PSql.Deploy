@@ -29,7 +29,7 @@ public class LoadedSeedTests
     public void Modules_Get()
     {
         var seed    = new Seed("a", "b");
-        var modules = ImmutableArray.Create(new SeedModule("c", default, default, default));
+        var modules = ImmutableArray.Create(new SeedModule("c", false, default, default, default));
 
         var loadedSeed = new LoadedSeed(seed, modules);
 

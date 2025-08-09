@@ -14,6 +14,12 @@ public class SeedModule
     /// <param name="name">
     ///   The name of the module.
     /// </param>
+    /// <param name="allWorkers">
+    ///   Whether the module should run on every worker thread in a seed
+    ///   application (<see langword="true"/>) or singly on any one available
+    ///   worker thread (<see langword="false"/>).  The usual case is
+    ///   <see langword="false"/>.
+    /// </param>
     /// <param name="batches">
     ///   The SQL batches to be executed when the module runs.
     /// </param>
@@ -30,6 +36,7 @@ public class SeedModule
     /// </exception>
     public SeedModule(
         string                 name,
+        bool                   allWorkers,
         ImmutableArray<string> batches,
         ImmutableArray<string> provides,
         ImmutableArray<string> requires)
@@ -37,16 +44,25 @@ public class SeedModule
         if (name is null)
             throw new ArgumentNullException(nameof(name));
 
-        Name     = name;
-        Batches  = batches;
-        Provides = provides;
-        Requires = requires;
+        Name       = name;
+        AllWorkers = allWorkers;
+        Batches    = batches;
+        Provides   = provides;
+        Requires   = requires;
     }
 
     /// <summary>
     ///   Gets the name of the module.
     /// </summary>
     public string Name { get; }
+
+    /// <summary>
+    ///   Gets whether the module must run for each worker thread in a a seed
+    ///   application (<see langword="true"/>) or singly on any one available
+    ///   worker thread (<see langword="false"/>).  The usual case is
+    ///   <see langword="false"/>.
+    /// </summary>
+    public bool AllWorkers { get; }
 
     /// <summary>
     ///   Gets the SQL batches to be executed when the module runs.
