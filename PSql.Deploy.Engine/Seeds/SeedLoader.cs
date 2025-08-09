@@ -138,10 +138,13 @@ internal class SeedLoader
 
     private void NewModule(CaptureCollection arguments)
     {
-        if (arguments.Count != 1)
-            throw new FormatException("The MODULE magic comment expects exactly one argument.");
+        if (arguments.Count is 0)
+            throw new FormatException("The MODULE magic comment expects at least one argument.");
 
         _moduleName = arguments[0].Value;
+
+        foreach (Capture argument in arguments.Skip(1))
+            _provides.Add(argument.Value);
     }
 
     private void AddProvides(CaptureCollection arguments)
