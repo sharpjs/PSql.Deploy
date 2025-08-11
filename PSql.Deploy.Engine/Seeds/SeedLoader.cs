@@ -53,7 +53,8 @@ internal class SeedLoader
 
         var preprocessor = new SqlCmdPreprocessor
         {
-            Variables = { ["Path"] = directoryPath }
+            Variables = { ["Path"] = directoryPath },
+            EnableVariableReplacementInComments = true,
         };
 
         if (defines is not null)

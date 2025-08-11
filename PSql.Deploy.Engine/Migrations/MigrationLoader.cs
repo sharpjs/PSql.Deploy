@@ -121,7 +121,8 @@ internal static class MigrationLoader
 
         var preprocessor = new SqlCmdPreprocessor
         {
-            Variables = { ["Path"] = directoryPath }
+            Variables = { ["Path"] = directoryPath },
+            EnableVariableReplacementInComments = true,
         };
 
         var raw = File.ReadAllText(migration.Path!);
