@@ -16,7 +16,7 @@
   <PropertyGroup>
     <Product>PSql.Deploy</Product>
     <VersionPrefix>2.0.0</VersionPrefix>
-    <Authors>Subatomix Research Inc.</Authors>
+    <Authors>Jeffrey Sharp</Authors>
     <Company>Subatomix Research Inc.</Company>
     <Copyright>© $([System.DateTime]::UtcNow.Year) $(Company)</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
