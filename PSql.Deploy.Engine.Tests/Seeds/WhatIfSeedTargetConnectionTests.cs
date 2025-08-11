@@ -33,6 +33,14 @@ public class WhatIfSeedTargetConnectionTests : TestHarnessBase
     }
 
     [Test]
+    public async Task OpenAsync()
+    {
+        _logger.Setup(l => l.Log("", 0, 0, 0, "Would open connection."));
+
+        await _outer.OpenAsync(Cancellation.Token);
+    }
+
+    [Test]
     public async Task PrepareAsync()
     {
         _logger.Setup(l => l.Log("", 0, 0, 0, "Would prepare connection."));

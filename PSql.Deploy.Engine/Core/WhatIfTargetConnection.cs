@@ -43,7 +43,7 @@ internal abstract class WhatIfTargetConnection : ITargetConnection
         => _connection.Logger;
 
     /// <inheritdoc/>
-    public Task OpenAsync(CancellationToken cancellation)
+    public virtual Task OpenAsync(CancellationToken cancellation)
         => _connection.OpenAsync(cancellation);
 
     /// <inheritdoc/>

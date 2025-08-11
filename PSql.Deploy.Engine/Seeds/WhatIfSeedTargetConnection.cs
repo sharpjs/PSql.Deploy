@@ -20,6 +20,13 @@ internal class WhatIfSeedTargetConnection : WhatIfTargetConnection, ISeedTargetC
 #endif
 
     /// <inheritdoc/>
+    public override Task OpenAsync(CancellationToken cancellation)
+    {
+        Log("Would open connection.");
+        return Task.CompletedTask;
+    }
+
+    /// <inheritdoc/>
     public Task PrepareAsync(Guid runId, int workerId, CancellationToken cancellation = default)
     {
         Log("Would prepare connection.");
