@@ -14,11 +14,12 @@ public class SeedModule
     /// <param name="name">
     ///   The name of the module.
     /// </param>
-    /// <param name="allWorkers">
-    ///   Whether the module should run on every worker thread in a seed
-    ///   application (<see langword="true"/>) or singly on any one available
-    ///   worker thread (<see langword="false"/>).  The usual case is
-    ///   <see langword="false"/>.
+    /// <param name="workerId">
+    ///   A value that determines which worker threads can apply the module.
+    ///   A positive value nominates a specific worker by that worker's ordinal
+    ///   ID.  The default value, <c>0</c>, indicates that any worker can apply
+    ///   the module.  The special value <c>-1</c> indicates that <b>every</b>
+    ///   worker must apply the module.
     /// </param>
     /// <param name="batches">
     ///   The SQL batches to be executed when the module runs.
@@ -34,21 +35,26 @@ public class SeedModule
     /// <exception cref="ArgumentNullException">
     ///   <paramref name="name"/> is <see langword="null"/>.
     /// </exception>
+    /// <exception cref="ArgumentOutOfRangeException">
+    ///   <paramref name="workerId"/> is less than <c>-1</c>.
+    /// </exception>
     public SeedModule(
         string                 name,
-        bool                   allWorkers,
+        int                    workerId,
         ImmutableArray<string> batches,
         ImmutableArray<string> provides,
         ImmutableArray<string> requires)
     {
         if (name is null)
             throw new ArgumentNullException(nameof(name));
+        if (workerId < -1)
+            throw new ArgumentOutOfRangeException(nameof(workerId));
 
-        Name       = name;
-        AllWorkers = allWorkers;
-        Batches    = batches;
-        Provides   = provides;
-        Requires   = requires;
+        Name     = name;
+        WorkerId = workerId;
+        Batches  = batches;
+        Provides = provides;
+        Requires = requires;
     }
 
     /// <summary>
@@ -57,12 +63,13 @@ public class SeedModule
     public string Name { get; }
 
     /// <summary>
-    ///   Gets whether the module must run for each worker thread in a a seed
-    ///   application (<see langword="true"/>) or singly on any one available
-    ///   worker thread (<see langword="false"/>).  The usual case is
-    ///   <see langword="false"/>.
+    ///   Gets a value that determines which worker threads can apply the
+    ///   module.  A positive value nominates a specific worker by that
+    ///   worker's ordinal ID.  The default value, <c>0</c>, indicates that any
+    ///   worker can apply the module.  The special value <c>-1</c> indicates
+    ///   that <b>every</b> worker must apply the module.
     /// </summary>
-    public bool AllWorkers { get; }
+    public int WorkerId { get; }
 
     /// <summary>
     ///   Gets the SQL batches to be executed when the module runs.

@@ -161,12 +161,26 @@ internal class SeedApplicator : ISeedApplication
 
         foreach (var module in Seed.Modules)
         {
-            builder
-                .NewEntry(module.Name, module)
-                .AddProvides(module.Provides)
-                .AddRequires(module.Requires)
-                .Enqueue();
+            if (module.WorkerId is -1)
+                for (var i = 1; i <= MaxParallelism; i++)
+                    Populate(builder, Clone(module, workerId: i));
+            else
+                Populate(builder, module);
         }
+    }
+
+    private static void Populate(DependencyQueueEntryBuilder<SeedModule> builder, SeedModule module)
+    {
+        builder
+            .NewEntry(module.Name, module)
+            .AddProvides(module.Provides)
+            .AddRequires(module.Requires)
+            .Enqueue();
+    }
+
+    private static SeedModule Clone(SeedModule module, int workerId)
+    {
+        return new(module.Name, workerId, module.Batches, module.Provides, module.Requires);
     }
 
     private void Validate(DependencyQueue<SeedModule> queue)
@@ -185,7 +199,11 @@ internal class SeedApplicator : ISeedApplication
 
         await PrepareAsync(connection, context);
 
-        while (await context.GetNextEntryAsync() is { Value: var module })
+        bool CanTake(SeedModule module)
+            => module.WorkerId == 0
+            || module.WorkerId == context.WorkerId;
+
+        while (await context.GetNextEntryAsync(CanTake) is { Value: var module })
             await ExecuteAsync(module, connection, context);
     }
 

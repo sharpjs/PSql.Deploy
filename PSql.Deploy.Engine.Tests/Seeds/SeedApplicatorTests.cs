@@ -251,7 +251,7 @@ public class SeedApplicatorTests : TestHarnessBase
 
         return new(
             name,
-            allWorkers,
+            allWorkers ? -1 : 0, // workerId
             batches .ToImmutableArray(),
             provides.ToImmutableArray(),
             requires.ToImmutableArray()

@@ -205,7 +205,7 @@ internal class SeedLoader
     {
         _modules.Add(new(
             _moduleName,
-            _allWorkers,
+            _allWorkers ? -1 : 0, // workerId // TODO: constants or a custom struct
             _batches .ToImmutable(),
             _provides.ToImmutableArray(),
             _requires.ToImmutableArray()
