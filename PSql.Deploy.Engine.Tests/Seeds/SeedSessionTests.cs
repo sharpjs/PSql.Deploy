@@ -298,6 +298,8 @@ public class SeedSessionTests : TestHarnessBase
             ExpectUseConnection();
             ExpectReportApplying("(init)");
             ExpectInvokeBatch(TypicalSeed_InitialModule_Batch0);
+            ExpectReportApplying("init-worker");
+            ExpectInvokeBatch(TypicalSeed_InitWorkerModule_Batch0);
             ExpectReportApplying("a");
             ExpectInvokeBatch(TypicalSeed_ModuleA_Batch0);
             ExpectReportApplying("b");
@@ -415,16 +417,20 @@ public class SeedSessionTests : TestHarnessBase
 
     private const string
         TypicalSeed_InitialModule_Batch0
-            = "PRINT 'This is in the initial module.';" + Eol,
+            = "PRINT 'This is in the initial module.';"   + Eol,
+        TypicalSeed_InitWorkerModule_Batch0
+            = "--# WORKER: all"                           + Eol
+            + "PRINT 'This is in an all-worker module.';" + Eol,
         TypicalSeed_ModuleA_Batch0
-            = "--# PROVIDES: x y"                       + Eol
-            + "--# provides: y x"                       + Eol
-            + "--# Provides:"                           + Eol
-            + "PRINT 'This is in module a.';"           + Eol
-            + "PRINT 'The value of ''foo'' is bar.';"   + Eol,
+            = "--# PROVIDES: x y"                         + Eol
+            + "--# provides: y x"                         + Eol
+            + "--# Provides:"                             + Eol
+            + "PRINT 'This is in module a.';"             + Eol
+            + "PRINT 'The value of ''foo'' is bar.';"     + Eol 
+            + "-- The value of foo is bar."               + Eol,
         TypicalSeed_ModuleB_Batch0
-            = "--# REQUIRES:  x  y"                     + Eol
-            + "--# requires:  y  x"                     + Eol
-            + "--# Requires:  "                         + Eol
-            + "PRINT 'This is in module b.';"           + Eol;
+            = "--# REQUIRES:  x  y  z"                    + Eol
+            + "--# requires:  z  y  x"                    + Eol
+            + "--# Requires:  "                           + Eol
+            + "PRINT 'This is in module b.';"             + Eol;
 }

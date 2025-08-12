@@ -1,5 +1,5 @@
 --#module:b
---# REQUIRES:  x  y
---# requires:  y  x
+--# REQUIRES:  x  y  z
+--# requires:  z  y  x
 --# Requires:  
 PRINT 'This is in module b.';

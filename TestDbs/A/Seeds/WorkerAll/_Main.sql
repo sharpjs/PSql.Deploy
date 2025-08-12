@@ -1,0 +1,2 @@
+--# MODULE: init-worker
+--# WORKER: all

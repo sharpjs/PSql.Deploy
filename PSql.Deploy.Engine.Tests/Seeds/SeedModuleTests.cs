@@ -16,6 +16,15 @@ public class SeedModuleTests
     }
 
     [Test]
+    public void Construct_OutOfRangeWorkerId()
+    {
+        Should.Throw<ArgumentOutOfRangeException>(() =>
+        {
+            _ = new SeedModule("a", -2, default, default, default);
+        });
+    }
+
+    [Test]
     public void Name_Get()
     {
         var module = new SeedModule("a", 0, default, default, default);
