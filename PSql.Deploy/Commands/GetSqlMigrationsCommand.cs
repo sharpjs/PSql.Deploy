@@ -23,7 +23,7 @@ public sealed class GetSqlMigrationsCommand : AsyncPSCmdlet
     /// </summary>
     [Parameter(
         ParameterSetName  = "Path",
-        Mandatory         = true,
+        Mandatory         = false,
         Position          = 0,
         ValueFromPipeline = true
     )]
@@ -71,7 +71,7 @@ public sealed class GetSqlMigrationsCommand : AsyncPSCmdlet
     {
         var migrations = ParameterSetName switch
         {
-            "Path" => GetMigrations(Path!),
+            "Path" => GetMigrations(Path),
             _      => await GetMigrationsAsync(Target!),
         };
 
@@ -84,7 +84,7 @@ public sealed class GetSqlMigrationsCommand : AsyncPSCmdlet
             WriteObject(new Migration(migration));
     }
 
-    private IReadOnlyList<M.Migration> GetMigrations(string path)
+    private IReadOnlyList<M.Migration> GetMigrations(string? path)
     {
         path = this.GetFullPath(path);
 
