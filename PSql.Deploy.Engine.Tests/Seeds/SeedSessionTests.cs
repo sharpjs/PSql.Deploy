@@ -296,7 +296,7 @@ public class SeedSessionTests : TestHarnessBase
             ExpectCreateLog("Typical");
             ExpectReportStarting();
             ExpectUseConnection();
-            ExpectReportApplying("(init)");
+            ExpectReportApplying("init");
             ExpectInvokeBatch(TypicalSeed_InitialModule_Batch0);
             ExpectReportApplying("init-worker");
             ExpectInvokeBatch(TypicalSeed_InitWorkerModule_Batch0);

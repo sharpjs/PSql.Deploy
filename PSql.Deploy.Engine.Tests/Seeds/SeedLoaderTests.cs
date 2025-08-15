@@ -30,7 +30,7 @@ public class SeedLoaderTests
         loadedSeed.Modules.AssignTo(out var modules);
 
         modules            .ShouldHaveSingleItem();
-        modules[0].Name    .ShouldBe("(init)");
+        modules[0].Name    .ShouldBe("init");
         modules[0].Provides.ShouldBeEmpty();
         modules[0].Requires.ShouldBeEmpty();
         modules[0].Batches .ShouldBeEmpty();
@@ -48,7 +48,7 @@ public class SeedLoaderTests
 
         modules.Length       .ShouldBe(4);
 
-        modules[0].Name      .ShouldBe("(init)");
+        modules[0].Name      .ShouldBe("init");
         modules[0].WorkerId  .ShouldBe(0);
         modules[0].Provides  .ShouldBeEmpty();
         modules[0].Requires  .ShouldBeEmpty();
@@ -117,7 +117,7 @@ public class SeedLoaderTests
 
         modules.Length     .ShouldBe(2);
 
-        modules[0].Name    .ShouldBe("(init)");
+        modules[0].Name    .ShouldBe("init");
         modules[0].WorkerId.ShouldBe(0);
         modules[0].Provides.ShouldBeEmpty();
         modules[0].Requires.ShouldBeEmpty();
@@ -142,7 +142,7 @@ public class SeedLoaderTests
 
         modules.Length.ShouldBe(1);
 
-        modules[0].Name      .ShouldBe("(init)");
+        modules[0].Name      .ShouldBe("init");
         modules[0].WorkerId  .ShouldBe(0);
         modules[0].Provides  .ShouldBeEmpty();
         modules[0].Requires  .ShouldBeEmpty();

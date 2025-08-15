@@ -20,7 +20,7 @@ internal class SeedLoader
     private readonly SortedSet<string>                  _provides;
     private readonly SortedSet<string>                  _requires;
 
-    private const string InitialModuleName = "(init)";
+    private const string InitialModuleName = "init";
 
     private string _moduleName = InitialModuleName;
     private bool   _allWorkers = false;

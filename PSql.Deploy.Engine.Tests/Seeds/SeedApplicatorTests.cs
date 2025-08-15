@@ -27,7 +27,7 @@ public class SeedApplicatorTests : TestHarnessBase
 
         _seed = MakeSeed(
             "Test",
-            MakeModule("(init)", ["init-sql"]),
+            MakeModule("init", ["init-sql"]),
             MakeModule("A", ["a-sql"], provides: ["X"]),
             MakeModule("B", ["b-sql"], requires: ["X"])
         );
@@ -122,9 +122,9 @@ public class SeedApplicatorTests : TestHarnessBase
         ExpectReportStarting();
         ExpectConnect();
         ExpectPrepare();
-        ExpectReportApplying("(init)"); ExpectExecuteBatch("init-sql");
-        ExpectReportApplying("A");      ExpectExecuteBatch("a-sql");
-        ExpectReportApplying("B");      ExpectExecuteBatch("b-sql");
+        ExpectReportApplying("init"); ExpectExecuteBatch("init-sql");
+        ExpectReportApplying("A");    ExpectExecuteBatch("a-sql");
+        ExpectReportApplying("B");    ExpectExecuteBatch("b-sql");
         ExpectReportApplied(count: 3, TargetDisposition.Successful);
 
         await Applicator.ApplyAsync();
@@ -142,7 +142,7 @@ public class SeedApplicatorTests : TestHarnessBase
     {
         _seed = MakeSeed(
             "Test",
-            MakeModule("(init)", ["init-sql"]),
+            MakeModule("init", ["init-sql"]),
             MakeModule("A", ["a-sql"], requires: ["B"]), // \_ cyclic
             MakeModule("B", ["b-sql"], requires: ["A"])  // /  dependency
         );
@@ -168,7 +168,7 @@ public class SeedApplicatorTests : TestHarnessBase
     {
         _seed = MakeSeed(
             "Test",
-            MakeModule("(init)", ["init-sql"]),
+            MakeModule("init", ["init-sql"]),
             MakeModule("A", ["a-sql"], requires: ["X"]), // \_ unprovided
             MakeModule("B", ["b-sql"], requires: ["X"])  // /  topic
         );
@@ -216,8 +216,8 @@ public class SeedApplicatorTests : TestHarnessBase
         ExpectReportStarting();
         ExpectConnect();
         ExpectPrepare();
-        ExpectReportApplying("(init)"); ExpectExecuteBatch("init-sql");
-        ExpectReportApplying("A");      ExpectExecuteBatch("a-sql", exception: e);
+        ExpectReportApplying("init"); ExpectExecuteBatch("init-sql");
+        ExpectReportApplying("A");    ExpectExecuteBatch("a-sql", exception: e);
         ExpectReportProblem("Database is on fire.");
         ExpectReportApplied(count: 1, TargetDisposition.Failed);
 
