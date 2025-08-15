@@ -60,7 +60,7 @@ public class SeedLoaderTests
         modules[1].Name      .ShouldBe("init-worker");
         modules[1].WorkerId  .ShouldBe(-1);
         modules[1].Provides  .ShouldBeEmpty();
-        modules[1].Requires  .ShouldBeEmpty();
+        modules[1].Requires  .ShouldHaveSingleItem().ShouldBe("init");
         modules[1].Batches   .ShouldHaveSingleItem();
         modules[1].Batches[0].ShouldBe(""
             + "--# WORKER: all"                           + Eol
@@ -70,7 +70,7 @@ public class SeedLoaderTests
         modules[2].Name      .ShouldBe("a");
         modules[2].WorkerId  .ShouldBe(0);
         modules[2].Provides  .ShouldBe(ImmutableArray.Create("x", "y", "z"));
-        modules[2].Requires  .ShouldBeEmpty();
+        modules[2].Requires  .ShouldHaveSingleItem().ShouldBe("init");
         modules[2].Batches   .ShouldHaveSingleItem();
         modules[2].Batches[0].ShouldBe(""
             + "--# PROVIDES: x y"                       + Eol
@@ -85,7 +85,7 @@ public class SeedLoaderTests
         modules[3].Name      .ShouldBe("b");
         modules[3].WorkerId  .ShouldBe(0);
         modules[3].Provides  .ShouldBeEmpty();
-        modules[3].Requires  .ShouldBe(ImmutableArray.Create("x", "y", "z"));
+        modules[3].Requires  .ShouldBe(ImmutableArray.Create("init", "x", "y", "z"));
         modules[3].Batches   .ShouldHaveSingleItem();
         modules[3].Batches[0].ShouldBe(""
             + "--# REQUIRES:  x  y  z"                  + Eol
@@ -126,7 +126,7 @@ public class SeedLoaderTests
         modules[1].Name    .ShouldBe("init-worker");
         modules[1].WorkerId.ShouldBe(-1);
         modules[1].Provides.ShouldBeEmpty();
-        modules[1].Requires.ShouldBeEmpty();
+        modules[1].Requires.ShouldHaveSingleItem().ShouldBe("init");
         modules[1].Batches .ShouldHaveSingleItem();
         modules[1].Batches[0].ShouldBe("--# WORKER: all" + Eol);
     }
