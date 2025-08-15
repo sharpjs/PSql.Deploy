@@ -154,11 +154,6 @@ internal class SeedLoader
 
         _moduleName = arguments[0].Value;
 
-        // Ensure every module (except the initial module) implicitly requires
-        // the initial module
-        if (_moduleName != InitialModuleName)
-            _requires.Add(InitialModuleName);
-
         foreach (Capture argument in arguments.Skip(1))
             _provides.Add(argument.Value);
     }
@@ -208,6 +203,11 @@ internal class SeedLoader
 
     private void EndModule()
     {
+        // Ensure every module except the initial module (or its own
+        // dependencies) implicitly requires the initial module
+        if (_moduleName != InitialModuleName && !_provides.Contains(InitialModuleName))
+            _requires.Add(InitialModuleName);
+
         _modules.Add(new(
             _moduleName,
             _allWorkers ? -1 : 0, // workerId // TODO: constants or a custom struct
