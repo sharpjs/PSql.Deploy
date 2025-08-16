@@ -1,0 +1,3 @@
+--# REQUIRES: pre-init
+--# MODULE: pre-init
+--# PROVIDES: init

@@ -107,6 +107,36 @@ public class SeedLoaderTests
     }
 
     [Test]
+    public void Load_ProvidesInit()
+    {
+        var seed   = WithSeed("ProvidesInit");
+        var loaded = SeedLoader.Load(seed);
+
+        loaded.Seed   .ShouldBeSameAs(seed);
+        loaded.Modules.AssignTo(out var modules);
+
+        modules.Length.ShouldBe(2);
+
+        modules[0].Name      .ShouldBe("init");
+        modules[0].WorkerId  .ShouldBe(0);
+        modules[0].Provides  .ShouldBeEmpty();
+        modules[0].Requires  .ShouldBe(ImmutableArray.Create("pre-init"));
+        modules[0].Batches   .ShouldHaveSingleItem();
+        modules[0].Batches[0].ShouldBe(
+            "--# REQUIRES: pre-init" + Eol
+        );
+
+        modules[1].Name      .ShouldBe("pre-init");
+        modules[1].WorkerId  .ShouldBe(0);
+        modules[1].Provides  .ShouldBe(ImmutableArray.Create("init"));
+        modules[1].Requires  .ShouldBeEmpty();
+        modules[1].Batches   .ShouldHaveSingleItem();
+        modules[1].Batches[0].ShouldBe(
+            "--# PROVIDES: init" + Eol
+        );
+    }
+
+    [Test]
     public void Load_WorkerAll()
     {
         var seed   = WithSeed("WorkerAll");
