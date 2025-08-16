@@ -19,7 +19,9 @@ using AllowNullAttribute = System.Management.Automation.AllowNullAttribute;
 public sealed class GetSqlMigrationsCommand : AsyncPSCmdlet
 {
     /// <summary>
-    ///   <b>-Path:</b> TODO
+    ///   <b>-Path:</b> Path to a directory containing database source code in
+    ///   the layout expected by PSql.Deploy.  The default is the current
+    ///   directory.
     /// </summary>
     [Parameter(
         ParameterSetName  = "Path",
@@ -40,10 +42,10 @@ public sealed class GetSqlMigrationsCommand : AsyncPSCmdlet
 #endif
 
     /// <summary>
-    ///   <b>-Target:</b> TODO
+    ///   <b>-Target:</b> Object specifying how to connect to the database.
     /// </summary>
     /// <remarks>
-    ///   Target | SqlContext | string
+    ///   string | SqlContext | SqlTargetDatabase
     /// </remarks>
     [Parameter(
         ParameterSetName  = "Target",
@@ -55,7 +57,9 @@ public sealed class GetSqlMigrationsCommand : AsyncPSCmdlet
     public SqlTargetDatabase? Target { get; set; }
 
     /// <summary>
-    ///   <b>-MinimumName:</b> TODO
+    ///   <b>-MinimumName:</b> Minimum name of migration to return, or
+    ///   <see langword="null"/> to to return all migrations registered on the
+    ///   target database.  The default is <see langword="null"/>.
     /// </summary>
     [Parameter(ParameterSetName  = "Target")]
     [AllowNull, AllowEmptyString]

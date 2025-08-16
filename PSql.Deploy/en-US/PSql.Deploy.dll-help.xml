@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<helpItems schema="maml"
+            xmlns="http://msh"
+       xmlns:maml="http://schemas.microsoft.com/maml/2004/10"
+    xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10"
+        xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10">
+  <!-- 
+    Copyright Subatomix Research Inc.
+    SPDX-License-Identifier: MIT
+
+    Documentation:
+    https://learn.microsoft.com/en-us/powershell/scripting/developer/help/how-to-create-the-cmdlet-help-file
+  -->
+
+  <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+  <!-- Connect-Sql -->
+
+  <command:command>
+
+    <command:details>
+      <command:name>Get-SqlMigrations</command:name>
+      <command:verb>Get</command:verb>
+      <command:noun>SqlMigrations</command:noun>
+      <maml:description>
+        <maml:para>Lists database schema migrations.</maml:para>
+      </maml:description>
+    </command:details>
+
+    <maml:description>
+      <maml:para>
+        The Get-SqlMigrations cmdlet retrieves a list of database schema migrations from either a filesystem location or a target database.
+      </maml:para>
+      <maml:para>
+        When used with the -Path parameter, this cmdlet lists the migrations defined within the specified source directory.  The source directory must conform to the following layout:
+      </maml:para>
+      <maml:para>
+foo\                    The source directory: a set of migrations and
+ │                        seeds for one database.  The name can vary.
+ │
+ ├─ Migrations\         Migrations for one database.
+ │   │
+ │   ├─ v1.2.3\         One migration.  The name can vary.
+ │   │   │
+ │   │   ├─ _Main.sql   Top-level script for the migration.  It can
+ │   │   │                include other files with the :r directive.
+ │   │   ├─ FileA.sql   Example file included by _Main.sql.
+ │   │   ├─ FileB.sql   Example file included by _Main.sql.
+ │   │   └─ ...         More files, subdirectories, etc.
+ │   │
+ │   └─ ...             More migrations.
+ │
+ ├─ Seeds/              Content seeds for the database (optional).
+ │
+ └─ ...                 PSql.Deploy does not care about other files or
+                          directories present in the source directory.
+      </maml:para>
+      <maml:para>
+        Each subdirectory of {source-directory}\Migrations containing a _Main.sql file is presumed to be a migration.  The name of the subdirectory is the name of the migration.  Migration discovery is not recursive; only one level of subdirectories is examined.  Migration order is by case-insensitive ordinal comparison of the migration names.
+      </maml:para>
+      <maml:para>
+        Migrations named _Begin or _End, if present, are special pseudo-migrations intended for setup and teardown scripts.  They execute during every migration application session, before and after any other migrations, respectively.
+      </maml:para>
+      <maml:para>
+        When used with the -Target parameter, this cmdlet lists the migrations already applied to the target database.  The optional -MinimumName parameter excludes applied migrations with names lesser/earlier than the specified name.
+      </maml:para>
+      <maml:para>
+        For each migration discovered, this cmdlet outputs a Migration object with Name, Path, and other properties.
+      </maml:para>
+    </maml:description>
+
+    <command:syntax>
+
+      <!-- ParameterSetName: Path -->
+      <command:syntaxItem>
+        <maml:name>Get-SqlMigrations</maml:name>
+        <command:parameter required="false" position="0" pipelineInput="True (ByValue)" globbing="false">
+          <maml:name>Path</maml:name>
+          <command:parameterValue required="true">string</command:parameterValue>
+        </command:parameter>
+      </command:syntaxItem>
+
+      <!-- ParameterSetName: Target -->
+      <command:syntaxItem>
+        <maml:name>Get-SqlMigrations</maml:name>
+        <command:parameter required="true" position="0" pipelineInput="True (ByValue)" globbing="false">
+          <maml:name>Target</maml:name>
+          <command:parameterValue required="true">string | PSql.SqlContext | PSql.Deploy.SqlTargetDatabase</command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
+          <maml:name>MinimumName</maml:name>
+          <command:parameterValue required="true">string</command:parameterValue>
+        </command:parameter>
+      </command:syntaxItem>
+
+    </command:syntax>
+
+    <command:parameters>
+
+      <!-- -Path -->
+      <command:parameter required="false" position="0" pipelineInput="True (ByValue)" globbing="false" aliases="PSPath">
+        <maml:name>Path</maml:name>
+        <maml:description>
+          <maml:para>Path to a directory containing database source code in the layout expected by PSql.Deploy.  The default is the current directory.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">string</command:parameterValue>
+        <dev:type>
+          <maml:name>System.String</maml:name>
+        </dev:type>
+        <dev:defaultValue>$PWD</dev:defaultValue>
+      </command:parameter>
+
+      <!-- -Target -->
+      <command:parameter required="true" position="0" pipelineInput="True (ByValue)" globbing="false" aliases="none">
+        <maml:name>Target</maml:name>
+        <maml:description>
+          <maml:para>Object specifying how to connect to the database.  Accepts the following types of object:</maml:para>
+          <maml:para><!-- blank line --></maml:para>
+          <maml:list>
+            <maml:listItem>
+              <maml:para>string                          a SqlClient connection string</maml:para>
+            </maml:listItem>
+            <maml:listItem>
+              <maml:para>PSql.SqlContext                 returned by the PSql New-SqlContext cmdlet</maml:para>
+            </maml:listItem>
+            <maml:listItem>
+              <maml:para>PSql.Deploy.SqlTargetDatabase   obtained by casting or construction</maml:para>
+            </maml:listItem>
+          </maml:list>
+        </maml:description>
+        <command:parameterValue required="true">string | PSql.SqlContext | PSql.Deploy.SqlTargetDatabase</command:parameterValue>
+        <dev:type>
+          <maml:name>System.String | PSql.SqlContext | PSql.Deploy.SqlTargetDatabase</maml:name>
+        </dev:type>
+        <dev:defaultValue>None</dev:defaultValue>
+      </command:parameter>
+
+      <!-- -MinimumName -->
+      <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
+        <maml:name>MinimumName</maml:name>
+        <maml:description>
+          <maml:para>Minimum name of migration to return, or $null to to return all migrations registered on the target database.  The default is $null.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">string</command:parameterValue>
+        <dev:type>
+          <maml:name>System.String</maml:name>
+        </dev:type>
+        <dev:defaultValue>$null</dev:defaultValue>
+      </command:parameter>
+
+    </command:parameters>
+
+    <command:inputTypes>
+      <command:inputType>
+        <dev:type>
+          <maml:name>string</maml:name>
+        </dev:type>
+        <maml:description>
+          <maml:para>A SqlClient connection string specifying how to connect to a target database.</maml:para>
+        </maml:description>
+      </command:inputType>
+      <command:inputType>
+        <dev:type>
+          <maml:name>PSql.SqlContext</maml:name>
+        </dev:type>
+        <maml:description>
+          <maml:para>An object specifying how to connect to a target database.  Obtain via the New-SqlContext cmdlet.</maml:para>
+        </maml:description>
+      </command:inputType>
+      <command:inputType>
+        <dev:type>
+          <maml:name>PSql.Deploy.SqlTargetDatabase</maml:name>
+        </dev:type>
+        <maml:description>
+          <maml:para>An object specifying how to connect to a target database.  Obtain by casting a string or SqlContext, via a [PSql.Deploy.SqlTargetDatabase]::new(...) construtor, or from the Targets property of a database group object returned by the New-SqlTargetDatabaseGroup cmdlet.</maml:para>
+        </maml:description>
+      </command:inputType>
+    </command:inputTypes>
+
+    <command:returnValues>
+      <command:returnValue>
+        <dev:type>
+          <maml:name>PSql.Deploy.Migrations.Migration</maml:name>
+        </dev:type>
+        <maml:description>
+          <maml:para>A database schema migration.</maml:para>
+        </maml:description>
+      </command:returnValue>
+    </command:returnValues>
+
+    <maml:relatedLinks>
+      <maml:navigationLink>
+        <maml:linkText>PSql:</maml:linkText>
+        <maml:uri>https://github.com/sharpjs/PSql</maml:uri>
+      </maml:navigationLink>
+      <maml:navigationLink>
+        <maml:linkText>PSql.Deploy:</maml:linkText>
+        <maml:uri>https://github.com/sharpjs/PSql.Deploy</maml:uri>
+      </maml:navigationLink>
+    </maml:relatedLinks>
+
+  </command:command>
+
+</helpItems>
