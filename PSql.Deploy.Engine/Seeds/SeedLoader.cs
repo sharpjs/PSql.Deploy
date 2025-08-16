@@ -203,8 +203,8 @@ internal class SeedLoader
 
     private void EndModule()
     {
-        // Ensure every module except the initial module (or its own
-        // dependencies) implicitly requires the initial module
+        // Ensure every module except init (or those providing init) implicitly
+        // requires init; this ensure initialization runs before other modules
         if (_moduleName != InitialModuleName && !_provides.Contains(InitialModuleName))
             _requires.Add(InitialModuleName);
 
