@@ -1,0 +1,143 @@
+about_PSql_Deploy
+=================
+
+SHORT DESCRIPTION
+
+PSql.Deploy is a migration and seeding system for SQL Server and Azure SQL
+Database.
+
+
+LONG DESCRIPTION
+
+The PSql.Deploy module provides cmdlets to deal with two core concepts:
+migrations and seeds.  A migration is a SQL script that modifies the schema of
+a target database.  A seed is a SQL script that populates a target database
+with data.  Together, migrations and seeds provide a mechanism to perform
+database deployments in a controlled and repeatable manner.
+
+Source Directory Structure
+
+PSql.Deploy expects migrations and seeds to have a specific filesystem layout.
+
+src\                    The source directory: a set of migrations and
+ │                        seeds for one database design.  The name can vary.
+ │
+ ├─ Migrations\         Migrations.  Required only if there are any migrations.
+ │   │
+ │   ├─ 0001\           One migration.  The name can vary.
+ │   │   │
+ │   │   ├─ _Main.sql   Top-level script for the migration.  It can
+ │   │   │                include other files with the :r directive.
+ │   │   ├─ FileA.sql   Example file included by _Main.sql.
+ │   │   ├─ FileB.sql   Example file included by _Main.sql.
+ │   │   └─ ...         More files, subdirectories, etc.
+ │   │
+ │   └─ ...             More migrations.
+ │
+ ├─ Seeds\              Seeds.  Required only if there are any seeds.
+ │   │
+ │   ├─ TestData\       One seed.  The name can vary.
+ │   │   │
+ │   │   ├─ _Main.sql   Top-level script for the migration.  It can
+ │   │   │                include other files with the :r directive.
+ │   │   ├─ FileA.sql   Example file included by _Main.sql.
+ │   │   ├─ FileB.sql   Example file included by _Main.sql.
+ │   │   └─ ...         More files, subdirectories, etc.
+ │   │
+ │   └─ ...             More migrations.
+ │
+ └─ ...                 PSql.Deploy does not care about other files or
+                          directories present in the source directory.
+
+See the sections below for more details about migrations and seeds.
+
+
+Migrations
+----------
+
+A migration is a SQL script that modifies the schema of a target database.
+
+Each subdirectory of {source-directory}\Migrations containing a _Main.sql file
+is a migration.  The name of the subdirectory is the name of the migration.
+
+PSql.Deploy's Invoke-SqlMigrations cmdlet applies (runs) each migration exactly
+once per target database to evolve the database's schema from its current
+version to the next version.  After applying a migration, the cmdlet records
+the migration's state in a table in the target database so that future
+deployments to the database will skip that migration.
+
+When multiple migrations are present in the source directory but not yet
+applied to a target database, The Invoke-SqlMigrations cmdlet applies them in a
+specific order: from least to greatest by case-insensitive ordinal comparison
+of the migrations' names.  It is therefore important to choose a migration
+naming scheme carefully to fit the development workflow of the database.  See
+below for examples of migration naming schemes.
+
+:: Phases
+
+To facilitate zero- and low-downtime deployments, PSql.Deploy splits deployment
+into three logical phases: Pre, Core, and Post.  Each phase represents a
+different moment within a deployment process.  Each SQL statement within a
+migration executes in exactly one of these phases.  One migration can contain
+statements for multiple phases.
+
+The three phases are:
+
+- Pre
+    This phase occurs before deployment of the workloads that use the target
+    database, perhaps while previously deployed workloads are still running.
+    Migration statements in this phase should make the database compatible with
+    the upcoming workload deployment retaining compatibility with the existing
+    workloads.
+
+- Core
+    This phase occurs at some arbitrary point between the Pre and Post phases.
+    PSql.Deploy interprets statements within this phase as requiring downtime,
+    explicitly breaking a zero-downtime deployment schenario.
+
+- Post
+    This phase occurs after deployment of the workloads that use the target
+    database, while those workloads are running.  Migration statements in this
+    phase should finalize or clean up after the changes made in earlier phases
+    while retaining compatibility with the deployed workloads.
+
+Deployments for which downtime is not a concern can use any phase, with Core
+being the easiest to use.
+
+:: Migration Naming Schemes
+
+Here are some example migration naming schemes:
+
+- Numeric, zero-padded: 0001, 0002, 0003, ...
+    Pros: simple
+    Cons: requires coordination if multiple people author migrations
+      concurrently; requires new scheme if next number exceeds planned width
+    Best for: solo projects or teams with a single migration author where the
+      versioning scheme is unknown or subject to change
+
+- Version, zero-padded: v01.00.00, v01.00.01, v01.01.00, v02.00.00, ...
+    Pros: descriptive; aligned with versioning
+    Cons: requires coordination if multiple people author migrations
+      concurrently; tricky if a version number exceeds planned width
+    Best for: solo projects or teams with a single migration author where the
+      versioning scheme is known and unlikely to change
+
+- Date and description: 2025-08-15-Initial, 2025-08-18-AddUsersTable, ...
+    Pros: descriptive; requires less coordination for multiple authors
+    Cons: need to keep migration name up-to-date during authoring
+    Best for: teams with multiple migration authors
+
+- Date and work item number: 2025-08-15-00042, 2025-08-18-00123, ...
+    Pros: requires less coordination for multiple authors
+    Cons: need to keep migration name up-to-date during authoring; requires
+      knowing work item numbers
+    Best for: teams with multiple migration authors where it is useful to
+      associate migrations with work items, pull requests, etc.
+
+
+Seeds
+-----
+
+A seed is a SQL script that populates a target database with data.
+
+TODO: Describe seeds here.
