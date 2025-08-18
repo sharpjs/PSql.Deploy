@@ -35,9 +35,9 @@
       </maml:para>
       <maml:para>
 foo\                    The source directory: a set of migrations and
- │                        seeds for one database.  The name can vary.
+ │                        seeds for one database layout.  The name can vary.
  │
- ├─ Migrations\         Migrations for one database.
+ ├─ Migrations\         Migrations.
  │   │
  │   ├─ v1.2.3\         One migration.  The name can vary.
  │   │   │
@@ -49,7 +49,7 @@ foo\                    The source directory: a set of migrations and
  │   │
  │   └─ ...             More migrations.
  │
- ├─ Seeds/              Content seeds for the database (optional).
+ ├─ Seeds/              Seeds (optional).  See about_PSql_Deploy for details.
  │
  └─ ...                 PSql.Deploy does not care about other files or
                           directories present in the source directory.
@@ -188,6 +188,9 @@ foo\                    The source directory: a set of migrations and
     </command:returnValues>
 
     <maml:relatedLinks>
+      <maml:navigationLink>
+        <maml:linkText>Get-Help about_PSql_Deploy</maml:linkText>
+      </maml:navigationLink>
       <maml:navigationLink>
         <maml:linkText>PSql:</maml:linkText>
         <maml:uri>https://github.com/sharpjs/PSql</maml:uri>
