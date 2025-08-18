@@ -52,19 +52,36 @@ src\                    The source directory: a set of migrations and
 See the sections below for more details about migrations and seeds.
 
 
+Target Parameter
+----------------
+
+Most PSql.Deploy cmdlets accept a -Target parameter to specify one or more
+target databases on which to operate.
+
+TODO: Expand
+
+
 Migrations
 ----------
 
-A migration is a SQL script that modifies the schema of a target database.
+A migration is a SQL script that evolves a target database's schema from its
+current version to the next version.
 
 Each subdirectory of {source-directory}\Migrations containing a _Main.sql file
 is a migration.  The name of the subdirectory is the name of the migration.
+The _Main.sql file is the entry point for the migration.
 
 PSql.Deploy's Invoke-SqlMigrations cmdlet applies (runs) each migration exactly
-once per target database to evolve the database's schema from its current
-version to the next version.  After applying a migration, the cmdlet records
-the migration's state in a table in the target database so that future
-deployments to the database will skip that migration.
+once per target database.  After applying a migration, the cmdlet records the
+migration's state in a table in the target database.  Future invocations of
+the cmdlet for the same target database will read the table and skip any
+migrations that have already been applied.  Thus the Invoke-SqlMigrations
+cmdlet is idempotent: invoked multiple times against the same target database,
+the cmdlet applies only new migrations and does nothing to a fully-migrated
+database.
+
+The Get-SqlMigrations cmdlet lists the migrations found in a source directory
+or applied to a target database.
 
 When multiple migrations are present in the source directory but not yet
 applied to a target database, The Invoke-SqlMigrations cmdlet applies them in a
@@ -73,7 +90,28 @@ of the migrations' names.  It is therefore important to choose a migration
 naming scheme carefully to fit the development workflow of the database.  See
 below for examples of migration naming schemes.
 
-:: Phases
+Once applied to a target database, a migration should be considered immutable.
+The Invoke-SqlMigrations cmdlet computes a hash of all .sql files within the
+migration directory and subdirectories, recursively.  The cmdlet stores this
+hash as part of the migration state in the target database.  If a subsequent
+invocation finds that the computed hash is different from the stored hash, the
+cmdlet detects that the migration has been modified after application.  The
+cmdlet then reports a validation error and aborts without applying any
+migrations.  To resolve the error, either revert the changes to the migration,
+or update the hash value stored in all target databases (not recommended).
+
+PSql.Deploy supports 'up', or forward, migrations only.  It does not support
+'down' migrations that would revert the database to some prior schema.  Many
+migration activities are inherently destructive -- dropping a table, for
+example.  The work to make those activities reversible is often much more
+complex than the work of the activities themselves, all to enable a feature
+that in practice is seldom used.  Thus PSql.Deploy takes the position that
+'down' migrations are not worth the effort.  If a database schema must revert
+to a prior state, then author a new migration that makes the necessary changes,
+or restore the database from a backup.  Use automated testing to find migration
+problems early, before they reach production.
+
+Phases
 
 To facilitate zero- and low-downtime deployments, PSql.Deploy splits deployment
 into three logical phases: Pre, Core, and Post.  Each phase represents a
@@ -104,7 +142,7 @@ The three phases are:
 Deployments for which downtime is not a concern can use any phase, with Core
 being the easiest to use.
 
-:: Migration Naming Schemes
+Example Migration Naming Schemes
 
 Here are some example migration naming schemes:
 
