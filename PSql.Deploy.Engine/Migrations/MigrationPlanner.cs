@@ -54,7 +54,7 @@ internal readonly ref struct MigrationPlanner
         3 │         Pre │           Core      ^^^^                   │ Post           │
         4 │             │                          Pre     Core      │      Post      │
         5 │             │                          ^^^ Pre      Core │           Post │
-          Time──>                                      ^^^
+            Time──>                                    ^^^
 
         Rules
         =====
@@ -68,7 +68,7 @@ internal readonly ref struct MigrationPlanner
         Migration N's Posts are guaranteed to run after all of Migration N-1's Posts.
 
         Only the greatest dependency name for each migration matters.
-        If Migration A depends on Migration B, then B's Post will run before A's Pre.
+        If Migration B depends on Migration A, then A's Post will run before B's Pre.
     */
 
     private readonly MigrationPlan                        _plan;

@@ -51,6 +51,25 @@ src\                    The source directory: a set of migrations and
 
 See the sections below for more details about migrations and seeds.
 
+TODO: SQLCMD mode support.
+GO
+    Breaks the script into batches.
+
+$(name)
+    Replaced by the value of the variable 'name' in the migration or seed.
+
+:r <file>
+    Include the contents of the specified file in the migration.  The variable
+    $(Path) is available in the included file and expands to the path of the
+    migration or seed file that includes the file.
+
+:setvar <name> <value>
+    Set a variable for the duration of the migration or seed.  The variable
+    $(name) is available in the included file and expands to the value set by
+    this directive.
+
+TODO: General magic comments description.
+
 
 Target Parameter
 ----------------
@@ -117,30 +136,115 @@ To facilitate zero- and low-downtime deployments, PSql.Deploy splits deployment
 into three logical phases: Pre, Core, and Post.  Each phase represents a
 different moment within a deployment process.  Each SQL statement within a
 migration executes in exactly one of these phases.  One migration can contain
-statements for multiple phases.
+statements for multiple phases.  The purposes of the phases are as follows:
 
-The three phases are:
-
-- Pre
+Pre
     This phase occurs before deployment of the workloads that use the target
     database, perhaps while previously deployed workloads are still running.
     Migration statements in this phase should make the database compatible with
-    the upcoming workload deployment retaining compatibility with the existing
-    workloads.
+    the upcoming workload deployment but should retain compatibility with any
+    existing workloads.
 
-- Core
+Core
     This phase occurs at some arbitrary point between the Pre and Post phases.
     PSql.Deploy interprets statements within this phase as requiring downtime,
-    explicitly breaking a zero-downtime deployment schenario.
+    explicitly breaking a zero-downtime deployment schenario.  Migration
+    statements in this phase should make the database compatible with newly
+    deployed workloads and need not retain compatibility with any previously
+    deployed workloads.  This phase is also suitable for deployment scenarios
+    where downtime is not a concern.
 
-- Post
+Post
     This phase occurs after deployment of the workloads that use the target
     database, while those workloads are running.  Migration statements in this
     phase should finalize or clean up after the changes made in earlier phases
     while retaining compatibility with the deployed workloads.
 
-Deployments for which downtime is not a concern can use any phase, with Core
-being the easiest to use.
+Dependencies
+
+PSql.Deploy enables one migration to declare a dependency on another migration.
+The Invoke-SqlMigrations cmdlet handles a dependency in one of two ways.  If
+the required migration has been applied fully to a target database, then the
+dependency is satisfied already, and the cmdlet applies the depending migration
+normally to that target database.  If neither the required migration nor the
+requiring migration has been applied yet to a target database, then the cmdlet
+moves Pre and Post statements into the Core phase as required to satisfy the
+dependency and preserve the guarantees that the cmdlet makes about the order of
+migration statements.  Note that this makes dependency resolution incompatible
+with zero-downtime deployment scenarios, because Core entails downtime.
+
+Ordering Guarantees
+
+The Invoke-SqlMigrations cmdlet makes the following guarantees about the order
+of migration statement execution:
+
+- A migration's Pre-phase statements are guaranteed to execute after all
+    previous migrations' Pre-phase statements.
+
+- A migration's Core-phase statements are guaranteed to execute after all
+    previous migrations' Core-phase statements.
+
+- A migration's Post-phase statements are guaranteed to execute after all
+    previous migrations' Post-phase statements.
+
+- If migration B depends on migration A, then A's Post-phase statements are
+    guaranteed to execute before B's Pre-phase statements.
+
+Example 1: No dependencies
+
+These migrations:
+1 │ Pre Core Post
+2 │ Pre Core Post
+3 │ Pre Core Post
+4 │ Pre Core Post
+5 │ Pre Core Post
+
+Yield this order operations:
+  │ Pre                │ Core                     │ Post                     │
+══╪════════════════════╪══════════════════════════╪══════════════════════════╡
+1 │ Pre                │ Core                     │ Post                     │
+2 │     Pre            │      Core                │      Post                │
+3 │         Pre        │           Core           │           Post           │
+4 │             Pre    │                Core      │                Post      │
+5 │                Pre │                     Core │                     Post │
+    Time──>
+
+Example 2: One dependency
+
+These migrations:
+1 │ Pre Core Post
+2 │ Pre Core Post <──╮
+3 │ Pre Core Post    │
+4 │ Pre Core Post ───╯  Migration 4 depends on Migration 2
+5 │ Pre Core Post
+
+Yield this order operations:
+  │ Pre         │ Core                                       │ Post           │
+══╪═════════════╪════════════════════════════════════════════╪════════════════╡
+1 │ Pre         │ Core           Post                        │                │
+2 │     Pre     │      Core      ^^^^ Post                   │                │
+3 │         Pre │           Core      ^^^^                   │ Post           │
+4 │             │                          Pre     Core      │      Post      │
+5 │             │                          ^^^ Pre      Core │           Post │
+    Time──>                                    ^^^
+
+Magic Comments
+
+A migration may contain 'magic comments', which are special comments that the
+Invoke-SqlMigrations cmdlet interprets as directives.  The cmdlet supports the
+following magic comments:
+
+--# PRE
+    Causes subsequent SQL text to execute in the Pre phase.
+
+--# CORE
+    Causes subsequent SQL text to execute in the Core phase.
+
+--# POST
+    Causes subsequent SQL text to execute in the Post phase.
+
+--# REQUIRES: <migration-name> ...
+    Declares a dependency on one or more migrations.
 
 Example Migration Naming Schemes
 
@@ -171,6 +275,10 @@ Here are some example migration naming schemes:
       knowing work item numbers
     Best for: teams with multiple migration authors where it is useful to
       associate migrations with work items, pull requests, etc.
+
+Squashes
+
+TODO: Describe squashes here.
 
 
 Seeds
