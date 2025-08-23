@@ -119,6 +119,15 @@ cmdlet then reports a validation error and aborts without applying any
 migrations.  To resolve the error, either revert the changes to the migration,
 or update the hash value stored in all target databases (not recommended).
 
+Migrations named _Begin and _End, if present, are 'pseudo-migrations' that
+receive special treatment.  Invoke-SqlMigrations executes _Begin before any
+other migrations and _End after all other migrations.  Furthermore, the cmdlet
+does not record the state of these migrations in the target database.  They
+execute every time the cmdlet runs against a target database and has at least
+one other migration to apply.  _Begin is useful for connection setup tasks such
+as setting the transaction isolation level.  _End is a good place to perform
+cleanup that must occur after every migration session.
+
 PSql.Deploy supports 'up', or forward, migrations only.  It does not support
 'down' migrations that would revert the database to some prior schema.  Many
 migration activities are inherently destructive -- dropping a table, for
@@ -278,12 +287,47 @@ Here are some example migration naming schemes:
 
 Squashes
 
-TODO: Describe squashes here.
+A long-lived project with frequent schema changes will accumulate a large
+number of migrations over time.  For such projects, it is sometimes useful to
+delete old migrations and instead use a create script that creates a database
+already migrated to that poitn in time.  This is known as a 'squash'.  Create
+scripts are outside the scope of PSql.Deploy, but PSql.Deploy supports squashes
+by not caring about completed migrations that are no longer present in the
+source directory.  Nevertheless, there are two rules that must be oserved when
+performing a squash:
+
+1. The oldest unsquashed migration must be same age or older than the oldest
+     backup that is likely to be restored.
+
+1. The oldest unsquashed migration must be same age or older than the create
+     script.
+
+TODO: Describe this better when more brain cells are available.
 
 
 Seeds
 -----
 
 A seed is a SQL script that populates a target database with data.
+
+Each subdirectory of {source-directory}\Seeds containing a _Main.sql file is a
+seed.  The name of the subdirectory is the name of the seed.  The _Main.sql
+file is the entry point for the seed.
+
+Seeds support several magic comments for organizing code into modules with dependencies:
+
+--# MODULE: name [topic ...]
+    Starts a new module with the specified name, optionally declaring provided
+    topics.
+
+--# PROVIDES: topic [topic ...]
+    Indicates that the current module provides the specified topics.
+
+--# REQUIRES: topic [topic ...]
+    Indicates that the current module requires the specified topics.
+
+--# WORKER: all|any
+    Specifies worker execution mode.  'all' means the module executes on all
+    workers; 'any' means it executes on any single worker.
 
 TODO: Describe seeds here.

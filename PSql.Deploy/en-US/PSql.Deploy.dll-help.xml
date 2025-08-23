@@ -13,7 +13,7 @@
   -->
 
   <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
-  <!-- Connect-Sql -->
+  <!-- Get-SqlMigrations -->
 
   <command:command>
 
@@ -22,7 +22,9 @@
       <command:verb>Get</command:verb>
       <command:noun>SqlMigrations</command:noun>
       <maml:description>
-        <maml:para>Lists database schema migrations.</maml:para>
+        <maml:para>
+          Lists database schema migrations.
+        </maml:para>
       </maml:description>
     </command:details>
 
@@ -31,49 +33,38 @@
         The Get-SqlMigrations cmdlet retrieves a list of database schema migrations from either a filesystem location or a target database.
       </maml:para>
       <maml:para>
-        When used with the -Path parameter, this cmdlet lists the migrations defined within the specified source directory.  The source directory must conform to the following layout:
+        When used with no parameters or with the -Path parameter, the cmdlet lists the migrations defined in a filesystem location.  The -Path parameter specifies the location; otherwise, the cmdlet uses the current directory as the location.  The location must conform to the expected PSql.Deploy source directory structure, with migrations in the Migrations subdirectory.  See about_PSql_Deploy for more details about the expected directory structure.
       </maml:para>
       <maml:para>
-foo\                    The source directory: a set of migrations and
- │                        seeds for one database layout.  The name can vary.
- │
- ├─ Migrations\         Migrations.
- │   │
- │   ├─ v1.2.3\         One migration.  The name can vary.
- │   │   │
- │   │   ├─ _Main.sql   Top-level script for the migration.  It can
- │   │   │                include other files with the :r directive.
- │   │   ├─ FileA.sql   Example file included by _Main.sql.
- │   │   ├─ FileB.sql   Example file included by _Main.sql.
- │   │   └─ ...         More files, subdirectories, etc.
- │   │
- │   └─ ...             More migrations.
- │
- ├─ Seeds/              Seeds (optional).  See about_PSql_Deploy for details.
- │
- └─ ...                 PSql.Deploy does not care about other files or
-                          directories present in the source directory.
+        When used with the -Target parameter, the cmdlet lists the migrations already applied to the target database.  The optional -MinimumName parameter excludes applied migrations with names lesser/earlier than the specified name.
       </maml:para>
       <maml:para>
-        Each subdirectory of {source-directory}\Migrations containing a _Main.sql file is presumed to be a migration.  The name of the subdirectory is the name of the migration.  Migration discovery is not recursive; only one level of subdirectories is examined.  Migration order is by case-insensitive ordinal comparison of the migration names.
+        The -InputObject parameter accepts pipeline input or a positional argument.  The cmdlet automatically determines whether to interpret the value as a -Path or -Target argument.
       </maml:para>
       <maml:para>
-        Migrations named _Begin or _End, if present, are special pseudo-migrations intended for setup and teardown scripts.  They execute during every migration application session, before and after any other migrations, respectively.
-      </maml:para>
-      <maml:para>
-        When used with the -Target parameter, this cmdlet lists the migrations already applied to the target database.  The optional -MinimumName parameter excludes applied migrations with names lesser/earlier than the specified name.
-      </maml:para>
-      <maml:para>
-        For each migration discovered, this cmdlet outputs a Migration object with Name, Path, and other properties.
+        For each migration discovered, the cmdlet outputs a Migration object with Name, Path, and other properties.
       </maml:para>
     </maml:description>
 
     <command:syntax>
 
-      <!-- ParameterSetName: Path -->
+      <!-- ParameterSetName: InputObject -->
       <command:syntaxItem>
         <maml:name>Get-SqlMigrations</maml:name>
         <command:parameter required="false" position="0" pipelineInput="True (ByValue)" globbing="false">
+          <maml:name>InputObject</maml:name>
+          <command:parameterValue required="true">object</command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
+          <maml:name>MinimumName</maml:name>
+          <command:parameterValue required="true">string</command:parameterValue>
+        </command:parameter>
+      </command:syntaxItem>
+
+      <!-- ParameterSetName: Path -->
+      <command:syntaxItem>
+        <maml:name>Get-SqlMigrations</maml:name>
+        <command:parameter required="true" position="named" pipelineInput="False" globbing="false">
           <maml:name>Path</maml:name>
           <command:parameterValue required="true">string</command:parameterValue>
         </command:parameter>
@@ -82,9 +73,9 @@ foo\                    The source directory: a set of migrations and
       <!-- ParameterSetName: Target -->
       <command:syntaxItem>
         <maml:name>Get-SqlMigrations</maml:name>
-        <command:parameter required="true" position="0" pipelineInput="True (ByValue)" globbing="false">
+        <command:parameter required="true" position="named" pipelineInput="False" globbing="false">
           <maml:name>Target</maml:name>
-          <command:parameterValue required="true">string | PSql.SqlContext | PSql.Deploy.SqlTargetDatabase</command:parameterValue>
+          <command:parameterValue required="true">object</command:parameterValue>
         </command:parameter>
         <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
           <maml:name>MinimumName</maml:name>
@@ -96,34 +87,65 @@ foo\                    The source directory: a set of migrations and
 
     <command:parameters>
 
+      <!-- -InputObject -->
+      <command:parameter required="false" position="0" pipelineInput="True (ByValue)" globbing="false">
+        <maml:name>InputObject</maml:name>
+        <maml:description>
+          <maml:para>
+            Value for the -Path or -Target parameter.  The cmdlet determines which parameter to use.
+          </maml:para>
+          <maml:para>
+            If the object is a string, the cmdlet assumes the string is a SqlClient connection string for -Target if the string contains a semicolon.  Otherwise, the cmdlet assumes the string is a filesystem path -Path.
+          </maml:para>
+          <maml:para>
+            If the object is not a string, the cmdlet assumes it is a value for the -Target parameter.
+          </maml:para>
+        </maml:description>
+        <command:parameterValue required="true">string | PSql.SqlContext | PSql.Deploy.SqlTargetDatabase</command:parameterValue>
+        <dev:type>
+          <maml:name>System.String | PSql.SqlContext | PSql.Deploy.SqlTargetDatabase</maml:name>
+        </dev:type>
+        <dev:defaultValue>None</dev:defaultValue>
+      </command:parameter>
+
       <!-- -Path -->
-      <command:parameter required="false" position="0" pipelineInput="True (ByValue)" globbing="false" aliases="PSPath">
+      <command:parameter required="true" position="named" pipelineInput="False" globbing="false" aliases="PSPath">
         <maml:name>Path</maml:name>
         <maml:description>
-          <maml:para>Path to a directory containing database source code in the layout expected by PSql.Deploy.  The default is the current directory.</maml:para>
+          <maml:para>
+            Path to a directory containing database source code in the layout expected by PSql.Deploy.
+          </maml:para>
         </maml:description>
         <command:parameterValue required="true">string</command:parameterValue>
         <dev:type>
           <maml:name>System.String</maml:name>
         </dev:type>
-        <dev:defaultValue>$PWD</dev:defaultValue>
+        <dev:defaultValue>None</dev:defaultValue>
       </command:parameter>
 
       <!-- -Target -->
-      <command:parameter required="true" position="0" pipelineInput="True (ByValue)" globbing="false" aliases="none">
+      <command:parameter required="true" position="named" pipelineInput="False" globbing="false" aliases="none">
         <maml:name>Target</maml:name>
         <maml:description>
-          <maml:para>Object specifying how to connect to the database.  Accepts the following types of object:</maml:para>
+          <maml:para>
+            Object specifying how to connect to the database.  Accepts the following types of object:
+          </maml:para>
           <maml:para><!-- blank line --></maml:para>
           <maml:list>
             <maml:listItem>
-              <maml:para>string                          a SqlClient connection string</maml:para>
+              <maml:para>
+                string                          a SqlClient connection string
+              </maml:para>
             </maml:listItem>
             <maml:listItem>
-              <maml:para>PSql.SqlContext                 returned by the PSql New-SqlContext cmdlet</maml:para>
+              <maml:para>
+                PSql.SqlContext                 returned by the PSql New-SqlContext cmdlet
+              </maml:para>
             </maml:listItem>
             <maml:listItem>
-              <maml:para>PSql.Deploy.SqlTargetDatabase   obtained by casting or construction</maml:para>
+              <maml:para>
+                PSql.Deploy.SqlTargetDatabase   obtained by casting or construction
+              </maml:para>
             </maml:listItem>
           </maml:list>
         </maml:description>
@@ -138,7 +160,9 @@ foo\                    The source directory: a set of migrations and
       <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
         <maml:name>MinimumName</maml:name>
         <maml:description>
-          <maml:para>Minimum name of migration to return, or $null to to return all migrations registered on the target database.  The default is $null.</maml:para>
+          <maml:para>
+            Minimum name of migration to return, or $null to to return all migrations registered on the target database.  The default is $null.
+          </maml:para>
         </maml:description>
         <command:parameterValue required="true">string</command:parameterValue>
         <dev:type>
@@ -155,7 +179,9 @@ foo\                    The source directory: a set of migrations and
           <maml:name>string</maml:name>
         </dev:type>
         <maml:description>
-          <maml:para>A SqlClient connection string specifying how to connect to a target database.</maml:para>
+          <maml:para>
+            A SqlClient connection string specifying how to connect to a target database.
+          </maml:para>
         </maml:description>
       </command:inputType>
       <command:inputType>
@@ -163,7 +189,9 @@ foo\                    The source directory: a set of migrations and
           <maml:name>PSql.SqlContext</maml:name>
         </dev:type>
         <maml:description>
-          <maml:para>An object specifying how to connect to a target database.  Obtain via the New-SqlContext cmdlet.</maml:para>
+          <maml:para>
+            An object specifying how to connect to a target database.  Obtain via the New-SqlContext cmdlet.
+          </maml:para>
         </maml:description>
       </command:inputType>
       <command:inputType>
@@ -171,7 +199,9 @@ foo\                    The source directory: a set of migrations and
           <maml:name>PSql.Deploy.SqlTargetDatabase</maml:name>
         </dev:type>
         <maml:description>
-          <maml:para>An object specifying how to connect to a target database.  Obtain by casting a string or SqlContext, via a [PSql.Deploy.SqlTargetDatabase]::new(...) construtor, or from the Targets property of a database group object returned by the New-SqlTargetDatabaseGroup cmdlet.</maml:para>
+          <maml:para>
+            An object specifying how to connect to a target database.  Obtain by casting a string or SqlContext, via a [PSql.Deploy.SqlTargetDatabase]::new(...) construtor, or from the Targets property of a database group object returned by the New-SqlTargetDatabaseGroup cmdlet.
+          </maml:para>
         </maml:description>
       </command:inputType>
     </command:inputTypes>
@@ -182,7 +212,9 @@ foo\                    The source directory: a set of migrations and
           <maml:name>PSql.Deploy.Migrations.Migration</maml:name>
         </dev:type>
         <maml:description>
-          <maml:para>A database schema migration.</maml:para>
+          <maml:para>
+            A database schema migration.
+          </maml:para>
         </maml:description>
       </command:returnValue>
     </command:returnValues>
@@ -192,12 +224,801 @@ foo\                    The source directory: a set of migrations and
         <maml:linkText>Get-Help about_PSql_Deploy</maml:linkText>
       </maml:navigationLink>
       <maml:navigationLink>
-        <maml:linkText>PSql:</maml:linkText>
-        <maml:uri>https://github.com/sharpjs/PSql</maml:uri>
+        <maml:linkText>Get-Help New-SqlContext</maml:linkText>
+      </maml:navigationLink>
+      <maml:navigationLink>
+        <maml:linkText>Get-Help New-SqlTargetDatabaseGroup</maml:linkText>
       </maml:navigationLink>
       <maml:navigationLink>
         <maml:linkText>PSql.Deploy:</maml:linkText>
         <maml:uri>https://github.com/sharpjs/PSql.Deploy</maml:uri>
+      </maml:navigationLink>
+      <maml:navigationLink>
+        <maml:linkText>PSql:</maml:linkText>
+        <maml:uri>https://github.com/sharpjs/PSql</maml:uri>
+      </maml:navigationLink>
+    </maml:relatedLinks>
+
+  </command:command>
+
+  <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+  <!-- Invoke-SqlMigrations -->
+
+  <command:command>
+
+    <command:details>
+      <command:name>Invoke-SqlMigrations</command:name>
+      <command:verb>Invoke</command:verb>
+      <command:noun>SqlMigrations</command:noun>
+      <maml:description>
+        <maml:para>
+          Invokes database schema migrations against target databases.
+        </maml:para>
+      </maml:description>
+    </command:details>
+
+    <maml:description>
+      <maml:para>
+        The Invoke-SqlMigrations cmdlet applies database schema migrations defined in a filesystem location to one or more target databases.
+      </maml:para>
+      <maml:para>
+        A migration is a SQL script that modifies the schema of a target database.  The SQL script may contain magic comments that organize its statements into deployment phases or declare dependencies on prerequisite migrations.  See about_PSql_Deploy for more details.
+      </maml:para>
+    </maml:description>
+
+    <command:syntax>
+      <command:syntaxItem>
+        <maml:name>Invoke-SqlMigrations</maml:name>
+        <command:parameter required="true" position="0" pipelineInput="True (ByValue)" globbing="false">
+          <maml:name>Target</maml:name>
+          <command:parameterValue required="true">object[]</command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
+          <maml:name>Path</maml:name>
+          <command:parameterValue required="true">string</command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
+          <maml:name>Phase</maml:name>
+          <command:parameterValue required="true">MigrationPhase[]</command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
+          <maml:name>MaximumMigrationName</maml:name>
+          <command:parameterValue required="true">string</command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
+          <maml:name>AllowContentInCorePhase</maml:name>
+          <command:parameterValue required="false">SwitchParameter</command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
+          <maml:name>MaxErrorCount</maml:name>
+          <command:parameterValue required="true">int</command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
+          <maml:name>WhatIf</maml:name>
+          <command:parameterValue required="false">SwitchParameter</command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
+          <maml:name>Confirm</maml:name>
+          <command:parameterValue required="false">SwitchParameter</command:parameterValue>
+        </command:parameter>
+      </command:syntaxItem>
+    </command:syntax>
+
+    <command:parameters>
+
+      <!-- -Target -->
+      <command:parameter required="true" position="0" pipelineInput="True (ByValue)" globbing="false" aliases="none">
+        <maml:name>Target</maml:name>
+        <maml:description>
+          <maml:para>
+            Objects specifying target databases.  Accepts the following types of object:
+          </maml:para>
+          <maml:para></maml:para>
+          <maml:list>
+            <maml:listItem>
+              <maml:para>
+                string                               a SqlClient connection string
+              </maml:para>
+            </maml:listItem>
+            <maml:listItem>
+              <maml:para>
+                PSql.SqlContext                      returned by the PSql New-SqlContext cmdlet
+              </maml:para>
+            </maml:listItem>
+            <maml:listItem>
+              <maml:para>
+                PSql.Deploy.SqlTargetDatabase        obtained by casting or construction
+              </maml:para>
+            </maml:listItem>
+            <maml:listItem>
+              <maml:para>
+                PSql.Deploy.SqlTargetDatabaseGroup   returned by the New-SqlTargetDatabaseGroup cmdlet
+              </maml:para>
+            </maml:listItem>
+          </maml:list>
+        </maml:description>
+        <command:parameterValue required="true">(string | SqlContext | SqlTargetDatabase | SqlTargetDatabaseGroup)[]</command:parameterValue>
+        <dev:type>
+          <maml:name>(System.String | PSql.SqlContext | PSql.Deploy.SqlTargetDatabase | PSql.Deploy.SqlTargetDatabaseGroup)[]</maml:name>
+        </dev:type>
+        <dev:defaultValue>None</dev:defaultValue>
+      </command:parameter>
+
+      <!-- -Path -->
+      <command:parameter required="false" position="named" pipelineInput="False" globbing="false" aliases="PSPath, SourcePath">
+        <maml:name>Path</maml:name>
+        <maml:description>
+          <maml:para>
+            Path to a directory containing database source code in the layout expected by PSql.Deploy.  The default is the current directory.
+          </maml:para>
+        </maml:description>
+        <command:parameterValue required="true">string</command:parameterValue>
+        <dev:type>
+          <maml:name>System.String</maml:name>
+        </dev:type>
+        <dev:defaultValue>$PWD</dev:defaultValue>
+      </command:parameter>
+
+      <!-- -Phase -->
+      <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
+        <maml:name>Phase</maml:name>
+        <maml:description>
+          <maml:para>
+            Deployment phases for which to run migrations.  Valid values are:
+          </maml:para>
+          <maml:para></maml:para>
+          <maml:list>
+            <maml:listItem>
+              <maml:para>
+                Pre - This phase occurs before deployment of the workloads that use the target databases, perhaps while previously deployed workloads are still running.
+              </maml:para>
+            </maml:listItem>
+            <maml:listItem>
+              <maml:para>
+                Core - This phase occurs during deployment of workloads that use the target databases.  PSql.Deploy interprets statements within this phase as requiring downtime, explicitly breaking a zero-downtime deployment schenario.  This phase is also suitable for deployment scenarios where downtime is not a concern.
+              </maml:para>
+            </maml:listItem>
+            <maml:listItem>
+              <maml:para>
+                Post - This phase occurs after deployment of the workloads that use the target databases, while those workloads are running.
+              </maml:para>
+            </maml:listItem>
+          </maml:list>
+          <maml:para>
+            If this parameter is not specified, all phases are enabled.
+          </maml:para>
+        </maml:description>
+        <command:parameterValue required="true">MigrationPhase[]</command:parameterValue>
+        <dev:type>
+          <maml:name>PSql.Deploy.Migrations.MigrationPhase[]</maml:name>
+        </dev:type>
+        <dev:defaultValue>All phases</dev:defaultValue>
+      </command:parameter>
+
+      <!-- -MaximumMigrationName -->
+      <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
+        <maml:name>MaximumMigrationName</maml:name>
+        <maml:description>
+          <maml:para>
+            Maximum name of migrations to apply.  Only migrations with names less than or equal to the specified name will be applied.
+          </maml:para>
+        </maml:description>
+        <command:parameterValue required="true">string</command:parameterValue>
+        <dev:type>
+          <maml:name>System.String</maml:name>
+        </dev:type>
+        <dev:defaultValue>$null</dev:defaultValue>
+      </command:parameter>
+
+      <!-- -AllowContentInCorePhase -->
+      <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
+        <maml:name>AllowContentInCorePhase</maml:name>
+        <maml:description>
+          <maml:para>
+            Allow migration content in the Core phase.  If not given, Invoke-SqlMigrations exits with a validation error if any migration content exists in the core phase.
+          </maml:para>
+        </maml:description>
+        <command:parameterValue required="false">SwitchParameter</command:parameterValue>
+        <dev:type>
+          <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+        </dev:type>
+        <dev:defaultValue>False</dev:defaultValue>
+      </command:parameter>
+
+      <!-- -MaxErrorCount -->
+      <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
+        <maml:name>MaxErrorCount</maml:name>
+        <maml:description>
+          <maml:para>
+            Maximum count of errors to allow.  If the count of errors exceeds this value, the command attempts to cancel in-progress operations and terminates early.
+          </maml:para>
+        </maml:description>
+        <command:parameterValue required="true">int</command:parameterValue>
+        <dev:type>
+          <maml:name>System.Int32</maml:name>
+        </dev:type>
+        <dev:defaultValue>0</dev:defaultValue>
+      </command:parameter>
+
+      <!-- -WhatIf -->
+      <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
+        <maml:name>WhatIf</maml:name>
+        <maml:description>
+          <maml:para>
+            Shows the actions that the cmdlet would perform, but does not actually perform the actions.
+          </maml:para>
+        </maml:description>
+        <command:parameterValue required="false">SwitchParameter</command:parameterValue>
+        <dev:type>
+          <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+        </dev:type>
+        <dev:defaultValue>False</dev:defaultValue>
+      </command:parameter>
+
+      <!-- -Confirm -->
+      <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
+        <maml:name>Confirm</maml:name>
+        <maml:description>
+          <maml:para>
+            Prompts for confirmation.
+          </maml:para>
+        </maml:description>
+        <command:parameterValue required="false">SwitchParameter</command:parameterValue>
+        <dev:type>
+          <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+        </dev:type>
+        <dev:defaultValue></dev:defaultValue>
+      </command:parameter>
+
+    </command:parameters>
+
+    <command:inputTypes>
+      <command:inputType>
+        <dev:type>
+          <maml:name>string</maml:name>
+        </dev:type>
+        <maml:description>
+          <maml:para>
+            A SqlClient connection string specifying how to connect to a target database.
+          </maml:para>
+        </maml:description>
+      </command:inputType>
+      <command:inputType>
+        <dev:type>
+          <maml:name>PSql.SqlContext</maml:name>
+        </dev:type>
+        <maml:description>
+          <maml:para>
+            An object specifying how to connect to a target database.  Obtain via the New-SqlContext cmdlet.
+          </maml:para>
+        </maml:description>
+      </command:inputType>
+      <command:inputType>
+        <dev:type>
+          <maml:name>PSql.Deploy.SqlTargetDatabase</maml:name>
+        </dev:type>
+        <maml:description>
+          <maml:para>
+            An object specifying how to connect to a target database.  Obtain by casting a string or SqlContext, via a [PSql.Deploy.SqlTargetDatabase]::new(...) construtor, or from the Targets property of a database group object returned by the New-SqlTargetDatabaseGroup cmdlet.
+          </maml:para>
+        </maml:description>
+      </command:inputType>
+      <command:inputType>
+        <dev:type>
+          <maml:name>PSql.Deploy.SqlTargetDatabaseGroup</maml:name>
+        </dev:type>
+        <maml:description>
+          <maml:para>
+            An object specifying a set of target databases and parallelism options.  Obtain via the New-SqlTargetDatabaseGroup cmdlet.
+          </maml:para>
+        </maml:description>
+      </command:inputType>
+    </command:inputTypes>
+
+    <command:returnValues>
+      <command:returnValue>
+        <dev:type>
+          <maml:name>None</maml:name>
+        </dev:type>
+        <maml:description>
+          <maml:para>
+            This cmdlet does not return any objects.
+          </maml:para>
+        </maml:description>
+      </command:returnValue>
+    </command:returnValues>
+
+    <maml:relatedLinks>
+      <maml:navigationLink>
+        <maml:linkText>Get-Help about_PSql_Deploy</maml:linkText>
+      </maml:navigationLink>
+      <maml:navigationLink>
+        <maml:linkText>Get-Help Get-SqlMigrations</maml:linkText>
+      </maml:navigationLink>
+      <maml:navigationLink>
+        <maml:linkText>Get-Help New-SqlContext</maml:linkText>
+      </maml:navigationLink>
+      <maml:navigationLink>
+        <maml:linkText>Get-Help New-SqlTargetDatabaseGroup</maml:linkText>
+      </maml:navigationLink>
+      <maml:navigationLink>
+        <maml:linkText>PSql.Deploy:</maml:linkText>
+        <maml:uri>https://github.com/sharpjs/PSql.Deploy</maml:uri>
+      </maml:navigationLink>
+      <maml:navigationLink>
+        <maml:linkText>PSql:</maml:linkText>
+        <maml:uri>https://github.com/sharpjs/PSql</maml:uri>
+      </maml:navigationLink>
+    </maml:relatedLinks>
+
+  </command:command>
+
+  <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+  <!-- Invoke-SqlSeed -->
+
+  <command:command>
+
+    <command:details>
+      <command:name>Invoke-SqlSeed</command:name>
+      <command:verb>Invoke</command:verb>
+      <command:noun>SqlSeed</command:noun>
+      <maml:description>
+        <maml:para>
+          Invokes database content seeds against sets of target databases.
+        </maml:para>
+      </maml:description>
+    </command:details>
+
+    <maml:description>
+      <maml:para>
+        The Invoke-SqlSeed cmdlet applies database content seeds defined in a filesystem location to one or more target databases.
+      </maml:para>
+      <maml:para>
+        A seed is a SQL script that populate a target database with data.  The SQL script typically contains magic comments that organize its statements into multiple modules, with inter-module dependencies that establish the order of application.  A seed is typically applied on a fully migrated target database to populate test data, to load data from other databases, or to add other required content.   See about_PSql_Deploy for more details.
+      </maml:para>
+    </maml:description>
+
+    <command:syntax>
+      <command:syntaxItem>
+        <maml:name>Invoke-SqlSeed</maml:name>
+        <command:parameter required="true" position="0" pipelineInput="True (ByValue)" globbing="false">
+          <maml:name>Target</maml:name>
+          <command:parameterValue required="true">object[]</command:parameterValue>
+        </command:parameter>
+        <command:parameter required="true" position="1" pipelineInput="False" globbing="false">
+          <maml:name>Seed</maml:name>
+          <command:parameterValue required="true">string[]</command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
+          <maml:name>Path</maml:name>
+          <command:parameterValue required="true">string</command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
+          <maml:name>Define</maml:name>
+          <command:parameterValue required="true">hashtable</command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
+          <maml:name>MaxErrorCount</maml:name>
+          <command:parameterValue required="true">int</command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
+          <maml:name>WhatIf</maml:name>
+          <command:parameterValue required="false">SwitchParameter</command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
+          <maml:name>Confirm</maml:name>
+          <command:parameterValue required="false">SwitchParameter</command:parameterValue>
+        </command:parameter>
+      </command:syntaxItem>
+    </command:syntax>
+
+    <command:parameters>
+      <!-- -Target -->
+      <command:parameter required="true" position="0" pipelineInput="True (ByValue)" globbing="false" aliases="none">
+        <maml:name>Target</maml:name>
+        <maml:description>
+          <maml:para>
+            Objects specifying target databases.  Accepts the following types of object:
+          </maml:para>
+          <maml:para></maml:para>
+          <maml:list>
+            <maml:listItem>
+              <maml:para>
+                string                               a SqlClient connection string
+              </maml:para>
+            </maml:listItem>
+            <maml:listItem>
+              <maml:para>
+                PSql.SqlContext                      returned by the PSql New-SqlContext cmdlet
+              </maml:para>
+            </maml:listItem>
+            <maml:listItem>
+              <maml:para>
+                PSql.Deploy.SqlTargetDatabase        obtained by casting or construction
+              </maml:para>
+            </maml:listItem>
+            <maml:listItem>
+              <maml:para>
+                PSql.Deploy.SqlTargetDatabaseGroup   returned by the New-SqlTargetDatabaseGroup cmdlet
+              </maml:para>
+            </maml:listItem>
+          </maml:list>
+        </maml:description>
+        <command:parameterValue required="true">(string | SqlContext | SqlTargetDatabase | SqlTargetDatabaseGroup)[]</command:parameterValue>
+        <dev:type>
+          <maml:name>(System.String | PSql.SqlContext | PSql.Deploy.SqlTargetDatabase | PSql.Deploy.SqlTargetDatabaseGroup)[]</maml:name>
+        </dev:type>
+        <dev:defaultValue>None</dev:defaultValue>
+      </command:parameter>
+
+      <!-- -Seed -->
+      <command:parameter required="true" position="1" pipelineInput="False" globbing="false" aliases="none">
+        <maml:name>Seed</maml:name>
+        <maml:description>
+          <maml:para>
+            Names of seeds to apply.  Each name should correspond to a subdirectory of the Seeds directory in the source path.
+          </maml:para>
+        </maml:description>
+        <command:parameterValue required="true">string[]</command:parameterValue>
+        <dev:type>
+          <maml:name>System.String[]</maml:name>
+        </dev:type>
+        <dev:defaultValue>None</dev:defaultValue>
+      </command:parameter>
+
+      <!-- -Path -->
+      <command:parameter required="false" position="named" pipelineInput="False" globbing="false" aliases="PSPath, SourcePath">
+        <maml:name>Path</maml:name>
+        <maml:description>
+          <maml:para>
+            Path to a directory containing database source code in the layout expected by PSql.Deploy.  The default is the current directory.
+          </maml:para>
+        </maml:description>
+        <command:parameterValue required="true">string</command:parameterValue>
+        <dev:type>
+          <maml:name>System.String</maml:name>
+        </dev:type>
+        <dev:defaultValue>$PWD</dev:defaultValue>
+      </command:parameter>
+
+      <!-- -Define -->
+      <command:parameter required="false" position="named" pipelineInput="False" globbing="false" aliases="none">
+        <maml:name>Define</maml:name>
+        <maml:description>
+          <maml:para>
+            SQLCMD preprocessor variables to define.  These variables are available within seed scripts and can be referenced using $(VariableName) syntax.
+          </maml:para>
+        </maml:description>
+        <command:parameterValue required="true">hashtable</command:parameterValue>
+        <dev:type>
+          <maml:name>System.Collections.Hashtable</maml:name>
+        </dev:type>
+        <dev:defaultValue>@{}</dev:defaultValue>
+      </command:parameter>
+
+      <!-- -MaxErrorCount -->
+      <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
+        <maml:name>MaxErrorCount</maml:name>
+        <maml:description>
+          <maml:para>
+            Maximum count of errors to allow.  If the count of errors exceeds this value, the command attempts to cancel in-progress operations and terminates early.
+          </maml:para>
+        </maml:description>
+        <command:parameterValue required="true">int</command:parameterValue>
+        <dev:type>
+          <maml:name>System.Int32</maml:name>
+        </dev:type>
+        <dev:defaultValue>0</dev:defaultValue>
+      </command:parameter>
+
+      <!-- -WhatIf -->
+      <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
+        <maml:name>WhatIf</maml:name>
+        <maml:description>
+          <maml:para>
+            Shows the actions that the cmdlet would perform, but does not actually perform the actions.
+          </maml:para>
+        </maml:description>
+        <command:parameterValue required="false">SwitchParameter</command:parameterValue>
+        <dev:type>
+          <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+        </dev:type>
+        <dev:defaultValue>False</dev:defaultValue>
+      </command:parameter>
+
+      <!-- -Confirm -->
+      <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
+        <maml:name>Confirm</maml:name>
+        <maml:description>
+          <maml:para>
+            Prompts for confirmation.
+          </maml:para>
+        </maml:description>
+        <command:parameterValue required="false">SwitchParameter</command:parameterValue>
+        <dev:type>
+          <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+        </dev:type>
+        <dev:defaultValue></dev:defaultValue>
+      </command:parameter>
+
+    </command:parameters>
+
+    <command:inputTypes>
+      <command:inputType>
+        <dev:type>
+          <maml:name>string</maml:name>
+        </dev:type>
+        <maml:description>
+          <maml:para>
+            A SqlClient connection string specifying how to connect to a target database.
+          </maml:para>
+        </maml:description>
+      </command:inputType>
+      <command:inputType>
+        <dev:type>
+          <maml:name>PSql.SqlContext</maml:name>
+        </dev:type>
+        <maml:description>
+          <maml:para>
+            An object specifying how to connect to a target database.  Obtain via the New-SqlContext cmdlet.
+          </maml:para>
+        </maml:description>
+      </command:inputType>
+      <command:inputType>
+        <dev:type>
+          <maml:name>PSql.Deploy.SqlTargetDatabase</maml:name>
+        </dev:type>
+        <maml:description>
+          <maml:para>
+            An object specifying how to connect to a target database.  Obtain by casting a string or SqlContext, via a [PSql.Deploy.SqlTargetDatabase]::new(...) construtor, or from the Targets property of a database group object returned by the New-SqlTargetDatabaseGroup cmdlet.
+          </maml:para>
+        </maml:description>
+      </command:inputType>
+      <command:inputType>
+        <dev:type>
+          <maml:name>PSql.Deploy.SqlTargetDatabaseGroup</maml:name>
+        </dev:type>
+        <maml:description>
+          <maml:para>
+            An object specifying a set of target databases and parallelism options.  Obtain via the New-SqlTargetDatabaseGroup cmdlet.
+          </maml:para>
+        </maml:description>
+      </command:inputType>
+    </command:inputTypes>
+
+    <command:returnValues>
+      <command:returnValue>
+        <dev:type>
+          <maml:name>None</maml:name>
+        </dev:type>
+        <maml:description>
+          <maml:para>
+            This cmdlet does not return any objects.
+          </maml:para>
+        </maml:description>
+      </command:returnValue>
+    </command:returnValues>
+
+    <maml:relatedLinks>
+      <maml:navigationLink>
+        <maml:linkText>Get-Help about_PSql_Deploy</maml:linkText>
+      </maml:navigationLink>
+      <maml:navigationLink>
+        <maml:linkText>Get-Help New-SqlContext</maml:linkText>
+      </maml:navigationLink>
+      <maml:navigationLink>
+        <maml:linkText>Get-Help New-SqlTargetDatabaseGroup</maml:linkText>
+      </maml:navigationLink>
+      <maml:navigationLink>
+        <maml:linkText>PSql.Deploy:</maml:linkText>
+        <maml:uri>https://github.com/sharpjs/PSql.Deploy</maml:uri>
+      </maml:navigationLink>
+      <maml:navigationLink>
+        <maml:linkText>PSql:</maml:linkText>
+        <maml:uri>https://github.com/sharpjs/PSql</maml:uri>
+      </maml:navigationLink>
+    </maml:relatedLinks>
+
+  </command:command>
+
+  <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+  <!-- New-SqlTargetDatabaseGroup -->
+
+  <command:command>
+
+    <command:details>
+      <command:name>New-SqlTargetDatabaseGroup</command:name>
+      <command:verb>New</command:verb>
+      <command:noun>SqlTargetDatabaseGroup</command:noun>
+      <maml:description>
+        <maml:para>
+          Creates an object specifying a set of target databases with defined parallelism.
+        </maml:para>
+      </maml:description>
+    </command:details>
+
+    <maml:description>
+      <maml:para>
+        The New-SqlTargetDatabaseGroup cmdlet creates a SqlTargetDatabaseGroup object, which specifies a set of target databases along with the maximum degrees of parallelism with which to operate against those databases.  The SqlTargetDatabaseGroup object is usable in the -Target parameter of the Invoke-SqlMigrations and Invoke-SqlSeed cmdlets.
+      </maml:para>
+      <maml:para>
+        The parallelism properties include MaxParallelism, which specifies how many databases in the group can be processed simultaneously, and MaxParallelismPerDatabase, which specifies how many operations can be performed against a single database at one time.  These properties allow you to tune performance when working with large numbers of databases.
+      </maml:para>
+      <maml:para>
+        The target database group supports an optional descriptive name, which will appear in command output and logs when operations are performed against the group.
+      </maml:para>
+    </maml:description>
+
+    <command:syntax>
+      <command:syntaxItem>
+        <maml:name>New-SqlTargetDatabaseGroup</maml:name>
+        <command:parameter required="true" position="0" pipelineInput="True (ByValue)" globbing="false">
+          <maml:name>Target</maml:name>
+          <command:parameterValue required="true">object[]</command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" position="1" pipelineInput="False" globbing="false">
+          <maml:name>Name</maml:name>
+          <command:parameterValue required="true">string</command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
+          <maml:name>MaxParallelism</maml:name>
+          <command:parameterValue required="true">int</command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
+          <maml:name>MaxParallelismPerDatabase</maml:name>
+          <command:parameterValue required="true">int</command:parameterValue>
+        </command:parameter>
+      </command:syntaxItem>
+    </command:syntax>
+
+    <command:parameters>
+
+      <!-- -Target -->
+      <command:parameter required="true" position="0" pipelineInput="True (ByValue)" globbing="false" aliases="none">
+        <maml:name>Target</maml:name>
+        <maml:description>
+          <maml:para>
+            Objects specifying how to connect to the target databases in the group.  Accepts the following types of objects:
+          </maml:para>
+          <maml:para></maml:para>
+          <maml:list>
+            <maml:listItem>
+              <maml:para>
+                string                         a SqlClient connection string
+              </maml:para>
+            </maml:listItem>
+            <maml:listItem>
+              <maml:para>
+                PSql.SqlContext                returned by the PSql New-SqlContext cmdlet
+              </maml:para>
+            </maml:listItem>
+            <maml:listItem>
+              <maml:para>
+                PSql.Deploy.SqlTargetDatabase  obtained by casting or construction
+              </maml:para>
+            </maml:listItem>
+          </maml:list>
+        </maml:description>
+        <command:parameterValue required="true">(string | SqlContext | SqlTargetDatabase)[]</command:parameterValue>
+        <dev:type>
+          <maml:name>(System.String | PSql.SqlContext | PSql.Deploy.SqlTargetDatabase)[]</maml:name>
+        </dev:type>
+        <dev:defaultValue>None</dev:defaultValue>
+      </command:parameter>
+
+      <!-- -Name -->
+      <command:parameter required="false" position="1" pipelineInput="False" globbing="false" aliases="none">
+        <maml:name>Name</maml:name>
+        <maml:description>
+          <maml:para>
+            Informational name of the group.  If provided, PSql.Deploy uses the name in command output and logs.
+          </maml:para>
+        </maml:description>
+        <command:parameterValue required="true">string</command:parameterValue>
+        <dev:type>
+          <maml:name>System.String</maml:name>
+        </dev:type>
+        <dev:defaultValue>$null</dev:defaultValue>
+      </command:parameter>
+
+      <!-- -MaxParallelism -->
+      <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
+        <maml:name>MaxParallelism</maml:name>
+        <maml:description>
+          <maml:para>
+            Maximum count of operations to perform in parallel across all databases in the group.  The default value is the number of logical processors on the local machine.
+          </maml:para>
+        </maml:description>
+        <command:parameterValue required="true">int</command:parameterValue>
+        <dev:type>
+          <maml:name>System.Int32</maml:name>
+        </dev:type>
+        <dev:defaultValue>Environment.ProcessorCount</dev:defaultValue>
+      </command:parameter>
+
+      <!-- -MaxParallelismPerDatabase -->
+      <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
+        <maml:name>MaxParallelismPerDatabase</maml:name>
+        <maml:description>
+          <maml:para>
+            Maximum count of operations to perform in parallel against one database.  The default value is the number of logical processors on the local machine.
+          </maml:para>
+        </maml:description>
+        <command:parameterValue required="true">int</command:parameterValue>
+        <dev:type>
+          <maml:name>System.Int32</maml:name>
+        </dev:type>
+        <dev:defaultValue>Environment.ProcessorCount</dev:defaultValue>
+      </command:parameter>
+
+    </command:parameters>
+
+    <command:inputTypes>
+      <command:inputType>
+        <dev:type>
+          <maml:name>string</maml:name>
+        </dev:type>
+        <maml:description>
+          <maml:para>
+            A SqlClient connection string specifying how to connect to a target database.
+          </maml:para>
+        </maml:description>
+      </command:inputType>
+      <command:inputType>
+        <dev:type>
+          <maml:name>PSql.SqlContext</maml:name>
+        </dev:type>
+        <maml:description>
+          <maml:para>
+            An object specifying how to connect to a target database.  Obtain via the New-SqlContext cmdlet.
+          </maml:para>
+        </maml:description>
+      </command:inputType>
+      <command:inputType>
+        <dev:type>
+          <maml:name>PSql.Deploy.SqlTargetDatabase</maml:name>
+        </dev:type>
+        <maml:description>
+          <maml:para>
+            An object specifying how to connect to a target database.  Obtain by casting a string or SqlContext, or via a [PSql.Deploy.SqlTargetDatabase]::new(...) constructor.
+          </maml:para>
+        </maml:description>
+      </command:inputType>
+    </command:inputTypes>
+
+    <command:returnValues>
+      <command:returnValue>
+        <dev:type>
+          <maml:name>PSql.Deploy.SqlTargetDatabaseGroup</maml:name>
+        </dev:type>
+        <maml:description>
+          <maml:para>
+            A group of target databases with specified parallelism settings.
+          </maml:para>
+        </maml:description>
+      </command:returnValue>
+    </command:returnValues>
+
+    <maml:relatedLinks>
+      <maml:navigationLink>
+        <maml:linkText>Get-Help about_PSql_Deploy</maml:linkText>
+      </maml:navigationLink>
+      <maml:navigationLink>
+        <maml:linkText>Get-Help Invoke-SqlMigrations</maml:linkText>
+      </maml:navigationLink>
+      <maml:navigationLink>
+        <maml:linkText>Get-Help Invoke-SqlSeed</maml:linkText>
+      </maml:navigationLink>
+      <maml:navigationLink>
+        <maml:linkText>Get-Help New-SqlContext</maml:linkText>
+      </maml:navigationLink>
+      <maml:navigationLink>
+        <maml:linkText>PSql.Deploy:</maml:linkText>
+        <maml:uri>https://github.com/sharpjs/PSql.Deploy</maml:uri>
+      </maml:navigationLink>
+      <maml:navigationLink>
+        <maml:linkText>PSql:</maml:linkText>
+        <maml:uri>https://github.com/sharpjs/PSql</maml:uri>
       </maml:navigationLink>
     </maml:relatedLinks>
 
