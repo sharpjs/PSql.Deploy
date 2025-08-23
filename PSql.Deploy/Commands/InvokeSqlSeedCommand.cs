@@ -30,18 +30,9 @@ public class InvokeSqlSeedCommand : AsyncPSCmdlet
     ///   <b>-Seed:</b>
     ///   Names of seeds to apply.
     /// </summary>
-    [Parameter(Position = 1, Mandatory = true, ValueFromPipeline = true)]
+    [Parameter(Position = 1, Mandatory = true)]
     [ValidateNotNullOrEmpty]
     public string[]? Seed { get; set; }
-
-    /// <summary>
-    ///   <b>-Define:</b>
-    ///   SQLCMD preprocessor variables to define.
-    /// </summary>
-    [Parameter]
-    [ValidateNotNull]
-    [AllowEmptyCollection]
-    public Hashtable? Define { get; set; }
 
     /// <summary>
     ///   <b>-Path:</b>
@@ -51,6 +42,15 @@ public class InvokeSqlSeedCommand : AsyncPSCmdlet
     [Alias("PSPath", "SourcePath")]
     [ValidateNotNullOrEmpty]
     public string? Path { get; set; }
+
+    /// <summary>
+    ///   <b>-Define:</b>
+    ///   SQLCMD preprocessor variables to define.
+    /// </summary>
+    [Parameter]
+    [ValidateNotNull]
+    [AllowEmptyCollection]
+    public Hashtable? Define { get; set; }
 
     /// <summary>
     ///   <b>-MaxErrorCount:</b>
