@@ -195,7 +195,7 @@ internal class SeedApplicator : ISeedApplication
 
     private async Task SeedWorkerMainAsync(QueueContext context)
     {
-        await using var connection = Connect();
+        await using var connection = Connect(context);
 
         await PrepareAsync(connection, context);
 
@@ -207,11 +207,12 @@ internal class SeedApplicator : ISeedApplication
             await ExecuteAsync(module, connection, context);
     }
 
-    private ISeedTargetConnection Connect()
+    private ISeedTargetConnection Connect(QueueContext context)
     {
         Assume.NotNull(_logWriter);
 
-        var logger = new TextWriterSqlMessageLogger(_logWriter);
+        var prefix = $"{context.WorkerId}>";
+        var logger = new PrefixTextWriterSqlMessageLogger(_logWriter, prefix);
 
         return Session.Connect(Target, logger);
     }
