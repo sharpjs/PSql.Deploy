@@ -4,7 +4,7 @@
 namespace PSql.Deploy;
 
 /// <summary>
-///   Represents a set of target databases with specified parallelism limits.
+///   Represents a group of target databases with specified parallelism limits.
 /// </summary>
 public class TargetGroup
 {
@@ -12,16 +12,17 @@ public class TargetGroup
     ///   Initializes a new <see cref="TargetGroup"/> instance.
     /// </summary>
     /// <param name="targets">
-    ///   The targets in the set.
+    ///   The targets in the group.
     /// </param>
     /// <param name="name">
-    ///   An optional name for the set.  If provided, PSql.Deploy uses the name
-    ///   in command output and logs.
+    ///   An optional name for the group.  If provided, PSql.Deploy uses the
+    ///   name in command output and logs.
     /// </param>
     /// <param name="maxParallelism">
-    ///   The maximum degree of parallelism across all targets in the set.
-    ///   The special value <c>0</c> indicates parallelism equal to the count
-    ///   of logical processors on the current machine.  Cannot be negative.
+    ///   The maximum degree of parallelism across all target databases in the
+    ///   group.  The special value <c>0</c> indicates parallelism equal to the
+    ///   count of logical processors on the current machine.  Cannot be
+    ///   negative.
     /// </param>
     /// <param name="maxParallelismPerTarget">
     ///   The maximum degree of parallelism per target.  The special value
@@ -60,12 +61,12 @@ public class TargetGroup
     }
 
     /// <summary>
-    ///   Gets the targets in the set.
+    ///   Gets the target databases in the group.
     /// </summary>
     public IReadOnlyList<Target> Targets { get; }
 
     /// <summary>
-    ///   Gets the descriptive name for the set, if any.
+    ///   Gets the descriptive name for the group, if any.
     /// </summary>
     public string? Name { get; }
 

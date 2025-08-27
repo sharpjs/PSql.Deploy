@@ -12,7 +12,7 @@ public class NewSqlTargetDatabaseGroupCommand : PSCmdlet
 {
     /// <summary>
     ///   <b>-Target:</b>
-    ///   Objects specifying the databases in the target set.
+    ///   Objects specifying the databases in the target database group.
     /// </summary>
     [Parameter(Position = 0, Mandatory = true, ValueFromPipeline = true)]
     [ValidateNotNullOrEmpty]
@@ -20,7 +20,7 @@ public class NewSqlTargetDatabaseGroupCommand : PSCmdlet
 
     /// <summary>
     ///   <b>-Name:</b>
-    ///   Informational name of the target set.
+    ///   Informational name of the target database group.
     /// </summary>
     [Parameter(Position = 1)]
     [ValidateNotNullOrEmpty]

@@ -7,7 +7,7 @@ using System;
 using System.Diagnostics;
 
 /// <summary>
-///   Represents a set of target databases with specified parallelism limits.
+///   Represents a group of target databases with specified parallelism limits.
 /// </summary>
 [DebuggerDisplay(@"\{{Name}, Count = {Targets.Count}\}")]
 public class SqlTargetDatabaseGroup
@@ -15,8 +15,8 @@ public class SqlTargetDatabaseGroup
     private readonly E.TargetGroup _inner;
 
     /// <summary>
-    ///   Initializes a new <see cref="SqlTargetDatabaseGroup"/> instance by converting from
-    ///   the specified object.
+    ///   Initializes a new <see cref="SqlTargetDatabaseGroup"/> instance by
+    ///   converting from the specified object.
     /// </summary>
     /// <param name="obj">
     ///   The object to convert into a <see cref="SqlTargetDatabaseGroup"/>.
@@ -36,24 +36,25 @@ public class SqlTargetDatabaseGroup
     }
 
     /// <summary>
-    ///   Initializes a new <see cref="SqlTargetDatabaseGroup"/> instance with the specified
-    ///   values.
+    ///   Initializes a new <see cref="SqlTargetDatabaseGroup"/> instance with
+    ///   the specified values.
     /// </summary>
     /// <param name="targets">
-    ///   The targets in the set.
+    ///   The target databases in the group.
     /// </param>
     /// <param name="name">
-    ///   An optional name for the set.  If provided, PSql.Deploy uses the name
-    ///   in command output and logs.
+    ///   An optional name for the group.  If provided, PSql.Deploy uses the
+    ///   name in command output and logs.
     /// </param>
     /// <param name="maxParallelism">
-    ///   The maximum degree of parallelism across all targets in the set.
-    ///   The special value <c>0</c> indicates parallelism equal to the count
-    ///   of logical processors on the current machine.  Cannot be negative.
+    ///   The maximum degree of parallelism across all target databases in the
+    ///   group.  The special value <c>0</c> indicates parallelism equal to the
+    ///   count of logical processors on the current machine.  Cannot be
+    ///   negative.
     /// </param>
     /// <param name="maxParallelismPerTarget">
-    ///   The maximum degree of parallelism per target.  The special value
-    ///   <c>0</c> indicates parallelism equal to the count of logical
+    ///   The maximum degree of parallelism per target database.  The special
+    ///   value <c>0</c> indicates parallelism equal to the count of logical
     ///   processors on the current machine.  Cannot be negative.
     /// </param>
     /// <exception cref="ArgumentNullException">
@@ -82,7 +83,7 @@ public class SqlTargetDatabaseGroup
     }
 
     /// <summary>
-    ///   Gets the inner target set wrapped by this object.
+    ///   Gets the inner target database group wrapped by this object.
     /// </summary>
     internal E.TargetGroup InnerGroup => _inner;
 
@@ -92,7 +93,7 @@ public class SqlTargetDatabaseGroup
     public IReadOnlyList<SqlTargetDatabase> Targets { get; }
 
     /// <summary>
-    ///   Gets the descriptive name for the set, if any.
+    ///   Gets the descriptive name for the group, if any.
     /// </summary>
     public string? Name => _inner.Name;
 
