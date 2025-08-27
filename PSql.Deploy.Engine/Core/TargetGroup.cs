@@ -70,12 +70,13 @@ public class TargetGroup
     public string? Name { get; }
 
     /// <summary>
-    ///   Gets the maximum degree of parallelism across all targets in the set.
+    ///   Gets the maximum degree of parallelism across all target databases in
+    ///   the group.
     /// </summary>
     public int MaxParallelism { get; }
 
     /// <summary>
-    ///   Gets the maximum degree of parallelism per target.
+    ///   Gets the maximum degree of parallelism per target database.
     /// </summary>
     public int MaxParallelismPerTarget { get; }
 

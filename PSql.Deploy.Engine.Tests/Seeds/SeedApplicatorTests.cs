@@ -14,11 +14,13 @@ public class SeedApplicatorTests : TestHarnessBase
     private readonly Mock<ISeedTargetConnection> _connection;
     private readonly MockSequence                _sequence;
     private readonly Target                      _target;
+    private readonly Parallelism                 _parallelism;
     private readonly StringWriter                _log;
 
     public SeedApplicatorTests()
     {
         _target       = new("Server=db.example.com;Database=test;User ID=test;Password=test");
+        _parallelism  = new(1, 1, 1);
         _session      = Mocks.Create<ISeedSessionInternal>();
         _console      = Mocks.Create<ISeedConsole>();
         _connection   = Mocks.Create<ISeedTargetConnection>();
@@ -41,14 +43,14 @@ public class SeedApplicatorTests : TestHarnessBase
     }
 
     private SeedApplicator Applicator
-        => _applicator ??= new(_session.Object, _seed, _target, maxParallelism: 1);
+        => _applicator ??= new(_session.Object, _seed, _target, _parallelism);
 
     [Test]
     public void Construct_NullSession()
     {
         Should.Throw<ArgumentNullException>(() =>
         {
-            _ = new SeedApplicator(null!, _seed, _target, maxParallelism: 1);
+            _ = new SeedApplicator(null!, _seed, _target, _parallelism);
         });
     }
 
@@ -57,7 +59,7 @@ public class SeedApplicatorTests : TestHarnessBase
     {
         Should.Throw<ArgumentNullException>(() =>
         {
-            _ = new SeedApplicator(_session.Object, null!, _target, maxParallelism: 1);
+            _ = new SeedApplicator(_session.Object, null!, _target, _parallelism);
         });
     }
 
@@ -66,16 +68,16 @@ public class SeedApplicatorTests : TestHarnessBase
     {
         Should.Throw<ArgumentNullException>(() =>
         {
-            _ = new SeedApplicator(_session.Object, _seed, null!, maxParallelism: 1);
+            _ = new SeedApplicator(_session.Object, _seed, null!, _parallelism);
         });
     }
 
     [Test]
-    public void Construct_OutOfRangeMaxParallelism()
+    public void Construct_NullParallelism()
     {
-        Should.Throw<ArgumentOutOfRangeException>(() =>
+        Should.Throw<ArgumentNullException>(() =>
         {
-            _ = new SeedApplicator(_session.Object, _seed, _target, maxParallelism: 0);
+            _ = new SeedApplicator(_session.Object, _seed, _target, null!);
         });
     }
 
@@ -110,9 +112,9 @@ public class SeedApplicatorTests : TestHarnessBase
     }
 
     [Test]
-    public void MaxParallelism_Get()
+    public void Parallelism_Get()
     {
-        Applicator.MaxParallelism.ShouldBe(1); // as set by test fixture constructor
+        Applicator.Parallelism.ShouldBeSameAs(_parallelism);
     }
 
     [Test]

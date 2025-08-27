@@ -37,7 +37,7 @@ public class NewSqlTargetDatabaseGroupCommand : PSCmdlet
 
     /// <summary>
     ///   <b>-MaxParallelismPerDatabase:</b>
-    ///   Maximum count of operations to perform in parallel against one
+    ///   Maximum count of operations to perform in parallel against any one
     ///   database. The default value is the number of logical processors on
     ///   the local machine.
     /// </summary>

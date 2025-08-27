@@ -30,39 +30,32 @@ internal class SeedApplicator : ISeedApplication
     /// <param name="target">
     ///   An object specifying how to connect to the target database.
     /// </param>
-    /// <param name="maxParallelism">
-    ///   The maximum number of batches that may be executed against the target
-    ///   database in parallel.
+    /// <param name="parallelism">
+    ///   A governor to limit the parallelism of the seed application.
     /// </param>
     /// <exception cref="ArgumentNullException">
     ///   <paramref name="session"/>,
-    ///   <paramref name="seed"/>, and/or
-    ///   <paramref name="target"/> is <see langword="null"/>.
-    /// </exception>
-    /// <exception cref="ArgumentOutOfRangeException">
-    ///   <paramref name="maxParallelism"/> is zero or negative.
+    ///   <paramref name="seed"/>,
+    ///   <paramref name="target"/>, and/or
+    ///   <paramref name="parallelism"/> is <see langword="null"/>.
     /// </exception>
     public SeedApplicator(
         ISeedSessionInternal session,
         LoadedSeed           seed,
         Target               target,
-        int                  maxParallelism)
+        Parallelism          parallelism)
     {
-        if (session is null)
-            throw new ArgumentNullException(nameof(session));
-        if (seed is null)
-            throw new ArgumentNullException(nameof(seed));
-        if (target is null)
-            throw new ArgumentNullException(nameof(target));
-        if (maxParallelism < 1)
-            throw new ArgumentOutOfRangeException(nameof(maxParallelism));
+        ArgumentNullException.ThrowIfNull(session);
+        ArgumentNullException.ThrowIfNull(seed);
+        ArgumentNullException.ThrowIfNull(target);
+        ArgumentNullException.ThrowIfNull(parallelism);
 
-        Session        = session;
-        Seed           = seed;
-        Target         = target;
-        MaxParallelism = maxParallelism;
+        Session     = session;
+        Seed        = seed;
+        Target      = target;
+        Parallelism = parallelism;
 
-        _stopwatch = new();
+        _stopwatch  = new();
     }
 
     /// <inheritdoc cref="ISeedApplication.Session"/>
@@ -87,10 +80,10 @@ internal class SeedApplicator : ISeedApplication
     public Target Target { get; }
 
     /// <summary>
-    ///   Gets the maximum number of batches that may be executed against the
-    ///   target database in parallel.
+    ///   Gets the governor that limits the parallelism of the seed
+    ///   application.
     /// </summary>
-    public int MaxParallelism { get; }
+    public Parallelism Parallelism { get; }
 
     // Time elapsed in ApplyAsync
     private readonly Stopwatch _stopwatch;
@@ -132,7 +125,7 @@ internal class SeedApplicator : ISeedApplication
             await queue.RunAsync(
                 SeedWorkerMainAsync,
                 Session,
-                MaxParallelism,
+                Parallelism.MaxCommandsPerTarget,
                 Session.CancellationToken
             );
         }
@@ -162,7 +155,7 @@ internal class SeedApplicator : ISeedApplication
         foreach (var module in Seed.Modules)
         {
             if (module.WorkerId is -1)
-                for (var i = 1; i <= MaxParallelism; i++)
+                for (var i = 1; i <= Parallelism.MaxCommandsPerTarget; i++)
                     Populate(builder, Clone(module, workerId: i));
             else
                 Populate(builder, module);
@@ -217,8 +210,10 @@ internal class SeedApplicator : ISeedApplication
         return Session.Connect(Target, logger);
     }
 
-    private static async Task PrepareAsync(ISeedTargetConnection connection, QueueContext context)
+    private async Task PrepareAsync(ISeedTargetConnection connection, QueueContext context)
     {
+        using var _ = await Parallelism.UseCommandScopeAsync(context.CancellationToken);
+
         await connection.OpenAsync(context.CancellationToken);
 
         await connection.PrepareAsync(
@@ -230,6 +225,8 @@ internal class SeedApplicator : ISeedApplication
 
     private async Task ExecuteAsync(SeedModule module, ISeedTargetConnection connection, QueueContext context)
     {
+        using var _ = await Parallelism.UseCommandScopeAsync(context.CancellationToken);
+
         ReportApplying(module, context.WorkerId);
 
         foreach (var batch in module.Batches)

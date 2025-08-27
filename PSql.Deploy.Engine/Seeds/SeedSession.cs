@@ -64,12 +64,12 @@ public class SeedSession : DeploymentSession, ISeedSessionInternal
     }
 
     /// <inheritdoc/>
-    protected override async Task ApplyCoreAsync(Target target, int maxParallelism)
+    protected override async Task ApplyCoreAsync(Target target, Parallelism parallelism)
     {
         var seeds = await LazyLoadSeedsAsync();
 
         foreach (var seed in seeds)
-            await new SeedApplicator(this, seed, target, maxParallelism).ApplyAsync();
+            await new SeedApplicator(this, seed, target, parallelism).ApplyAsync();
     }
 
     [ExcludeFromCodeCoverage(Justification = "timing-dependent")]
@@ -116,6 +116,20 @@ public class SeedSession : DeploymentSession, ISeedSessionInternal
     ISeedTargetConnection ISeedSessionInternal
         .Connect(Target target, ISqlMessageLogger logger)
         => Connect(target, logger);
+
+    /// <inheritdoc/>
+    protected override int GetMaxParallelTargets(TargetGroup group)
+    {
+        // Assume actual parallelism per target equal to group.MaxParallelismPerTarget
+        // FUTURE: Consider making this configurable to enable overcommit
+
+        var (targets, remainder) = Math.DivRem(
+            group.MaxParallelism,
+            group.MaxParallelismPerTarget
+        );
+
+        return targets + Math.Sign(remainder);
+    }
 
     /// <inheritdoc/>
     protected override Exception Transform(Exception exception)

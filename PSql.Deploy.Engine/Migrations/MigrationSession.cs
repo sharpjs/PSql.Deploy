@@ -166,7 +166,14 @@ public class MigrationSession : DeploymentSession, IMigrationSessionInternal
     }
 
     /// <inheritdoc/>
-    protected override Task ApplyCoreAsync(Target target, int maxParallelism)
+    protected override int GetMaxParallelTargets(TargetGroup group)
+    {
+        // Migrations do not use per-target parallelism
+        return group.MaxParallelism;
+    }
+
+    /// <inheritdoc/>
+    protected override Task ApplyCoreAsync(Target target, Parallelism parallelism)
     {
         return new MigrationApplicator(this, target).ApplyAsync();
     }

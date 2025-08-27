@@ -69,7 +69,7 @@ public abstract class DeploymentSession : IDeploymentSessionInternal
         if (target is null)
             throw new ArgumentNullException(nameof(target));
 
-        BeginApplying(new TargetGroup([target], name: null, maxParallelism: 1, maxParallelism));
+        BeginApplying(new TargetGroup([target], name: null, maxParallelism, maxParallelism));
     }
 
     /// <inheritdoc/>
@@ -119,44 +119,29 @@ public abstract class DeploymentSession : IDeploymentSessionInternal
 
     private async Task ApplyAsync(TargetGroup group)
     {
-        using var limiter = new SemaphoreSlim(
-            initialCount: group.MaxParallelism,
-            maxCount:     group.MaxParallelism
+        using var parallelism = new Parallelism(
+            GetMaxParallelTargets(group),
+            group.MaxParallelism,
+            group.MaxParallelismPerTarget
         );
 
-        Task ApplyToTargetAsync(Target context)
-            => ApplyAsync(context, limiter, group.MaxParallelismPerTarget);
+        Task ApplyToTargetAsync(Target target)
+            => ApplyAsync(target, parallelism);
 
         await Task.WhenAll(group.Targets.Select(ApplyToTargetAsync));
     }
 
-    private async Task ApplyAsync(Target target, SemaphoreSlim limiter, int maxParallelism)
+    private async Task ApplyAsync(Target target, Parallelism parallelism)
     {
-        // Move to another thread so that caller's context iterator continues
+        // Move to another thread so that caller's target iterator continues
         await Task.Yield();
-
-        var limited = false;
 
         try
         {
             // Limit group parallelism
-            await limiter.WaitAsync(CancellationToken);
-            limited = true;
+            using var _ = await parallelism.UseTargetScopeAsync(CancellationToken);
 
-            await ApplyAsync(target, maxParallelism);
-        }
-        finally
-        {
-            if (limited)
-                limiter.Release();
-        }
-    }
-
-    private async Task ApplyAsync(Target target, int maxParallelism)
-    {
-        try
-        {
-            await ApplyCoreAsync(target, maxParallelism);
+            await ApplyCoreAsync(target, parallelism);
         }
         catch (OperationCanceledException)
         {
@@ -169,19 +154,32 @@ public abstract class DeploymentSession : IDeploymentSessionInternal
     }
 
     /// <summary>
+    ///   Gets the number of target databases against which the deployment
+    ///   operation should run in parallel for the specified target group.
+    /// </summary>
+    /// <param name="group">
+    ///   The group of target databases.
+    /// </param>
+    /// <returns>
+    ///   The count of target databases in <paramref name="group"/> against
+    ///   which the deployment operation should run in parallel.
+    /// </returns>
+    protected abstract int GetMaxParallelTargets(TargetGroup group);
+
+    /// <summary>
     ///   Applies the deployment operation to the specified target database
     ///   asynchronously.
     /// </summary>
     /// <param name="target">
     ///   An object specifying the target database.
     /// </param>
-    /// <param name="maxParallelism">
-    ///   The maximum degree of parallelism to use.
+    /// <param name="parallelism">
+    ///   A governor to limit the parallelism of the deployment operation.
     /// </param>
     /// <returns>
     ///   A <see cref="Task"/> representing the asynchronous operation.
     /// </returns>
-    protected abstract Task ApplyCoreAsync(Target target, int maxParallelism);
+    protected abstract Task ApplyCoreAsync(Target target, Parallelism parallelism);
 
     private void HandleError(Exception e, Target target)
     {

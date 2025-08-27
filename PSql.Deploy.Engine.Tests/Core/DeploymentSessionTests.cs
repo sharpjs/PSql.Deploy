@@ -2,19 +2,19 @@
 // SPDX-License-Identifier: MIT
 
 using System.Collections.ObjectModel;
-using Moq.Protected;
+using System.Linq.Expressions;
 
 namespace PSql.Deploy;
 
 [TestFixture]
 public class DeploymentSessionTests : TestHarnessBase
 {
-    private Mock<DeploymentSession>? _session;
+    private Mock<TestDeploymentSession>? _session;
 
     private readonly DeploymentSessionOptions
         _options = new TestDeploymentSessionOptions();
 
-    private Mock<DeploymentSession> SessionMock
+    private Mock<TestDeploymentSession> SessionMock
         => _session ??= CreateSession();
 
     private DeploymentSession Session
@@ -81,7 +81,15 @@ public class DeploymentSessionTests : TestHarnessBase
     [Test]
     public async Task Apply_Target_Ok()
     {
-        ExpectApplyCore(TargetA, maxParallelism: 4);
+        static void AssertParallelism(Target t, Parallelism p)
+        {
+            p.MaxParallelTargets  .ShouldBe(1);
+            p.MaxParallelCommands .ShouldBe(4);
+            p.MaxCommandsPerTarget.ShouldBe(4);
+        }
+
+        ExpectGetMaxParallelTargets(g => g.Targets.Single() == TargetA, result: 1);
+        ExpectApplyCore(TargetA, AssertParallelism);
 
         Session.BeginApplying(TargetA, maxParallelism: 4);
 
@@ -94,11 +102,19 @@ public class DeploymentSessionTests : TestHarnessBase
         var group = new TargetGroup(
             [TargetA, TargetB],
             maxParallelism:          8,
-            maxParallelismPerTarget: 2
+            maxParallelismPerTarget: 1
         );
 
-        ExpectApplyCore(TargetA, maxParallelism: 2);
-        ExpectApplyCore(TargetB, maxParallelism: 2);
+        static void AssertParallelism(Target t, Parallelism p)
+        {
+            p.MaxParallelTargets  .ShouldBe(6);
+            p.MaxParallelCommands .ShouldBe(8);
+            p.MaxCommandsPerTarget.ShouldBe(1);
+        }
+
+        ExpectGetMaxParallelTargets(g => g == group, result: 6);
+        ExpectApplyCore(TargetA, AssertParallelism);
+        ExpectApplyCore(TargetB, AssertParallelism);
 
         Session.BeginApplying(group);
 
@@ -108,8 +124,8 @@ public class DeploymentSessionTests : TestHarnessBase
     [Test]
     public async Task Apply_Any_Cancellation()
     {
-        ExpectApplyCore(TargetA, maxParallelism: 1, cancel: true);  // cancels session
-        //pectApplyCore(TargetB, maxParallelism: 1);                // never happens
+        ExpectApplyCore(TargetA, (t, p) => Session.Cancel());   // cancels session
+        //pectApplyCore(TargetB);                               // never happens
 
         Session.BeginApplying(TargetA, maxParallelism: 1);
         await WaitForSessionCancellationAsync(); // because count of errors exceeded max (default 0)
@@ -129,9 +145,9 @@ public class DeploymentSessionTests : TestHarnessBase
         _options.MaxErrorCount = 1;
         var exception  = new Exception("Oops!");
 
-        ExpectApplyCore(TargetA, maxParallelism: 1, exception); // error tolerated
-        ExpectApplyCore(TargetB, maxParallelism: 1);            // succeeds
-        ExpectApplyCore(TargetC, maxParallelism: 1);            // succeeds
+        ExpectApplyCore(TargetA, (t, p) => throw exception);    // error tolerated
+        ExpectApplyCore(TargetB);                               // succeeds
+        ExpectApplyCore(TargetC);                               // succeeds
 
         Session.BeginApplying(TargetA, maxParallelism: 1);
         await WaitForSessionToHaveErrorsAsync();
@@ -154,9 +170,9 @@ public class DeploymentSessionTests : TestHarnessBase
         var exceptionA = new Exception("Bam!");
         var exceptionB = new Exception("Pow!");
 
-        ExpectApplyCore(TargetA, maxParallelism: 1, exceptionA); // error tolerated
-        ExpectApplyCore(TargetB, maxParallelism: 1, exceptionB); // error cancels session
-        //pectApplyCore(TargetC, maxParallelism: 1);             // never happens
+        ExpectApplyCore(TargetA, (t, p) => throw exceptionA);   // error tolerated
+        ExpectApplyCore(TargetB, (t, p) => throw exceptionB);   // error cancels session
+        //pectApplyCore(TargetC);                               // never happens
 
         Session.BeginApplying(TargetA, maxParallelism: 1);
         await WaitForSessionToHaveErrorsAsync();
@@ -187,7 +203,7 @@ public class DeploymentSessionTests : TestHarnessBase
 
         var exception = new ExceptionWithData(data);
 
-        ExpectApplyCore(TargetA, maxParallelism: 1, exception);
+        ExpectApplyCore(TargetA, (t, p) => throw exception);
 
         Session.BeginApplying(TargetA, maxParallelism: 1);
 
@@ -204,7 +220,7 @@ public class DeploymentSessionTests : TestHarnessBase
     {
         var exception = new ExceptionWithData(data: null);
 
-        ExpectApplyCore(TargetA, maxParallelism: 1, exception);
+        ExpectApplyCore(TargetA, (t, p) => throw exception);
 
         Session.BeginApplying(TargetA, maxParallelism: 1);
 
@@ -216,37 +232,29 @@ public class DeploymentSessionTests : TestHarnessBase
         thrown.ShouldBeSameAs(exception);
     }
 
-    private void ExpectApplyCore(Target target, int maxParallelism)
+    private void ExpectGetMaxParallelTargets(
+        Expression<Func<TargetGroup, bool>> predicate, int result)
     {
         SessionMock
-            .Protected()
-            .Setup<Task>("ApplyCoreAsync", target, maxParallelism)
+            .Setup(s => s.PublicGetMaxParallelTargets_Public(It.Is(predicate)))
+            .Returns(result)
+            .Verifiable();
+    }
+
+    private void ExpectApplyCore(Target target, Action<Target, Parallelism>? callback = null)
+    {
+        static void Nop(Target t, Parallelism p) { }
+
+        SessionMock
+            .Setup(s => s.ApplyCoreAsync_Public(target, It.IsNotNull<Parallelism>()))
+            .Callback(callback ?? Nop)
             .Returns(Task.CompletedTask)
             .Verifiable();
     }
 
-    private void ExpectApplyCore(Target target, int maxParallelism, bool cancel)
+    private Mock<TestDeploymentSession> CreateSession()
     {
-        SessionMock
-            .Protected()
-            .Setup<Task>("ApplyCoreAsync", target, maxParallelism)
-            .Callback(Session.Cancel)
-            .ThrowsAsync(new OperationCanceledException())
-            .Verifiable();
-    }
-
-    private void ExpectApplyCore(Target target, int maxParallelism, Exception exception)
-    {
-        SessionMock
-            .Protected()
-            .Setup<Task>("ApplyCoreAsync", target, maxParallelism)
-            .ThrowsAsync(exception)
-            .Verifiable();
-    }
-
-    private Mock<DeploymentSession> CreateSession()
-    {
-        var session = Mocks.Create<DeploymentSession>(MockBehavior.Loose, _options);
+        var session = Mocks.Create<TestDeploymentSession>(MockBehavior.Loose, _options);
 
         session.CallBase = true;
 
@@ -280,14 +288,23 @@ public class DeploymentSessionTests : TestHarnessBase
         base.CleanUp(managed);
     }
 
-    private class TestDeploymentSessionOptions : DeploymentSessionOptions { }
+    internal class TestDeploymentSessionOptions : DeploymentSessionOptions { }
 
-    private class TestDeploymentSession : DeploymentSession
+    internal class TestDeploymentSession : DeploymentSession
     {
         public TestDeploymentSession(TestDeploymentSessionOptions options)
             : base(options) { }
 
-        protected override Task ApplyCoreAsync(Target target, int maxParallelism)
+        protected sealed override int GetMaxParallelTargets(TargetGroup group)
+            => PublicGetMaxParallelTargets_Public(group);
+
+        protected sealed override Task ApplyCoreAsync(Target target, Parallelism parallelism)
+            => ApplyCoreAsync_Public(target, parallelism);
+
+        public virtual int PublicGetMaxParallelTargets_Public(TargetGroup group)
+            => 4;
+
+        public virtual Task ApplyCoreAsync_Public(Target target, Parallelism parallelism)
             => Task.CompletedTask;
     }
 

@@ -97,12 +97,13 @@ public class SqlTargetDatabaseGroup
     public string? Name => _inner.Name;
 
     /// <summary>
-    ///   Gets the maximum degree of parallelism across the entire set.
+    ///   Gets the maximum degree of parallelism across all target databases in
+    ///   the group.
     /// </summary>
     public int MaxParallelism => _inner.MaxParallelism;
 
     /// <summary>
-    ///   Gets the maximum degree of parallelism per database.
+    ///   Gets the maximum degree of parallelism per target database.
     /// </summary>
     public int MaxParallelismPerDatabase => _inner.MaxParallelismPerTarget;
 
