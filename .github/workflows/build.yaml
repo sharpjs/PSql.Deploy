@@ -54,7 +54,7 @@ jobs:
 
     steps:
       - name: Check Out Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         #url: https://github.com/actions/checkout
 
       - name: Configure .NET
