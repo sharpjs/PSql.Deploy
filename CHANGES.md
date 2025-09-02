@@ -9,6 +9,7 @@ Future release.
 
 - Change: PSql.Deploy now requires PowerShell 7.2 or later.
 - Change: PSql.Deploy is now a binary module.
+- Remove support for _Pre.ps1 and _Post.ps1 in seeds.
 
 <!--
   Copyright Subatomix Research Inc.
