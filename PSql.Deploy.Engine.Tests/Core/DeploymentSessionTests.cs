@@ -181,8 +181,14 @@ public class DeploymentSessionTests : TestHarnessBase
     [Test]
     public async Task Apply_Any_Cancellation()
     {
-        ExpectApplyCore(TargetA, (t, p) => Session.Cancel());   // cancels session
-        //pectApplyCore(TargetB);                               // never happens
+        void SimulateCancellation(Target t, TargetParallelism p)
+        {
+            Session.Cancel();
+            Session.CancellationToken.ThrowIfCancellationRequested();
+        }
+
+        ExpectApplyCore(TargetA, SimulateCancellation); // cancels session
+        //pectApplyCore(TargetB);                       // never happens
 
         Session.BeginApplying(TargetA, maxParallelism: 1);
         await WaitForSessionCancellationAsync(); // because count of errors exceeded max (default 0)
