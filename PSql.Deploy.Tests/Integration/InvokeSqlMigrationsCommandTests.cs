@@ -41,7 +41,9 @@ public class InvokeSqlMigrationsCommandIntegrationTests
                 -Path     $Path    `
                 -Confirm: $false
 
-            Get-SqlMigrations -Target $TargetA
+            # Test pipeline input
+            $TargetA | Get-SqlMigrations
+            [PSql.Deploy.SqlTargetDatabase]::new($TargetA) | Get-SqlMigrations
             """
         );
 
@@ -51,33 +53,29 @@ public class InvokeSqlMigrationsCommandIntegrationTests
 
         var migrations = output.Select(o => o?.BaseObject).OfType<Migration>().ToList();
 
-        migrations.Count.ShouldBe(6);
+        migrations.Count.ShouldBe(9);
+
+        void ShouldBeMigrations(int n, MigrationState state)
+        {
+            migrations[n + 0].Name .ShouldBe("Migration0");
+            migrations[n + 0].Hash .ShouldBe("D8462C316FD72659FB11FA7C9727D05707F8332B");
+            migrations[n + 0].State.ShouldBe(state);
+
+            migrations[n + 1].Name .ShouldBe("Migration1");
+            migrations[n + 1].Hash .ShouldBe("2909F7C67C9B831FFCD4655F31683941F700A205");
+            migrations[n + 1].State.ShouldBe(state);
+
+            migrations[n + 2].Name .ShouldBe("Migration2");
+            migrations[n + 2].Hash .ShouldBe("FB049E6EA9DC10019088850C94E9C5D2661A6DE7");
+            migrations[n + 2].State.ShouldBe(state);
+        }
 
         // From Pre+Core run
-        migrations[0].Name .ShouldBe("Migration0");
-        migrations[0].Hash .ShouldBe("D8462C316FD72659FB11FA7C9727D05707F8332B");
-        migrations[0].State.ShouldBe(MigrationState.AppliedCore);
-
-        migrations[1].Name .ShouldBe("Migration1");
-        migrations[1].Hash .ShouldBe("2909F7C67C9B831FFCD4655F31683941F700A205");
-        migrations[1].State.ShouldBe(MigrationState.AppliedCore);
-
-        migrations[2].Name .ShouldBe("Migration2");
-        migrations[2].Hash .ShouldBe("FB049E6EA9DC10019088850C94E9C5D2661A6DE7");
-        migrations[2].State.ShouldBe(MigrationState.AppliedCore);
+        ShouldBeMigrations(0, MigrationState.AppliedCore);
 
         // From Post run
-        migrations[3].Name .ShouldBe("Migration0");
-        migrations[3].Hash .ShouldBe("D8462C316FD72659FB11FA7C9727D05707F8332B");
-        migrations[3].State.ShouldBe(MigrationState.AppliedPost);
-
-        migrations[4].Name .ShouldBe("Migration1");
-        migrations[4].Hash .ShouldBe("2909F7C67C9B831FFCD4655F31683941F700A205");
-        migrations[4].State.ShouldBe(MigrationState.AppliedPost);
-
-        migrations[5].Name .ShouldBe("Migration2");
-        migrations[5].Hash .ShouldBe("FB049E6EA9DC10019088850C94E9C5D2661A6DE7");
-        migrations[5].State.ShouldBe(MigrationState.AppliedPost);
+        ShouldBeMigrations(3, MigrationState.AppliedPost);
+        ShouldBeMigrations(6, MigrationState.AppliedPost);
 
         File.ReadAllText("..PSqlDeployTestA.0_Pre.log" ).ShouldNotBeNullOrEmpty();
         File.ReadAllText("..PSqlDeployTestA.1_Core.log").ShouldNotBeNullOrEmpty();

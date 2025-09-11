@@ -106,11 +106,8 @@ public sealed class GetSqlMigrationsCommand : AsyncPSCmdlet
                 return false;
 
             case nameof(Target):
-                Assume.NotNull(Target);
+                Assume.NotNull(Target); // due to [ValidateNotNullOrEmpty]
                 return true;
-
-            case nameof(InputObject) when InputObject is null:
-                return false;
 
             case nameof(InputObject) when InputObject is string path && !path.Contains(';'):
                 Path = path;
@@ -121,7 +118,8 @@ public sealed class GetSqlMigrationsCommand : AsyncPSCmdlet
                 return true;
 
             default:
-                Target = new SqlTargetDatabase(InputObject!);
+                Assume.NotNull(InputObject); // due to [ValidateNotNullOrEmpty]
+                Target = new SqlTargetDatabase(InputObject);
                 return true;
         }
     }

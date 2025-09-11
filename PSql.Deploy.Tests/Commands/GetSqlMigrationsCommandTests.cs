@@ -8,6 +8,7 @@ namespace PSql.Deploy.Commands;
 using static ScriptExecutor;
 
 [TestFixture]
+[FixtureLifeCycle(LifeCycle.SingleInstance)]
 public class GetSqlMigrationsCommandTests
 {
     // This test fixture tests only discovery of migrations defined on disk.
@@ -15,7 +16,7 @@ public class GetSqlMigrationsCommandTests
     // InvokeSqlMigrationsCommandIntegrationTests.
 
     [Test]
-    public void Invoke()
+    public void Invoke_Path()
     {
         var (output, exception) = Execute(
             """
@@ -32,9 +33,34 @@ public class GetSqlMigrationsCommandTests
             .Select(o => o.BaseObject.ShouldBeOfType<Migration>())
             .ToList();
 
+        ShouldBeTestDbADefinedMigrations(migrations);
+    }
+
+    [Test]
+    public void Invoke_Path_FromPipeline()
+    {
+        var (output, exception) = Execute(
+            """
+            Join-Path TestDbs A | Get-SqlMigrations
+            """
+        );
+
+        exception.ShouldBeNull();
+
+        output.Count.ShouldBe(5);
+
+        var migrations = output
+            .Select(o => o.ShouldNotBeNull())
+            .Select(o => o.BaseObject.ShouldBeOfType<Migration>())
+            .ToList();
+
+        ShouldBeTestDbADefinedMigrations(migrations);
+    }
+
+    private void ShouldBeTestDbADefinedMigrations(List<Migration> migrations)
+    {
         var path = Path.Combine(TestContext.CurrentContext.TestDirectory, "TestDbs", "A");
 
-        // From Pre+Core run
         migrations[0].Name    .ShouldBe("_Begin");
         migrations[0].Hash    .ShouldBe("1FA5BB132E282E92E49B1F3C73E5CA91977D1B7A");
         migrations[0].Path    .ShouldBe(Path.Combine(path, "Migrations", "_Begin", "_Main.sql"));
