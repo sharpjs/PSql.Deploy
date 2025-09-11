@@ -16,6 +16,32 @@ public interface IDeploymentSession : IDisposable
     bool IsWhatIfMode { get; }
 
     /// <summary>
+    ///   Gets the maximum number of actions (such as SQL batches) that the
+    ///   session will execute in parallel across all target databases.
+    /// </summary>
+    /// <remarks>
+    ///   This limit applies in addition to any group-specific limits specified
+    ///   by <see cref="TargetGroup.MaxParallelism"/>.
+    /// </remarks>
+    int MaxParallelism { get; }
+
+    /// <summary>
+    ///   Gets the maximum number of actions (such as SQL batches) that the
+    ///   session will execute in parallel against any one target database.
+    /// </summary>
+    /// <remarks>
+    ///   This limit applies in addition to any group-specific limits imposed
+    ///   by <see cref="TargetGroup.MaxParallelismPerTarget"/>.
+    /// </remarks>
+    int MaxParallelismPerTarget { get; }
+
+    /// <summary>
+    ///   Gets the maximum count of exceptions that the session will tolerate
+    ///   before cancelling ongoing operations.
+    /// </summary>
+    int MaxErrorCount { get; }
+
+    /// <summary>
     ///   Gets whether the session has encountered an error.
     /// </summary>
     bool HasErrors { get; }

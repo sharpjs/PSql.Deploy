@@ -33,8 +33,13 @@ public abstract class DeploymentSession : IDeploymentSessionInternal
         _exceptions   = [];
         _cancellation = new();
 
-        MaxErrorCount = options.MaxErrorCount;
         IsWhatIfMode  = options.IsWhatIfMode;
+        MaxErrorCount = options.MaxErrorCount;
+
+        Parallelism   = new GlobalParallelism(
+            InterpretParallelism(options.MaxParallelism),
+            InterpretParallelism(options.MaxParallelismPerTarget)
+        );
     }
 
     /// <summary>
@@ -42,14 +47,22 @@ public abstract class DeploymentSession : IDeploymentSessionInternal
     /// </summary>
     public CancellationToken CancellationToken => _cancellation.Token;
 
-    /// <summary>
-    ///   Gets the maximum count of exceptions that the session will tolerate
-    ///   before cancelling ongoing operations.
-    /// </summary>
-    public int MaxErrorCount { get; }
-
     /// <inheritdoc/>
     public bool IsWhatIfMode { get; }
+
+    /// <summary>
+    ///   Gets the parallelism policy for the session.
+    /// </summary>
+    private GlobalParallelism Parallelism { get; }
+
+    /// <inheritdoc/>
+    public int MaxParallelism => Parallelism.MaxActions;
+
+    /// <inheritdoc/>
+    public int MaxParallelismPerTarget => Parallelism.MaxActionsPerTarget;
+
+    /// <inheritdoc/>
+    public int MaxErrorCount { get; }
 
     /// <inheritdoc/>
     public bool HasErrors => !_exceptions.IsEmpty;
@@ -104,6 +117,7 @@ public abstract class DeploymentSession : IDeploymentSessionInternal
     /// <inheritdoc/>
     public virtual void Dispose()
     {
+        // NOTE: Unmanaged disposal not required
         _cancellation.Dispose();
         GC.SuppressFinalize(this);
     }
@@ -119,11 +133,7 @@ public abstract class DeploymentSession : IDeploymentSessionInternal
 
     private async Task ApplyAsync(TargetGroup group)
     {
-        using var parallelism = new Parallelism(
-            GetMaxParallelTargets(group),
-            group.MaxParallelism,
-            group.MaxParallelismPerTarget
-        );
+        using var parallelism = Parallelism.ForGroup(group, GetMaxParallelTargets(group));
 
         Task ApplyToTargetAsync(Target target)
             => ApplyAsync(target, parallelism);
@@ -131,17 +141,17 @@ public abstract class DeploymentSession : IDeploymentSessionInternal
         await Task.WhenAll(group.Targets.Select(ApplyToTargetAsync));
     }
 
-    private async Task ApplyAsync(Target target, Parallelism parallelism)
+    private async Task ApplyAsync(Target target, TargetGroupParallelism parallelism)
     {
         // Move to another thread so that caller's target iterator continues
         await Task.Yield();
 
         try
         {
-            // Limit group parallelism
-            using var _ = await parallelism.UseTargetScopeAsync(CancellationToken);
+            // Limit max parallel targets in group
+            using var _ = await parallelism.BeginTargetScopeAsync(CancellationToken);
 
-            await ApplyCoreAsync(target, parallelism);
+            await ApplyCoreAsync(target, parallelism.ForTarget);
         }
         catch (OperationCanceledException)
         {
@@ -174,12 +184,13 @@ public abstract class DeploymentSession : IDeploymentSessionInternal
     ///   An object specifying the target database.
     /// </param>
     /// <param name="parallelism">
-    ///   A governor to limit the parallelism of the deployment operation.
+    ///   The policy to manage parallelism of actions against the target
+    ///   database.
     /// </param>
     /// <returns>
     ///   A <see cref="Task"/> representing the asynchronous operation.
     /// </returns>
-    protected abstract Task ApplyCoreAsync(Target target, Parallelism parallelism);
+    protected abstract Task ApplyCoreAsync(Target target, TargetParallelism parallelism);
 
     private void HandleError(Exception e, Target target)
     {
@@ -221,4 +232,18 @@ public abstract class DeploymentSession : IDeploymentSessionInternal
     {
         return exception;
     }
+
+    /// <summary>
+    ///   Applies defaulting for parallelism values.
+    /// </summary>
+    /// <param name="value">
+    ///   The desired degree of parallelism.
+    /// </param>
+    /// <returns>
+    ///   The level of parallelism to use: <paramref name="value"/> if greater
+    ///   than zero; otherwise, the number of logical processors on the local
+    ///   machine.
+    /// </returns>
+    internal static int InterpretParallelism(int value)
+        => value > 0 ? value : ProcessInfo.Instance.ProcessorCount;
 }

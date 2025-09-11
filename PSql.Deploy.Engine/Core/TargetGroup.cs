@@ -56,8 +56,8 @@ public class TargetGroup
 
         Targets                 = targets;
         Name                    = name;
-        MaxParallelism          = InterpretParallelism(maxParallelism);
-        MaxParallelismPerTarget = InterpretParallelism(maxParallelismPerTarget);
+        MaxParallelism          = DeploymentSession.InterpretParallelism(maxParallelism);
+        MaxParallelismPerTarget = DeploymentSession.InterpretParallelism(maxParallelismPerTarget);
     }
 
     /// <summary>
@@ -80,7 +80,4 @@ public class TargetGroup
     ///   Gets the maximum degree of parallelism per target database.
     /// </summary>
     public int MaxParallelismPerTarget { get; }
-
-    private static int InterpretParallelism(int value)
-        => value > 0 ? value : ProcessInfo.Instance.ProcessorCount;
 }

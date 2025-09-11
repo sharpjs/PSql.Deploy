@@ -173,7 +173,7 @@ public class MigrationSession : DeploymentSession, IMigrationSessionInternal
     }
 
     /// <inheritdoc/>
-    protected override Task ApplyCoreAsync(Target target, Parallelism parallelism)
+    protected override Task ApplyCoreAsync(Target target, TargetParallelism _)
     {
         return new MigrationApplicator(this, target).ApplyAsync();
     }

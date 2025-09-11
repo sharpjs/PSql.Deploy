@@ -24,9 +24,9 @@ public class DeploymentSessionTests : TestHarnessBase
         => SessionMock.Object;
 
     private static readonly Target
-        TargetA = new Target("Server=sql.example.com;Database=a"),
-        TargetB = new Target("Server=sql.example.com;Database=b"),
-        TargetC = new Target("Server=sql.example.com;Database=c");
+        TargetA = new("Server=sql.example.com;Database=a"),
+        TargetB = new("Server=sql.example.com;Database=b"),
+        TargetC = new("Server=sql.example.com;Database=c");
 
     [Test]
     public void Construct_NullOptions()
@@ -35,6 +35,22 @@ public class DeploymentSessionTests : TestHarnessBase
         {
             _ = new TestDeploymentSession(null!);
         });
+    }
+
+    [Test]
+    public void MaxParallelism_Get()
+    {
+        _options.MaxParallelism = 3;
+
+        Session.MaxParallelism.ShouldBe(3);
+    }
+
+    [Test]
+    public void MaxParallelismPerTarget_Get()
+    {
+        _options.MaxParallelismPerTarget = 3;
+
+        Session.MaxParallelismPerTarget.ShouldBe(3);
     }
 
     [Test]
@@ -81,11 +97,28 @@ public class DeploymentSessionTests : TestHarnessBase
     [Test]
     public async Task Apply_Target_Ok()
     {
-        static void AssertParallelism(Target t, Parallelism p)
+        static void AssertParallelism(Target t, TargetParallelism p)
         {
-            p.MaxParallelTargets  .ShouldBe(1);
-            p.MaxParallelCommands .ShouldBe(4);
-            p.MaxCommandsPerTarget.ShouldBe(4);
+            p.MaxActions.ShouldBe(4);
+        }
+
+        ExpectGetMaxParallelTargets(g => g.Targets.Single() == TargetA, result: 1);
+        ExpectApplyCore(TargetA, AssertParallelism);
+
+        Session.BeginApplying(TargetA, maxParallelism: 4);
+
+        await Session.CompleteApplyingAsync(Cancellation.Token);
+    }
+
+    [Test]
+    public async Task Apply_Target_GlobalParallelismLimits()
+    {
+        _options.MaxParallelism          = 3;
+        _options.MaxParallelismPerTarget = 2;
+
+        static void AssertParallelism(Target t, TargetParallelism p)
+        {
+            p.MaxActions.ShouldBe(2); // limited by global max per target
         }
 
         ExpectGetMaxParallelTargets(g => g.Targets.Single() == TargetA, result: 1);
@@ -101,15 +134,39 @@ public class DeploymentSessionTests : TestHarnessBase
     {
         var group = new TargetGroup(
             [TargetA, TargetB],
-            maxParallelism:          8,
+            maxParallelism: 8,
             maxParallelismPerTarget: 1
         );
 
-        static void AssertParallelism(Target t, Parallelism p)
+        static void AssertParallelism(Target t, TargetParallelism p)
         {
-            p.MaxParallelTargets  .ShouldBe(6);
-            p.MaxParallelCommands .ShouldBe(8);
-            p.MaxCommandsPerTarget.ShouldBe(1);
+            p.MaxActions.ShouldBe(1);
+        }
+
+        ExpectGetMaxParallelTargets(g => g == group, result: 6);
+        ExpectApplyCore(TargetA, AssertParallelism);
+        ExpectApplyCore(TargetB, AssertParallelism);
+
+        Session.BeginApplying(group);
+
+        await Session.CompleteApplyingAsync(Cancellation.Token);
+    }
+
+    [Test]
+    public async Task Apply_Group_GlobalParallelismLimits()
+    {
+        _options.MaxParallelism          = 3;
+        _options.MaxParallelismPerTarget = 2;
+
+        var group = new TargetGroup(
+            [TargetA, TargetB],
+            maxParallelism: 8,
+            maxParallelismPerTarget: 4
+        );
+
+        static void AssertParallelism(Target t, TargetParallelism p)
+        {
+            p.MaxActions.ShouldBe(2);
         }
 
         ExpectGetMaxParallelTargets(g => g == group, result: 6);
@@ -241,12 +298,12 @@ public class DeploymentSessionTests : TestHarnessBase
             .Verifiable();
     }
 
-    private void ExpectApplyCore(Target target, Action<Target, Parallelism>? callback = null)
+    private void ExpectApplyCore(Target target, Action<Target, TargetParallelism>? callback = null)
     {
-        static void Nop(Target t, Parallelism p) { }
+        static void Nop(Target t, TargetParallelism p) { }
 
         SessionMock
-            .Setup(s => s.ApplyCoreAsync_Public(target, It.IsNotNull<Parallelism>()))
+            .Setup(s => s.ApplyCoreAsync_Public(target, It.IsNotNull<TargetParallelism>()))
             .Callback(callback ?? Nop)
             .Returns(Task.CompletedTask)
             .Verifiable();
@@ -298,13 +355,13 @@ public class DeploymentSessionTests : TestHarnessBase
         protected sealed override int GetMaxParallelTargets(TargetGroup group)
             => PublicGetMaxParallelTargets_Public(group);
 
-        protected sealed override Task ApplyCoreAsync(Target target, Parallelism parallelism)
+        protected sealed override Task ApplyCoreAsync(Target target, TargetParallelism parallelism)
             => ApplyCoreAsync_Public(target, parallelism);
 
         public virtual int PublicGetMaxParallelTargets_Public(TargetGroup group)
             => 4;
 
-        public virtual Task ApplyCoreAsync_Public(Target target, Parallelism parallelism)
+        public virtual Task ApplyCoreAsync_Public(Target target, TargetParallelism parallelism)
             => Task.CompletedTask;
     }
 

@@ -1,7 +1,7 @@
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
-namespace PSql.Deploy.Utilities;
+namespace PSql.Deploy;
 
 [TestFixture]
 public class CollectionExtensionTests

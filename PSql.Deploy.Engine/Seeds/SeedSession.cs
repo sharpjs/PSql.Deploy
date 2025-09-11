@@ -64,7 +64,7 @@ public class SeedSession : DeploymentSession, ISeedSessionInternal
     }
 
     /// <inheritdoc/>
-    protected override async Task ApplyCoreAsync(Target target, Parallelism parallelism)
+    protected override async Task ApplyCoreAsync(Target target, TargetParallelism parallelism)
     {
         var seeds = await LazyLoadSeedsAsync();
 

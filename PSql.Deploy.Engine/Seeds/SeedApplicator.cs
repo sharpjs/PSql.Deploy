@@ -31,7 +31,8 @@ internal class SeedApplicator : ISeedApplication
     ///   An object specifying how to connect to the target database.
     /// </param>
     /// <param name="parallelism">
-    ///   A governor to limit the parallelism of the seed application.
+    ///   The policy to manage parallelism of actions against the target
+    ///   database.
     /// </param>
     /// <exception cref="ArgumentNullException">
     ///   <paramref name="session"/>,
@@ -43,7 +44,7 @@ internal class SeedApplicator : ISeedApplication
         ISeedSessionInternal session,
         LoadedSeed           seed,
         Target               target,
-        Parallelism          parallelism)
+        TargetParallelism    parallelism)
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(seed);
@@ -80,10 +81,10 @@ internal class SeedApplicator : ISeedApplication
     public Target Target { get; }
 
     /// <summary>
-    ///   Gets the governor that limits the parallelism of the seed
-    ///   application.
+    ///   Gets the policy to manage parallelism of actions against the target
+    ///   database.
     /// </summary>
-    public Parallelism Parallelism { get; }
+    public TargetParallelism Parallelism { get; }
 
     // Time elapsed in ApplyAsync
     private readonly Stopwatch _stopwatch;
@@ -125,7 +126,7 @@ internal class SeedApplicator : ISeedApplication
             await queue.RunAsync(
                 SeedWorkerMainAsync,
                 Session,
-                Parallelism.MaxCommandsPerTarget,
+                Parallelism.MaxActions,
                 Session.CancellationToken
             );
         }
@@ -155,7 +156,7 @@ internal class SeedApplicator : ISeedApplication
         foreach (var module in Seed.Modules)
         {
             if (module.WorkerId is -1)
-                for (var i = 1; i <= Parallelism.MaxCommandsPerTarget; i++)
+                for (var i = 1; i <= Parallelism.MaxActions; i++)
                     Populate(builder, Clone(module, workerId: i));
             else
                 Populate(builder, module);
@@ -212,7 +213,7 @@ internal class SeedApplicator : ISeedApplication
 
     private async Task PrepareAsync(ISeedTargetConnection connection, QueueContext context)
     {
-        using var _ = await Parallelism.UseCommandScopeAsync(context.CancellationToken);
+        using var _ = await Parallelism.BeginActionScopeAsync(context.CancellationToken);
 
         await connection.OpenAsync(context.CancellationToken);
 
@@ -225,7 +226,7 @@ internal class SeedApplicator : ISeedApplication
 
     private async Task ExecuteAsync(SeedModule module, ISeedTargetConnection connection, QueueContext context)
     {
-        using var _ = await Parallelism.UseCommandScopeAsync(context.CancellationToken);
+        using var _ = await Parallelism.BeginActionScopeAsync(context.CancellationToken);
 
         ReportApplying(module, context.WorkerId);
 

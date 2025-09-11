@@ -14,13 +14,13 @@ public class SeedApplicatorTests : TestHarnessBase
     private readonly Mock<ISeedTargetConnection> _connection;
     private readonly MockSequence                _sequence;
     private readonly Target                      _target;
-    private readonly Parallelism                 _parallelism;
+    private readonly TargetParallelism           _parallelism;
     private readonly StringWriter                _log;
 
     public SeedApplicatorTests()
     {
         _target       = new("Server=db.example.com;Database=test;User ID=test;Password=test");
-        _parallelism  = new(1, 1, 1);
+        _parallelism  = new(NullParallelismLimiter.Instance, maxActions: 1);
         _session      = Mocks.Create<ISeedSessionInternal>();
         _console      = Mocks.Create<ISeedConsole>();
         _connection   = Mocks.Create<ISeedTargetConnection>();

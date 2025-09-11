@@ -61,6 +61,19 @@ public class InvokeSqlMigrationsCommand : AsyncPSCmdlet
     public SwitchParameter AllowContentInCorePhase { get; set; }
 
     /// <summary>
+    ///   <b>-Parallelism:</b>
+    ///   Maximum number of target databases to migrate in parallel.  Must be a
+    ///   positive number.  The default value is <see cref="int.MaxValue"/>.
+    /// </summary>
+    /// <remarks>
+    ///   This limit applies in addition to any group-specific limits imposed
+    ///   by <see cref="SqlTargetDatabaseGroup.MaxParallelism"/>.
+    /// </remarks>
+    [Parameter()]
+    [ValidateRange(1, int.MaxValue)]
+    public int MaxParallelism { get; set; } = int.MaxValue;
+
+    /// <summary>
     ///   <b>-MaxErrorCount:</b>
     ///   Maximum count of errors to allow.  If the count of errors exceeds
     ///   this value, the command attempts to cancel in-progress operations and
@@ -120,14 +133,17 @@ public class InvokeSqlMigrationsCommand : AsyncPSCmdlet
 
     private M.MigrationSessionOptions GetOptions()
     {
-        var options = new M.MigrationSessionOptions();
+        var options = new M.MigrationSessionOptions
+        {
+            AllowContentInCorePhase = AllowContentInCorePhase,
+            IsWhatIfMode            = this.IsWhatIf(),
+            MaxParallelism          = MaxParallelism,
+            MaxParallelismPerTarget = 1, // migrations are sequential per database
+            MaxErrorCount           = MaxErrorCount,
+        };
 
         if (Phase is not null)
             options.EnabledPhases = Phase.Select(p => (M.MigrationPhase) p);
-
-        options.AllowContentInCorePhase = AllowContentInCorePhase;
-        options.MaxErrorCount           = MaxErrorCount;
-        options.IsWhatIfMode            = this.IsWhatIf();
 
         return options;
     }

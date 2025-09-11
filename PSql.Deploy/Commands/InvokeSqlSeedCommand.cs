@@ -53,10 +53,39 @@ public class InvokeSqlSeedCommand : AsyncPSCmdlet
     public Hashtable? Define { get; set; }
 
     /// <summary>
+    ///   <b>-Parallelism:</b>
+    ///   Maximum number of SQL batches to execute in parallel across all
+    ///   target databases.  Must be a positive number.  The default value is
+    ///   <see cref="int.MaxValue"/>.
+    /// </summary>
+    /// <remarks>
+    ///   This limit applies in addition to any group-specific limits imposed
+    ///   by <see cref="SqlTargetDatabaseGroup.MaxParallelism"/>.
+    /// </remarks>
+    [Parameter()]
+    [ValidateRange(1, int.MaxValue)]
+    public int MaxParallelism { get; set; } = int.MaxValue;
+
+    /// <summary>
+    ///   <b>-ParallelismPerTarget:</b>
+    ///   Maximum number of SQL batches to execute in parallel against any one
+    ///   target database.  Must be or a positive number.  The default is
+    ///   <see cref="int.MaxValue"/>.
+    /// </summary>
+    /// <remarks>
+    ///   This limit applies in addition to any group-specific limits imposed
+    ///   by <see cref="SqlTargetDatabaseGroup.MaxParallelismPerTarget"/>.
+    /// </remarks>
+    [Parameter()]
+    [ValidateRange(1, int.MaxValue)]
+    public int MaxParallelismPerTarget { get; set; } = int.MaxValue;
+
+    /// <summary>
     ///   <b>-MaxErrorCount:</b>
     ///   Maximum count of errors to allow.  If the count of errors exceeds
     ///   this value, the command attempts to cancel in-progress operations and
-    ///   terminates early.
+    ///   terminates early.  Must be zero or a positive number.  The default is
+    ///   zero.
     /// </summary>
     [Parameter()]
     [ValidateRange(0, int.MaxValue)]
@@ -112,9 +141,11 @@ public class InvokeSqlSeedCommand : AsyncPSCmdlet
     {
         return new S.SeedSessionOptions
         {
-            Defines       = GetDefines(),
-            IsWhatIfMode  = this.IsWhatIf(),
-            MaxErrorCount = MaxErrorCount,
+            Defines                 = GetDefines(),
+            IsWhatIfMode            = this.IsWhatIf(),
+            MaxParallelism          = MaxParallelism,
+            MaxParallelismPerTarget = MaxParallelismPerTarget,
+            MaxErrorCount           = MaxErrorCount,
         };
     }
 

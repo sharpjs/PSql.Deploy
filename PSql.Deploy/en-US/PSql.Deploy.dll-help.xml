@@ -290,6 +290,10 @@
           <command:parameterValue required="false">SwitchParameter</command:parameterValue>
         </command:parameter>
         <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
+          <maml:name>MaxParallelism</maml:name>
+          <command:parameterValue required="true">int</command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
           <maml:name>MaxErrorCount</maml:name>
           <command:parameterValue required="true">int</command:parameterValue>
         </command:parameter>
@@ -425,12 +429,27 @@
         <dev:defaultValue>False</dev:defaultValue>
       </command:parameter>
 
+      <!-- -MaxParallelism -->
+      <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
+        <maml:name>MaxParallelism</maml:name>
+        <maml:description>
+          <maml:para>
+            Maximum number of target databases to migrate in parallel.  Must be a positive number.  The default value is [int]::MaxValue.
+          </maml:para>
+        </maml:description>
+        <command:parameterValue required="true">int</command:parameterValue>
+        <dev:type>
+          <maml:name>System.Int32</maml:name>
+        </dev:type>
+        <dev:defaultValue>[int]::MaxValue</dev:defaultValue>
+      </command:parameter>
+
       <!-- -MaxErrorCount -->
       <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
         <maml:name>MaxErrorCount</maml:name>
         <maml:description>
           <maml:para>
-            Maximum count of errors to allow.  If the count of errors exceeds this value, the command attempts to cancel in-progress operations and terminates early.
+            Maximum count of errors to allow.  If the count of errors exceeds this value, the command attempts to cancel in-progress operations and terminates early.  Must be zero or a positive number.
           </maml:para>
         </maml:description>
         <command:parameterValue required="true">int</command:parameterValue>
@@ -598,6 +617,14 @@
           <command:parameterValue required="true">hashtable</command:parameterValue>
         </command:parameter>
         <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
+          <maml:name>MaxParallelism</maml:name>
+          <command:parameterValue required="true">int</command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
+          <maml:name>MaxParallelismPerTarget</maml:name>
+          <command:parameterValue required="true">int</command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
           <maml:name>MaxErrorCount</maml:name>
           <command:parameterValue required="true">int</command:parameterValue>
         </command:parameter>
@@ -696,12 +723,43 @@
         <dev:defaultValue>@{}</dev:defaultValue>
       </command:parameter>
 
+      <!-- -MaxParallelism -->
+      <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
+        <maml:name>MaxParallelism</maml:name>
+        <maml:description>
+          <maml:para>
+            Maximum number of SQL batches to execute in parallel across all target databases.  Must be a positive number.
+          </maml:para>
+        </maml:description>
+        <command:parameterValue required="true">int</command:parameterValue>
+        <dev:type>
+          <maml:name>System.Int32</maml:name>
+        </dev:type>
+        <dev:defaultValue>[int]::MaxValue</dev:defaultValue>
+      </command:parameter>
+
+      <!-- -MaxParallelismPerTarget -->
+      <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
+        <maml:name>MaxParallelismPerTarget</maml:name>
+        <maml:description>
+          <maml:para>
+            Maximum number of SQL batches to execute in parallel against any one target database.  Must be a positive number.
+          </maml:para>
+        </maml:description>
+        <command:parameterValue required="true">int</command:parameterValue>
+        <dev:type>
+          <maml:name>System.Int32</maml:name>
+        </dev:type>
+        <dev:defaultValue>[int]::MaxValue</dev:defaultValue>
+      </command:parameter>
+
+
       <!-- -MaxErrorCount -->
       <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
         <maml:name>MaxErrorCount</maml:name>
         <maml:description>
           <maml:para>
-            Maximum count of errors to allow.  If the count of errors exceeds this value, the command attempts to cancel in-progress operations and terminates early.
+            Maximum count of errors to allow.  If the count of errors exceeds this value, the command attempts to cancel in-progress operations and terminates early.  Must be zero or a positive number.
           </maml:para>
         </maml:description>
         <command:parameterValue required="true">int</command:parameterValue>
