@@ -221,6 +221,9 @@
 
     <maml:relatedLinks>
       <maml:navigationLink>
+        <maml:linkText>Get-Help about_PSql_Deploy_Migrations</maml:linkText>
+      </maml:navigationLink>
+      <maml:navigationLink>
         <maml:linkText>Get-Help about_PSql_Deploy</maml:linkText>
       </maml:navigationLink>
       <maml:navigationLink>
@@ -549,6 +552,9 @@
 
     <maml:relatedLinks>
       <maml:navigationLink>
+        <maml:linkText>Get-Help about_PSql_Deploy_Migrations</maml:linkText>
+      </maml:navigationLink>
+      <maml:navigationLink>
         <maml:linkText>Get-Help about_PSql_Deploy</maml:linkText>
       </maml:navigationLink>
       <maml:navigationLink>
@@ -858,6 +864,9 @@
     </command:returnValues>
 
     <maml:relatedLinks>
+      <maml:navigationLink>
+        <maml:linkText>Get-Help about_PSql_Deploy_Seeds</maml:linkText>
+      </maml:navigationLink>
       <maml:navigationLink>
         <maml:linkText>Get-Help about_PSql_Deploy</maml:linkText>
       </maml:navigationLink>

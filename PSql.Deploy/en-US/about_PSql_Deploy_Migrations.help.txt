@@ -1,0 +1,252 @@
+about_PSql_Deploy_Migrations
+============================
+
+SHORT DESCRIPTION
+
+A migration is a SQL script that evolves a target database's schema from its
+current version to the next version.
+
+
+LONG DESCRIPTION
+
+PSql.Deploy expects migrations to have a specific filesystem layout.
+
+src\                    The source directory: a set of migrations and
+ │                        seeds for one database design.  The name can vary.
+ │
+ ├─ Migrations\         Migrations.  Required only if there are any migrations.
+ │   │
+ │   ├─ 0001\           One migration.  The name can vary.
+ │   │   │
+ │   │   ├─ _Main.sql   Top-level script for the migration.  It can
+ │   │   │                include other files with the :r directive.
+ │   │   ├─ FileA.sql   Example file included by _Main.sql.
+ │   │   ├─ FileB.sql   Example file included by _Main.sql.
+ │   │   └─ ...         More files, subdirectories, etc.
+ │   │
+ │   └─ ...             More migrations.
+ │
+ ├─ Seeds\              Seeds.  Required only if there are any seeds.
+ │   └─ ...             See about_PSql_Deploy_Seeds for details.
+ │
+ └─ ...                 PSql.Deploy does not care about other files or
+                          directories present in the source directory.
+
+
+Each subdirectory of {source-directory}\Migrations containing a _Main.sql file
+is a migration.  The name of the subdirectory is the name of the migration.
+The _Main.sql file is the entry point for the migration.
+
+PSql.Deploy's Invoke-SqlMigrations cmdlet applies (runs) each migration exactly
+once per target database.  After applying a migration, the cmdlet records the
+migration's state in a table in the target database.  Future invocations of
+the cmdlet for the same target database will read the table and skip any
+migrations that have already been applied.  Thus the Invoke-SqlMigrations
+cmdlet is idempotent: invoked multiple times against the same target database,
+the cmdlet applies only new migrations and does nothing to a fully-migrated
+database.
+
+The Get-SqlMigrations cmdlet lists the migrations found in a source directory
+or applied to a target database.
+
+When multiple migrations are present in the source directory but not yet
+applied to a target database, The Invoke-SqlMigrations cmdlet applies them in a
+specific order: from least to greatest by case-insensitive ordinal comparison
+of the migrations' names.  It is therefore important to choose a migration
+naming scheme carefully to fit the development workflow of the database.  See
+below for examples of migration naming schemes.
+
+Once applied to a target database, a migration should be considered immutable.
+The Invoke-SqlMigrations cmdlet computes a hash of all .sql files within the
+migration directory and subdirectories, recursively.  The cmdlet stores this
+hash as part of the migration state in the target database.  If a subsequent
+invocation finds that the computed hash is different from the stored hash, the
+cmdlet detects that the migration has been modified after application.  The
+cmdlet then reports a validation error and aborts without applying any
+migrations.  To resolve the error, either revert the changes to the migration,
+or update the hash value stored in all target databases (not recommended).
+
+Migrations named _Begin and _End, if present, are 'pseudo-migrations' that
+receive special treatment.  Invoke-SqlMigrations executes _Begin before any
+other migrations and _End after all other migrations.  Furthermore, the cmdlet
+does not record the state of these migrations in the target database.  They
+execute every time the cmdlet runs against a target database and has at least
+one other migration to apply.  _Begin is useful for connection setup tasks such
+as setting the transaction isolation level.  _End is a good place to perform
+cleanup that must occur after every migration session.
+
+PSql.Deploy supports 'up', or forward, migrations only.  It does not support
+'down' migrations that would revert the database to some prior schema.  Many
+migration activities are inherently destructive -- dropping a table, for
+example.  The work to make those activities reversible is often much more
+complex than the work of the activities themselves, all to enable a feature
+that in practice is seldom used.  Thus PSql.Deploy takes the position that
+'down' migrations are not worth the effort.  If a database schema must revert
+to a prior state, then author a new migration that makes the necessary changes,
+or restore the database from a backup.  Use automated testing to find migration
+problems early, before they reach production.
+
+Phases
+
+To facilitate zero- and low-downtime deployments, PSql.Deploy splits deployment
+into three logical phases: Pre, Core, and Post.  Each phase represents a
+different moment within a deployment process.  Each SQL statement within a
+migration executes in exactly one of these phases.  One migration can contain
+statements for multiple phases.  The purposes of the phases are as follows:
+
+Pre
+    This phase occurs before deployment of the workloads that use the target
+    database, perhaps while previously deployed workloads are still running.
+    Migration statements in this phase should make the database compatible with
+    the upcoming workload deployment but should retain compatibility with any
+    existing workloads.
+
+Core
+    This phase occurs at some arbitrary point between the Pre and Post phases.
+    PSql.Deploy interprets statements within this phase as requiring downtime,
+    explicitly breaking a zero-downtime deployment schenario.  Migration
+    statements in this phase should make the database compatible with newly
+    deployed workloads and need not retain compatibility with any previously
+    deployed workloads.  This phase is also suitable for deployment scenarios
+    where downtime is not a concern.
+
+Post
+    This phase occurs after deployment of the workloads that use the target
+    database, while those workloads are running.  Migration statements in this
+    phase should finalize or clean up after the changes made in earlier phases
+    while retaining compatibility with the deployed workloads.
+
+Dependencies
+
+PSql.Deploy enables one migration to declare a dependency on another migration.
+The Invoke-SqlMigrations cmdlet handles a dependency in one of two ways.  If
+the required migration has been applied fully to a target database, then the
+dependency is satisfied already, and the cmdlet applies the depending migration
+normally to that target database.  If neither the required migration nor the
+requiring migration has been applied yet to a target database, then the cmdlet
+moves Pre and Post statements into the Core phase as required to satisfy the
+dependency and preserve the guarantees that the cmdlet makes about the order of
+migration statements.  Note that this makes dependency resolution incompatible
+with zero-downtime deployment scenarios, because Core entails downtime.
+
+Ordering Guarantees
+
+The Invoke-SqlMigrations cmdlet makes the following guarantees about the order
+of migration statement execution:
+
+- A migration's Pre-phase statements are guaranteed to execute after all
+    previous migrations' Pre-phase statements.
+
+- A migration's Core-phase statements are guaranteed to execute after all
+    previous migrations' Core-phase statements.
+
+- A migration's Post-phase statements are guaranteed to execute after all
+    previous migrations' Post-phase statements.
+
+- If migration B depends on migration A, then A's Post-phase statements are
+    guaranteed to execute before B's Pre-phase statements.
+
+Example 1: No dependencies
+
+These migrations:
+1 │ Pre Core Post
+2 │ Pre Core Post
+3 │ Pre Core Post
+4 │ Pre Core Post
+5 │ Pre Core Post
+
+Yield this order operations:
+  │ Pre                │ Core                     │ Post                     │
+══╪════════════════════╪══════════════════════════╪══════════════════════════╡
+1 │ Pre                │ Core                     │ Post                     │
+2 │     Pre            │      Core                │      Post                │
+3 │         Pre        │           Core           │           Post           │
+4 │             Pre    │                Core      │                Post      │
+5 │                Pre │                     Core │                     Post │
+    Time──>
+
+Example 2: One dependency
+
+These migrations:
+1 │ Pre Core Post
+2 │ Pre Core Post <──╮
+3 │ Pre Core Post    │
+4 │ Pre Core Post ───╯  Migration 4 depends on Migration 2
+5 │ Pre Core Post
+
+Yield this order operations:
+  │ Pre         │ Core                                       │ Post           │
+══╪═════════════╪════════════════════════════════════════════╪════════════════╡
+1 │ Pre         │ Core           Post                        │                │
+2 │     Pre     │      Core      ^^^^ Post                   │                │
+3 │         Pre │           Core      ^^^^                   │ Post           │
+4 │             │                          Pre     Core      │      Post      │
+5 │             │                          ^^^ Pre      Core │           Post │
+    Time──>                                    ^^^
+
+Magic Comments
+
+A migration may contain 'magic comments', which are special comments that the
+Invoke-SqlMigrations cmdlet interprets as directives.  The cmdlet supports the
+following magic comments:
+
+--# PRE
+    Causes subsequent SQL text to execute in the Pre phase.
+
+--# CORE
+    Causes subsequent SQL text to execute in the Core phase.
+
+--# POST
+    Causes subsequent SQL text to execute in the Post phase.
+
+--# REQUIRES: <migration-name> ...
+    Declares a dependency on one or more migrations.
+
+Example Migration Naming Schemes
+
+Here are some example migration naming schemes:
+
+- Numeric, zero-padded: 0001, 0002, 0003, ...
+    Pros: simple
+    Cons: requires coordination if multiple people author migrations
+      concurrently; requires new scheme if next number exceeds planned width
+    Best for: solo projects or teams with a single migration author where the
+      versioning scheme is unknown or subject to change
+
+- Version, zero-padded: v01.00.00, v01.00.01, v01.01.00, v02.00.00, ...
+    Pros: descriptive; aligned with versioning
+    Cons: requires coordination if multiple people author migrations
+      concurrently; tricky if a version number exceeds planned width
+    Best for: solo projects or teams with a single migration author where the
+      versioning scheme is known and unlikely to change
+
+- Date and description: 2025-08-15-Initial, 2025-08-18-AddUsersTable, ...
+    Pros: descriptive; requires less coordination for multiple authors
+    Cons: need to keep migration name up-to-date during authoring
+    Best for: teams with multiple migration authors
+
+- Date and work item number: 2025-08-15-00042, 2025-08-18-00123, ...
+    Pros: requires less coordination for multiple authors
+    Cons: need to keep migration name up-to-date during authoring; requires
+      knowing work item numbers
+    Best for: teams with multiple migration authors where it is useful to
+      associate migrations with work items, pull requests, etc.
+
+Squashes
+
+A long-lived project with frequent schema changes will accumulate a large
+number of migrations over time.  For such projects, it is sometimes useful to
+delete old migrations and instead use a create script that creates a database
+already migrated to that poitn in time.  This is known as a 'squash'.  Create
+scripts are outside the scope of PSql.Deploy, but PSql.Deploy supports squashes
+by not caring about completed migrations that are no longer present in the
+source directory.  Nevertheless, there are two rules that must be oserved when
+performing a squash:
+
+1. The oldest unsquashed migration must be same age or older than the oldest
+     backup that is likely to be restored.
+
+1. The oldest unsquashed migration must be same age or older than the create
+     script.
+
+TODO: Describe this better when more brain cells are available.

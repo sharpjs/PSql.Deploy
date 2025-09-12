@@ -1,0 +1,56 @@
+about_PSql_Deploy_Seeds
+=======================
+
+SHORT DESCRIPTION
+
+A seed is a SQL script that populates a target database with data.
+
+
+LONG DESCRIPTION
+
+Source Directory Structure
+
+PSql.Deploy expects seeds to have a specific filesystem layout.
+
+src\                    The source directory: a set of migrations and
+ │                        seeds for one database design.  The name can vary.
+ │
+ ├─ Seeds\              Seeds.  Required only if there are any seeds.
+ │   │
+ │   ├─ TestData\       One seed.  The name can vary.
+ │   │   │
+ │   │   ├─ _Main.sql   Top-level script for the seed.  It can
+ │   │   │                include other files with the :r directive.
+ │   │   ├─ FileA.sql   Example file included by _Main.sql.
+ │   │   ├─ FileB.sql   Example file included by _Main.sql.
+ │   │   └─ ...         More files, subdirectories, etc.
+ │   │
+ │   └─ ...             More seeds.
+ │
+ ├─ Migrations\         Migrations.  Required only if there are any migrations.
+ │   └─ ...             See about_PSql_Deploy_Migrations for details.
+ │
+ └─ ...                 PSql.Deploy does not care about other files or
+                          directories present in the source directory.
+
+Each subdirectory of {source-directory}\Seeds containing a _Main.sql file is a
+seed.  The name of the subdirectory is the name of the seed.  The _Main.sql
+file is the entry point for the seed.
+
+Seeds support several magic comments for organizing code into modules with dependencies:
+
+--# MODULE: name [topic ...]
+    Starts a new module with the specified name, optionally declaring provided
+    topics.
+
+--# PROVIDES: topic [topic ...]
+    Indicates that the current module provides the specified topics.
+
+--# REQUIRES: topic [topic ...]
+    Indicates that the current module requires the specified topics.
+
+--# WORKER: all|any
+    Specifies worker execution mode.  'all' means the module executes on all
+    workers; 'any' means it executes on any single worker.
+
+TODO: Describe seeds here.
