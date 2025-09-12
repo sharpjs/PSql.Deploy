@@ -38,13 +38,13 @@ src\                    The source directory: a set of migrations and
  │   │
  │   ├─ TestData\       One seed.  The name can vary.
  │   │   │
- │   │   ├─ _Main.sql   Top-level script for the migration.  It can
+ │   │   ├─ _Main.sql   Top-level script for the seed.  It can
  │   │   │                include other files with the :r directive.
  │   │   ├─ FileA.sql   Example file included by _Main.sql.
  │   │   ├─ FileB.sql   Example file included by _Main.sql.
  │   │   └─ ...         More files, subdirectories, etc.
  │   │
- │   └─ ...             More migrations.
+ │   └─ ...             More seeds.
  │
  └─ ...                 PSql.Deploy does not care about other files or
                           directories present in the source directory.
