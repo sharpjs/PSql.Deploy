@@ -3,17 +3,19 @@ about_PSql_Deploy_Seeds
 
 SHORT DESCRIPTION
 
-A seed is a SQL script that populates a target database with data.
+A PSql.Deploy seed is a T-SQL script that populates a target SQL Server or
+Azure SQL database with data.  The Invoke-SqlSeed cmdlet applies one or more
+seeds to one or more target databases.
 
 
 LONG DESCRIPTION
 
-Source Directory Structure
+:: Source Directory Structure ::
 
 PSql.Deploy expects seeds to have a specific filesystem layout.
 
 src\                    The source directory: a set of migrations and
- │                        seeds for one database design.  The name can vary.
+ │                        seeds for one database design.  The path can vary.
  │
  ├─ Seeds\              Seeds.  Required only if there are any seeds.
  │   │
@@ -33,24 +35,98 @@ src\                    The source directory: a set of migrations and
  └─ ...                 PSql.Deploy does not care about other files or
                           directories present in the source directory.
 
-Each subdirectory of {source-directory}\Seeds containing a _Main.sql file is a
-seed.  The name of the subdirectory is the name of the seed.  The _Main.sql
-file is the entry point for the seed.
+Given an arbitrary source directory, PSql.Deploy expects to find seeds in a
+Seeds subdirectory.  Within the Seeds directory, each subdirectory containing a
+_Main.sql file is an individual seed.  The name of the subdirectory determines
+the name of the seed.  A seed name must be a valid directory name but is
+otherwise unrestricted.
 
-Seeds support several magic comments for organizing code into modules with dependencies:
+The _Main.sql file is the entry point for the seed.  The file is a T-SQL script
+with a few extensions to support modularity and parallelism.
 
---# MODULE: name [topic ...]
-    Starts a new module with the specified name, optionally declaring provided
-    topics.
 
---# PROVIDES: topic [topic ...]
-    Indicates that the current module provides the specified topics.
+:: Seed Script SQLCMD Support ::
 
---# REQUIRES: topic [topic ...]
-    Indicates that the current module requires the specified topics.
+PSql.Deploy seed scripts support a limited set of SQLCMD directives.  Typical
+seeds use these directives to organize code into multiple files, to separate
+SQL batches, and to replace hard-coded values with variables.
 
---# WORKER: all|any
-    Specifies worker execution mode.  'all' means the module executes on all
-    workers; 'any' means it executes on any single worker.
+    GO
+        Ends the current SQL batch and begins a new one.
 
-TODO: Describe seeds here.
+    $(<name>)
+        Replaced by the value of the SQLCMD variable <name>.
+
+    :r <file>
+        Replaced by the contents of the specified file.  The path is relative
+        to the current PowerShell directory ($PWD or Get-Location), matching
+        SQLCMD.EXE behavior.
+
+        To enable inclusion relative to the seed, PSql.Deploy predefines the
+        SQLCMD variable 'Path' as the full path of the directory containing the
+        _Main.sql file.  Thus the directive
+
+          :r $(Path)\Foo.sql
+
+        includes the file Foo.sql from the same directory as _Main.sql.
+
+        The path may be enclosed within double quotes.  This is mandatory if
+        the path contains spaces, tabs, or double quotes.  To include a double
+        quote in the path, use two double quotes.  Examples:
+
+          :r "$(Path)\My Script.sql"
+          :r "$(Path)/My ""Special"" Script.sql"
+
+        Note that Windows does not support tabs or double quotes in file names.  
+
+    :setvar <name> <value>
+        Sets the SQLCMD variable <name> to the spacified <value>.
+
+        The value may be enclosed within double quotes.  This is mandatory if
+        the value contains spaces, tabs, or double quotes.  To include a double
+        quote in the value, use two double quotes.
+
+          :setvar MyVar MyValue
+          :setvar MyVar "My Value"
+          :setvar MyVar "My ""Special"" Value"
+
+
+:: Seed Script Parallelism Directives ::
+
+Seeds typically consist of many statements that could execute in parallel if
+the language supported it.  For example, inserting rows into different tables
+could occur in parallel, provided that all rows necessary to satisfy foreign
+key constraints are already present.
+
+To enable parallelism, PSql.Deploy provides a set of directives to split a seed
+into 'modules' that can execute in parallel.  Each module can declare its
+dependencies upon other modules.  PSql.Deploy's Invoke-SqlSeed cmdlet then
+executes modules in parallel where possible but guarantees that each module's
+dependencies are satisfied before the module itself executes.
+
+The dependency model is based on 'topics'.  A topic is just an arbitrary name.
+Each module declares what topics it 'requires' and what topics it 'provides'.
+When a module requires a topic, PSql.Deploy will not execute that module until
+all modules providing that topic have completed.
+
+Each module has a name, which also is a topic that the module provides.  Seed
+code begins in the 'init' module.
+
+PSql.Deploy seed directives take the form of magic comments.  The following
+magic comments are available:
+
+    --# MODULE: <name> [<topic> ...]
+        Starts a new module with the specified name, optionally declaring extra
+        provided topics.  The module name itself is a provided topic.
+    
+    --# PROVIDES: <topic> [<topic> ...]
+        Indicates that the current module provides the specified topics.
+    
+    --# REQUIRES: <topic> [<topic> ...]
+        Indicates that the current module requires the specified topics.
+    
+    --# WORKER: all|any
+        Specifies worker execution mode.  'all' means the module executes on all
+        workers; 'any' means it executes on any single worker.
+
+TODO: Describe all-worker modules.
