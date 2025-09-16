@@ -96,24 +96,91 @@ SQL batches, and to replace hard-coded values with variables.
 Seeds typically consist of many statements that could execute in parallel if
 the language supported it.  For example, inserting rows into different tables
 could occur in parallel, provided that all rows necessary to satisfy foreign
-key constraints are already present.
+key constraints are already present.  Parallelism can significantly reduce the
+time required to seed large databases.
 
-To enable parallelism, PSql.Deploy provides a set of directives to split a seed
-into 'modules' that can execute in parallel.  Each module can declare its
-dependencies upon other modules.  PSql.Deploy's Invoke-SqlSeed cmdlet then
-executes modules in parallel where possible but guarantees that each module's
-dependencies are satisfied before the module itself executes.
+PSql.Deploy recognizes special directives to enable parallelism within seeds.
+These directives are 'magic' comments: line comments beginning with '--#'.
 
-The dependency model is based on 'topics'.  A topic is just an arbitrary name.
-Each module declares what topics it 'requires' and what topics it 'provides'.
-When a module requires a topic, PSql.Deploy will not execute that module until
-all modules providing that topic have completed.
+The MODULE directive enables the author to split a seed script into 'modules'
+that can execute in parallel.  A module is a named chunk of SQL that performs
+one unit of seed work, such as populating a particular table with data.  For
+example, a seed script might contain the following two modules:
 
-Each module has a name, which also is a topic that the module provides.  Seed
-code begins in the 'init' module.
+    --# MODULE: Customer
+    INSERT dbo.Customer ...
 
-PSql.Deploy seed directives take the form of magic comments.  The following
-magic comments are available:
+    --# MODULE: Product
+    INSERT dbo.Product ...
+
+All lines of SQL code after a MODULE directive until the next MODULE directive
+(or the end of the file) are part of that module.  Any lines of SQL code before
+the first MODULE directive are implicitly part of a module named 'init'.  Thus
+each line of SQL code in a seed script is part of exactly one module.
+
+Module names are author-defined.  They appear in logging and error messages.
+A module can contain multiple GO-separated batches.
+
+A module can declare dependencies upon other modules.  PSql.Deploy's
+Invoke-SqlSeed cmdlet executes modules in parallel where possible but
+guarantees that each module's dependencies are completed before the module
+itself executes.
+
+The dependency model is based on 'topics'.  A topic is an author-defined name
+that represents some facet of a seed's work that PSql.Deploy should track.
+Each module 'provides' one or more topics, meaning that the module contributes
+to the work represented by each topic.  A module always provides its own name
+as a topic and can use the PROVIDES directive to declare additional provided
+topics.  A module can 'require' one or more topics via the REQUIRES directive.
+When a module requires a topic, the module will not execute until that topic is
+complete.
+
+For example, consider a seed that populates three tables: Customer, Product,
+and Order.  The Order table has foreign keys to both Customer and Product.
+Customer and Product can be populated in parallel, but Order cannot be
+populated until both Customer and Product are complete.  The seed script might
+approach this as follows:
+
+    --# MODULE: Customer
+    INSERT dbo.Customer ...
+
+    --# MODULE: Product
+    INSERT dbo.Product ...
+
+    --# MODULE:   Order
+    --# REQUIRES: Customer Product
+    INSERT dbo.Order ...
+
+Another approach is to use a topic to represent the concept of 'master data':
+
+    --# MODULE:   Customer
+    --# PROVIDES: MasterData
+    INSERT dbo.Customer ...
+
+    --# MODULE:   Product
+    --# PROVIDES: MasterData
+    INSERT dbo.Product ...
+
+    --# MODULE:   Order
+    --# REQUIRES: MasterData
+    INSERT dbo.Order ...
+
+Invoke-SqlSeed executes seed modules in parallel by creating multiple worker
+tasks.  Each worker repeatedly picks the next ready module and executes it on
+the worker's connection to the target database.  In rare cases, an author might
+want a seed module to execute on every worker.  For example, an author might
+want to set connection options (like NOCOUNT) or to create a temporary table.
+The WORKER directive enables this behavior.  To perform connection setup:
+
+    --# MODULE: InitWorker
+    --# WORKER: all
+    SET NOCOUNT ON; -- This happens in every connection
+
+    --# MODULE:   Customer
+    --# REQUIRES: InitWorker
+    INSERT dbo.Customer ...
+
+Seed directive reference:
 
     --# MODULE: <name> [<topic> ...]
         Starts a new module with the specified name, optionally declaring extra
@@ -126,7 +193,13 @@ magic comments are available:
         Indicates that the current module requires the specified topics.
     
     --# WORKER: all|any
-        Specifies worker execution mode.  'all' means the module executes on all
-        workers; 'any' means it executes on any single worker.
+        Specifies worker execution mode: 'all' means that a copy of the module
+        will run on every worker; 'any' (the default) means that the module
+        executes once on any single available worker.
 
-TODO: Describe all-worker modules.
+
+:: See Also ::
+
+- about_PSql_Deploy
+- Invoke-SqlSeed
+- https://github.com/sharpjs/PSql.Deploy
