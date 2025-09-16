@@ -15,7 +15,8 @@ a target database.  A seed is a SQL script that populates a target database
 with data.  Together, migrations and seeds provide a mechanism to perform
 database deployments in a controlled and repeatable manner.
 
-Source Directory Structure
+
+:: Source Directory Structure ::
 
 PSql.Deploy expects migrations and seeds to have a specific filesystem layout.
 
@@ -49,32 +50,20 @@ src\                    The source directory: a set of migrations and
  └─ ...                 PSql.Deploy does not care about other files or
                           directories present in the source directory.
 
-See the sections below for more details about migrations and seeds.
 
-TODO: SQLCMD mode support.
-GO
-    Breaks the script into batches.
-
-$(name)
-    Replaced by the value of the variable 'name' in the migration or seed.
-
-:r <file>
-    Include the contents of the specified file in the migration.  The variable
-    $(Path) is available in the included file and expands to the path of the
-    migration or seed file that includes the file.
-
-:setvar <name> <value>
-    Set a variable for the duration of the migration or seed.  The variable
-    $(name) is available in the included file and expands to the value set by
-    this directive.
-
-TODO: General magic comments description.
-
-
-Target Parameter
-----------------
+:: Target Parameter ::
 
 Most PSql.Deploy cmdlets accept a -Target parameter to specify one or more
 target databases on which to operate.
 
 TODO: Expand
+
+
+:: See Also ::
+
+- about_PSql_Deploy_Migrations
+- about_PSql_Deploy_Seeds
+- Get-SqlMigrations
+- Invoke-SqlMigrations
+- Invoke-SqlSeed
+- https://github.com/sharpjs/PSql.Deploy
