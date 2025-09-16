@@ -15,6 +15,9 @@ a target database.  A seed is a SQL script that populates a target database
 with data.  Together, migrations and seeds provide a mechanism to perform
 database deployments in a controlled and repeatable manner.
 
+PSql.Deploy is designed to integrate with the PSql module if it is installed,
+but PSql is not required.
+
 
 :: Source Directory Structure ::
 
@@ -50,8 +53,35 @@ src\                    The source directory: a set of migrations and
  └─ ...                 PSql.Deploy does not care about other files or
                           directories present in the source directory.
 
+Given an arbitrary source directory, PSql.Deploy expects to find migrations in
+a Migrations subdirectory and seeds in a Seeds subdirectory.  Within the
+Migrations and Seeds directories, each subdirectory containing a _Main.sql file
+is a migration or seed, respectively.  The name of the subdirectory determines
+the name of the migration or seed.
 
-:: Target Parameter ::
+The _Main.sql file is a T-SQL script and is the entry point for the migration
+or seed.  PSql.Deploy supports the SQLCMD features GO, $(…), :r, and :setvar,
+enabling authors to split migration and seed scripts across multiple files.
+PSql.Deploy also recognizes a few migration- and seed-specific directives.
+These are 'magic' comments that begin with --# but are ignored by other tools.
+
+See about_PSql_Deploy_Migrations and about_PSql_Deploy_Seeds for more details.
+
+
+:: Command Overview ::
+
+Get-SqlMigrations
+    Lists migrations found in a source directory or applied to a target
+    database.
+
+Invoke-SqlMigrations
+    Applies outstanding migrations to one or more target databases.
+
+Invoke-SqlSeed
+    Applies one or more seeds to one or more target databases.
+
+
+:: -Target Parameter ::
 
 Most PSql.Deploy cmdlets accept a -Target parameter to specify one or more
 target databases on which to operate.
