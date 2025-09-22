@@ -3,9 +3,11 @@ about_PSql_Deploy_Seeds
 
 SHORT DESCRIPTION
 
-A PSql.Deploy seed is a T-SQL script that populates a target SQL Server or
-Azure SQL database with data.  The Invoke-SqlSeed cmdlet applies one or more
-seeds to one or more target databases.
+A PSql.Deploy seed is a T-SQL script that populates a target database with
+data.  The Invoke-SqlSeed cmdlet applies seeds to target databases, with
+configurable parallelism to support both large databases and many-database
+scenarios.  PSql.Deploy supports SQL Server, Azure SQL Database, and compatible
+databases.
 
 
 LONG DESCRIPTION

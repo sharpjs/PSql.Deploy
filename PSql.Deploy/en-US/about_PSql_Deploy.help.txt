@@ -3,8 +3,8 @@ about_PSql_Deploy
 
 SHORT DESCRIPTION
 
-PSql.Deploy is a migration and seeding system for SQL Server and Azure SQL
-Database.
+PSql.Deploy is a migration and seeding system for SQL Server, Azure SQL
+Database, and compatible databases.
 
 
 LONG DESCRIPTION
@@ -79,14 +79,6 @@ Invoke-SqlMigrations
 
 Invoke-SqlSeed
     Applies one or more seeds to one or more target databases.
-
-
-:: -Target Parameter ::
-
-Most PSql.Deploy cmdlets accept a -Target parameter to specify one or more
-target databases on which to operate.
-
-TODO: Expand
 
 
 :: See Also ::

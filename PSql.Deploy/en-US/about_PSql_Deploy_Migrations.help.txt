@@ -3,10 +3,12 @@ about_PSql_Deploy_Migrations
 
 SHORT DESCRIPTION
 
-A PSql.Deploy migration is a T-SQL script that evolves a target SQL Server or
-Azure SQL database's schema from its current version to the next version.  The
-Invoke-SqlMigrations cmdlet applies outstanding migrations to one or more
-target databases.
+A PSql.Deploy migration is a T-SQL script that evolves the schema of a target
+database from its current state to some new state.  The Get-SqlMigrations
+cmdlet lists migrations, and the Invoke-SqlMigrations cmdlet applies
+outstanding migrations to one or more target databases, with configurable
+parallelism to speed deployment in many-database scenarios.  PSql.Deploy
+supports SQL Server, Azure SQL Database, and compatible databases.
 
 
 LONG DESCRIPTION
