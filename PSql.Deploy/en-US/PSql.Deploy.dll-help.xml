@@ -33,10 +33,10 @@
         The Get-SqlMigrations cmdlet retrieves a list of database schema migrations from either a filesystem location or a target database.
       </maml:para>
       <maml:para>
-        When used with no parameters or with the -Path parameter, the cmdlet lists the migrations defined in a filesystem location.  The -Path parameter specifies the location; otherwise, the cmdlet uses the current directory as the location.  The location must conform to the expected PSql.Deploy source directory structure, with migrations in the Migrations subdirectory.  See about_PSql_Deploy for more details about the expected directory structure.
+        When used with no parameters or with the -Path parameter, the cmdlet lists the migrations defined in a filesystem location.  The -Path parameter specifies the location; without it, the cmdlet uses the current directory as the location.  The location must conform to the expected PSql.Deploy source directory structure, with migrations in a Migrations subdirectory.  See about_PSql_Deploy_Migrations for more details about the expected directory structure.
       </maml:para>
       <maml:para>
-        When used with the -Target parameter, the cmdlet lists the migrations already applied to the target database.  The optional -MinimumName parameter excludes applied migrations with names lesser/earlier than the specified name.
+        When used with the -Target parameter, the cmdlet lists the migrations already applied to the specified target database.  The optional -MinimumName parameter excludes applied migrations with names lesser/earlier than the specified name.
       </maml:para>
       <maml:para>
         The -InputObject parameter accepts pipeline input or a positional argument.  The cmdlet automatically determines whether to interpret the value as a -Path or -Target argument.
@@ -95,7 +95,7 @@
             Value for the -Path or -Target parameter.  The cmdlet determines which parameter to use.
           </maml:para>
           <maml:para>
-            If the object is a string, the cmdlet assumes the string is a SqlClient connection string for -Target if the string contains a semicolon.  Otherwise, the cmdlet assumes the string is a filesystem path -Path.
+            If the object is a string, the cmdlet assumes the string is a SqlClient connection string for -Target if the string contains a semicolon.  Otherwise, the cmdlet assumes the string is a filesystem path for -Path.
           </maml:para>
           <maml:para>
             If the object is not a string, the cmdlet assumes it is a value for the -Target parameter.
@@ -113,7 +113,7 @@
         <maml:name>Path</maml:name>
         <maml:description>
           <maml:para>
-            Path to a directory containing database source code in the layout expected by PSql.Deploy.
+            Path to a source directory in the layout expected by PSql.Deploy.  See about_PSql_Deploy_Migrations for more details about the expected directory structure.
           </maml:para>
         </maml:description>
         <command:parameterValue required="true">string</command:parameterValue>
@@ -144,7 +144,7 @@
             </maml:listItem>
             <maml:listItem>
               <maml:para>
-                PSql.Deploy.SqlTargetDatabase   obtained by casting or construction
+                PSql.Deploy.SqlTargetDatabase   see INPUTS section for details
               </maml:para>
             </maml:listItem>
           </maml:list>
@@ -161,7 +161,10 @@
         <maml:name>MinimumName</maml:name>
         <maml:description>
           <maml:para>
-            Minimum name of migration to return, or $null to to return all migrations registered on the target database.  The default is $null.
+            Minimum name of migration to return, or $null to to return all known migrations.  The default is $null.
+          </maml:para>
+          <maml:para>
+            This parameter is valid only when listing migrations applied to a target database.  When listing migrations in a filesystem location, the cmdlet always lists all migrations.
           </maml:para>
         </maml:description>
         <command:parameterValue required="true">string</command:parameterValue>
@@ -255,7 +258,7 @@
       <command:noun>SqlMigrations</command:noun>
       <maml:description>
         <maml:para>
-          Invokes database schema migrations against target databases.
+          Applies database schema migrations to target databases.
         </maml:para>
       </maml:description>
     </command:details>
