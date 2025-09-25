@@ -181,9 +181,9 @@ public abstract class PerTargetCommand : AsyncPSCmdlet
     {
         return new()
         {
-            Contexts                  = Context!,
-            MaxParallelism            = MaxParallelism,
-            MaxParallelismPerDatabase = MaxParallelism
+            Contexts                = Context!,
+            MaxParallelism          = MaxParallelism,
+            MaxParallelismPerTarget = MaxParallelism
         };
     }
 

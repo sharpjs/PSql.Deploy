@@ -40,7 +40,7 @@ public class SqlTargetDatabaseGroupTests
         group.Targets[1].ConnectionString.ShouldBe("Server = localhost; Database = B");
         group.Name                       .ShouldBe("My Group");
         group.MaxParallelism             .ShouldBe(4);
-        group.MaxParallelismPerDatabase  .ShouldBe(2);
+        group.MaxParallelismPerTarget    .ShouldBe(2);
     }
 
     [Test]
@@ -59,7 +59,7 @@ public class SqlTargetDatabaseGroupTests
         group.Targets[1].ConnectionString.ShouldBe("Server = localhost; Database = B");
         group.Name                       .ShouldBeNull();
         group.MaxParallelism             .ShouldBe(Environment.ProcessorCount);
-        group.MaxParallelismPerDatabase  .ShouldBe(Environment.ProcessorCount)  ;
+        group.MaxParallelismPerTarget    .ShouldBe(Environment.ProcessorCount)  ;
     }
 
     [Test]
@@ -108,8 +108,7 @@ public class SqlTargetDatabaseGroupTests
         actual.Targets[1].ConnectionString.ShouldBe("Server = localhost; Database = B");
         actual.Name                       .ShouldBeNull();
         actual.MaxParallelism             .ShouldBe(Environment.ProcessorCount);
-        actual.MaxParallelismPerDatabase  .ShouldBe(Environment.ProcessorCount);
-        // TODO: MaxParallelismPerTarget
+        actual.MaxParallelismPerTarget    .ShouldBe(Environment.ProcessorCount);
     }
 
     [Test]
@@ -128,8 +127,7 @@ public class SqlTargetDatabaseGroupTests
         actual.Targets[1].ConnectionString.ShouldBe("Server = localhost; Database = B");
         actual.Name                       .ShouldBeNull();
         actual.MaxParallelism             .ShouldBe(Environment.ProcessorCount);
-        actual.MaxParallelismPerDatabase  .ShouldBe(Environment.ProcessorCount);
-        // TODO: MaxParallelismPerTarget
+        actual.MaxParallelismPerTarget    .ShouldBe(Environment.ProcessorCount);
     }
 
     [Test]
@@ -141,8 +139,7 @@ public class SqlTargetDatabaseGroupTests
         actual.Targets[0].ConnectionString.ShouldBe("Server = localhost; Database = A");
         actual.Name                       .ShouldBeNull();
         actual.MaxParallelism             .ShouldBe(Environment.ProcessorCount);
-        actual.MaxParallelismPerDatabase  .ShouldBe(Environment.ProcessorCount);
-        // TODO: MaxParallelismPerTarget
+        actual.MaxParallelismPerTarget    .ShouldBe(Environment.ProcessorCount);
     }
 
     [Test]

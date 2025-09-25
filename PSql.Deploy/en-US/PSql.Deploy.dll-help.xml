@@ -909,7 +909,7 @@
         The New-SqlTargetDatabaseGroup cmdlet creates a SqlTargetDatabaseGroup object, which specifies a set of target databases along with the maximum degrees of parallelism with which to operate against those databases.  The SqlTargetDatabaseGroup object is usable in the -Target parameter of the Invoke-SqlMigrations and Invoke-SqlSeed cmdlets.
       </maml:para>
       <maml:para>
-        The parallelism properties include MaxParallelism, which specifies how many databases in the group can be processed simultaneously, and MaxParallelismPerDatabase, which specifies how many operations can be performed against a single database at one time.  These properties allow you to tune performance when working with large numbers of databases.
+        The parallelism properties include MaxParallelism, which specifies how many target databases in the group can be processed simultaneously, and MaxParallelismPerTarget, which specifies how many operations can be performed against a single target database at one time.
       </maml:para>
       <maml:para>
         The target database group supports an optional descriptive name, which will appear in command output and logs when operations are performed against the group.
@@ -932,7 +932,7 @@
           <command:parameterValue required="true">int</command:parameterValue>
         </command:parameter>
         <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
-          <maml:name>MaxParallelismPerDatabase</maml:name>
+          <maml:name>MaxParallelismPerTarget</maml:name>
           <command:parameterValue required="true">int</command:parameterValue>
         </command:parameter>
       </command:syntaxItem>
@@ -1003,12 +1003,12 @@
         <dev:defaultValue>Environment.ProcessorCount</dev:defaultValue>
       </command:parameter>
 
-      <!-- -MaxParallelismPerDatabase -->
+      <!-- -MaxParallelismPerTarget -->
       <command:parameter required="false" position="named" pipelineInput="False" globbing="false">
-        <maml:name>MaxParallelismPerDatabase</maml:name>
+        <maml:name>MaxParallelismPerTarget</maml:name>
         <maml:description>
           <maml:para>
-            Maximum count of operations to perform in parallel against one database.  The default value is the number of logical processors on the local machine.
+            Maximum count of operations to perform in parallel against one target database.  The default value is the number of logical processors on the local machine.
           </maml:para>
         </maml:description>
         <command:parameterValue required="true">int</command:parameterValue>

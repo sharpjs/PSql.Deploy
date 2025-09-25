@@ -36,14 +36,14 @@ public class NewSqlTargetDatabaseGroupCommand : PSCmdlet
     public int MaxParallelism { get; set; }
 
     /// <summary>
-    ///   <b>-MaxParallelismPerDatabase:</b>
+    ///   <b>-MaxParallelismPerTarget:</b>
     ///   Maximum count of operations to perform in parallel against any one
-    ///   database. The default value is the number of logical processors on
-    ///   the local machine.
+    ///   target database. The default value is the number of logical
+    ///   processors on the local machine.
     /// </summary>
     [Parameter()]
     [ValidateRange(1, int.MaxValue)]
-    public int MaxParallelismPerDatabase { get; set; }
+    public int MaxParallelismPerTarget { get; set; }
 
     // Collected targets from all ProcessRecord invocations
     private IReadOnlyList<SqlTargetDatabase>? _targets;
@@ -67,7 +67,7 @@ public class NewSqlTargetDatabaseGroupCommand : PSCmdlet
         Assume.NotNull(_targets);
 
         WriteObject(new SqlTargetDatabaseGroup(
-            _targets, Name, MaxParallelism, MaxParallelismPerDatabase
+            _targets, Name, MaxParallelism, MaxParallelismPerTarget
         ));
     }
 

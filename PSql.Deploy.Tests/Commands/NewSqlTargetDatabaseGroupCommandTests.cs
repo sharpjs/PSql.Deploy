@@ -19,11 +19,11 @@ internal class NewSqlTargetDatabaseGroupCommandTests
 
         var group = ShouldBeGroup(output);
 
-        group.Name                     .ShouldBeNull();
-        group.Targets                  .ShouldNotBeNull().AssignTo(out var targets);
-        group.Targets.Count            .ShouldBe(2);
-        group.MaxParallelism           .ShouldBe(Environment.ProcessorCount);
-        group.MaxParallelismPerDatabase.ShouldBe(Environment.ProcessorCount);
+        group.Name                   .ShouldBeNull();
+        group.Targets                .ShouldNotBeNull().AssignTo(out var targets);
+        group.Targets.Count          .ShouldBe(2);
+        group.MaxParallelism         .ShouldBe(Environment.ProcessorCount);
+        group.MaxParallelismPerTarget.ShouldBe(Environment.ProcessorCount);
 
         targets[0].ShouldNotBeNull();
         targets[0].ConnectionString.ShouldBe("Server=.;Database=a");
@@ -49,11 +49,11 @@ internal class NewSqlTargetDatabaseGroupCommandTests
 
         var group = ShouldBeGroup(output);
 
-        group.Name                     .ShouldBeNull();
-        group.Targets                  .ShouldNotBeNull().AssignTo(out var targets);
-        group.Targets.Count            .ShouldBe(3);
-        group.MaxParallelism           .ShouldBe(Environment.ProcessorCount);
-        group.MaxParallelismPerDatabase.ShouldBe(Environment.ProcessorCount);
+        group.Name                   .ShouldBeNull();
+        group.Targets                .ShouldNotBeNull().AssignTo(out var targets);
+        group.Targets.Count          .ShouldBe(3);
+        group.MaxParallelism         .ShouldBe(Environment.ProcessorCount);
+        group.MaxParallelismPerTarget.ShouldBe(Environment.ProcessorCount);
 
         targets[0].ShouldNotBeNull();
         targets[0].ConnectionString.ShouldBe("Server=.;Database=a");
@@ -77,11 +77,11 @@ internal class NewSqlTargetDatabaseGroupCommandTests
 
         var group = ShouldBeGroup(output);
 
-        group.Name                     .ShouldBe("GroupA");
-        group.Targets                  .ShouldNotBeNull().AssignTo(out var targets);
-        group.Targets.Count            .ShouldBe(1);
-        group.MaxParallelism           .ShouldBe(Environment.ProcessorCount);
-        group.MaxParallelismPerDatabase.ShouldBe(Environment.ProcessorCount);
+        group.Name                   .ShouldBe("GroupA");
+        group.Targets                .ShouldNotBeNull().AssignTo(out var targets);
+        group.Targets.Count          .ShouldBe(1);
+        group.MaxParallelism         .ShouldBe(Environment.ProcessorCount);
+        group.MaxParallelismPerTarget.ShouldBe(Environment.ProcessorCount);
 
         targets[0].ShouldNotBeNull();
         targets[0].ConnectionString.ShouldBe("Server=.;Database=a");
@@ -98,32 +98,32 @@ internal class NewSqlTargetDatabaseGroupCommandTests
 
         var group = ShouldBeGroup(output);
 
-        group.Name                     .ShouldBeNull();
-        group.Targets                  .ShouldNotBeNull().AssignTo(out var targets);
-        group.Targets.Count            .ShouldBe(1);
-        group.MaxParallelism           .ShouldBe(2);
-        group.MaxParallelismPerDatabase.ShouldBe(Environment.ProcessorCount);
+        group.Name                   .ShouldBeNull();
+        group.Targets                .ShouldNotBeNull().AssignTo(out var targets);
+        group.Targets.Count          .ShouldBe(1);
+        group.MaxParallelism         .ShouldBe(2);
+        group.MaxParallelismPerTarget.ShouldBe(Environment.ProcessorCount);
 
         targets[0].ShouldNotBeNull();
         targets[0].ConnectionString.ShouldBe("Server=.;Database=a");
     }
 
     [Test]
-    public void Invoke_WithMaxParallelismPerDatabase()
+    public void Invoke_WithMaxParallelismPerTarget()
     {
         var (output, exception) = Execute(
             """
-            New-SqlTargetDatabaseGroup 'Server=.;Database=a' -MaxParallelismPerDatabase 2
+            New-SqlTargetDatabaseGroup 'Server=.;Database=a' -MaxParallelismPerTarget 2
             """
         );
 
         var group = ShouldBeGroup(output);
 
-        group.Name                     .ShouldBeNull();
-        group.Targets                  .ShouldNotBeNull().AssignTo(out var targets);
-        group.Targets.Count            .ShouldBe(1);
-        group.MaxParallelism           .ShouldBe(Environment.ProcessorCount);
-        group.MaxParallelismPerDatabase.ShouldBe(2);
+        group.Name                   .ShouldBeNull();
+        group.Targets                .ShouldNotBeNull().AssignTo(out var targets);
+        group.Targets.Count          .ShouldBe(1);
+        group.MaxParallelism         .ShouldBe(Environment.ProcessorCount);
+        group.MaxParallelismPerTarget.ShouldBe(2);
 
         targets[0].ShouldNotBeNull();
         targets[0].ConnectionString.ShouldBe("Server=.;Database=a");
