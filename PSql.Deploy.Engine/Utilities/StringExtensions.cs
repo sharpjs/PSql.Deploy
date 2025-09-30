@@ -51,8 +51,9 @@ internal static class StringExtensions
     ///   <paramref name="s"/>
     ///     otherwise.
     /// </returns>
-    ///   This method performs a case-sensitive ordinal comparison.
     /// <remarks>
+    ///   This method performs a case-sensitive ordinal comparison.
+    /// </remarks>
     public static string? NullIf(this string? s, string? nullish)
         => s == nullish ? null : s;
 
