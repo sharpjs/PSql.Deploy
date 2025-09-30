@@ -189,16 +189,29 @@ internal class SeedApplicator : ISeedApplication
 
     private async Task SeedWorkerMainAsync(QueueContext context)
     {
-        await using var connection = Connect(context);
+        try
+        {
+            await using var connection = Connect(context);
 
-        await PrepareAsync(connection, context);
+            await PrepareAsync(connection, context);
 
-        bool CanTake(SeedModule module)
-            => module.WorkerId == 0
-            || module.WorkerId == context.WorkerId;
+            bool CanTake(SeedModule module)
+                => module.WorkerId == 0
+                || module.WorkerId == context.WorkerId;
 
-        while (await context.GetNextEntryAsync(CanTake) is { Value: var module })
-            await ExecuteAsync(module, connection, context);
+            while (await context.GetNextEntryAsync(CanTake) is { Value: var module })
+                await ExecuteAsync(module, connection, context);
+        }
+        catch (OperationCanceledException)
+        {
+            // Not an error, but need to flow cancellation to caller
+            throw;
+        }
+        catch (Exception e)
+        {
+            HandleError(e, context);
+            throw;
+        }
     }
 
     private ISeedTargetConnection Connect(QueueContext context)
@@ -234,6 +247,14 @@ internal class SeedApplicator : ISeedApplication
             await connection.ExecuteSeedBatchAsync(batch, context.CancellationToken);
 
         Interlocked.Increment(ref _appliedCount);
+    }
+
+    private void HandleError(Exception e, QueueContext context)
+    {
+        if (e.Data is { IsReadOnly: false } data)
+            data[nameof(context.WorkerId)] = context.WorkerId;
+
+        context.SetEnding();
     }
 
     private void ReportStarting()
