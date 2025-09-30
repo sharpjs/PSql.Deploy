@@ -54,7 +54,7 @@ public class Target
 
         ServerDisplayName
             =  serverDisplayName
-            ?? builder.DataSource.NullIfEmpty()
+            ?? builder.DataSource.NullIfEmpty().NullIf(".")
             ?? "local";
 
         DatabaseDisplayName

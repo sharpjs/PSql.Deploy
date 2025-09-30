@@ -77,12 +77,12 @@ public class InvokeSqlMigrationsCommandIntegrationTests
         ShouldBeMigrations(3, MigrationState.AppliedPost);
         ShouldBeMigrations(6, MigrationState.AppliedPost);
 
-        File.ReadAllText("..PSqlDeployTestA.0_Pre.log" ).ShouldNotBeNullOrEmpty();
-        File.ReadAllText("..PSqlDeployTestA.1_Core.log").ShouldNotBeNullOrEmpty();
-        File.ReadAllText("..PSqlDeployTestA.2_Post.log").ShouldNotBeNullOrEmpty();
-        File.ReadAllText("..PSqlDeployTestB.0_Pre.log" ).ShouldNotBeNullOrEmpty();
-        File.ReadAllText("..PSqlDeployTestB.1_Core.log").ShouldNotBeNullOrEmpty();
-        File.ReadAllText("..PSqlDeployTestB.2_Post.log").ShouldNotBeNullOrEmpty();
+        File.ReadAllText("local.PSqlDeployTestA.0_Pre.log" ).ShouldNotBeNullOrEmpty();
+        File.ReadAllText("local.PSqlDeployTestA.1_Core.log").ShouldNotBeNullOrEmpty();
+        File.ReadAllText("local.PSqlDeployTestA.2_Post.log").ShouldNotBeNullOrEmpty();
+        File.ReadAllText("local.PSqlDeployTestB.0_Pre.log" ).ShouldNotBeNullOrEmpty();
+        File.ReadAllText("local.PSqlDeployTestB.1_Core.log").ShouldNotBeNullOrEmpty();
+        File.ReadAllText("local.PSqlDeployTestB.2_Post.log").ShouldNotBeNullOrEmpty();
     }
 
     [Test]

@@ -33,8 +33,8 @@ public class InvokeSqlSeedCommandIntegrationTests
 
         exception.ShouldBeNull();
 
-        File.ReadAllText("..PSqlDeployTestA.Typical.log").ShouldNotBeNullOrEmpty();
-        File.ReadAllText("..PSqlDeployTestB.Typical.log").ShouldNotBeNullOrEmpty();
+        File.ReadAllText("local.PSqlDeployTestA.Typical.log").ShouldNotBeNullOrEmpty();
+        File.ReadAllText("local.PSqlDeployTestB.Typical.log").ShouldNotBeNullOrEmpty();
     }
 
     [Test]

@@ -1,9 +1,6 @@
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
-using System.Diagnostics.CodeAnalysis;
-using System.Text;
-
 namespace PSql.Deploy;
 
 /// <summary>
@@ -26,7 +23,7 @@ internal static class StringExtensions
         => string.IsNullOrEmpty(s);
 
     /// <summary>
-    ///   Replaces an empty string with <see langword="null"/>.
+    ///   Replaces the string with <see langword="null"/> if it is empty.
     /// </summary>
     /// <param name="s">
     ///   The string to transform.
@@ -36,7 +33,28 @@ internal static class StringExtensions
     ///   <paramref name="s"/> otherwise.
     /// </returns>
     public static string? NullIfEmpty(this string? s)
-        => string.IsNullOrEmpty(s) ? null : s;
+        => s.NullIf(string.Empty);
+
+    /// <summary>
+    ///   Replaces the string with <see langword="null"/> if it is equal to the
+    ///   specified string.
+    /// </summary>
+    /// <param name="s">
+    ///   The string to transform.
+    /// </param>
+    /// <param name="nullish">
+    ///   The string against which to compare <paramref name="s"/>.
+    /// </param>
+    /// <returns>
+    ///   <see langword="null"/>
+    ///     if <paramref name="s"/> is equal to <paramref name="nullish"/>;
+    ///   <paramref name="s"/>
+    ///     otherwise.
+    /// </returns>
+    ///   This method performs a case-sensitive ordinal comparison.
+    /// <remarks>
+    public static string? NullIf(this string? s, string? nullish)
+        => s == nullish ? null : s;
 
     /// <summary>
     ///   Escapes the string for inclusing in a SQL string literal.
