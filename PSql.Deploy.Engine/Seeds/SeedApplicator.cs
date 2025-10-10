@@ -7,7 +7,7 @@ using DependencyQueue;
 namespace PSql.Deploy.Seeds;
 
 using Queue                = DependencyQueue                     <SeedModule>;
-using QueueContext         = DependencyQueueContext              <SeedModule, ISeedSessionInternal>;
+using QueueItemBuilder     = DependencyQueueItemBuilder          <SeedModule>;
 using QueueError           = DependencyQueueError                ;
 using QueueErrorType       = DependencyQueueErrorType            ;
 using CycleError           = DependencyQueueCycleError           <SeedModule>;
@@ -123,11 +123,8 @@ internal class SeedApplicator : ISeedApplication
 
             ReportApplying();
 
-            await queue.RunAsync(
-                SeedWorkerMainAsync,
-                Session,
-                Parallelism.MaxActions,
-                Session.CancellationToken
+            await Task.WhenAll(
+                CreateWorkerContexts(queue).Select(WorkerMainAsync)
             );
         }
         catch (OperationCanceledException)
@@ -149,9 +146,9 @@ internal class SeedApplicator : ISeedApplication
         }
     }
 
-    private void Populate(DependencyQueue<SeedModule> queue)
+    private void Populate(Queue queue)
     {
-        var builder = queue.CreateEntryBuilder();
+        var builder = queue.CreateItemBuilder();
 
         foreach (var module in Seed.Modules)
         {
@@ -163,10 +160,10 @@ internal class SeedApplicator : ISeedApplication
         }
     }
 
-    private static void Populate(DependencyQueueEntryBuilder<SeedModule> builder, SeedModule module)
+    private static void Populate(QueueItemBuilder builder, SeedModule module)
     {
         builder
-            .NewEntry(module.Name, module)
+            .NewItem(module.Name, module)
             .AddProvides(module.Provides)
             .AddRequires(module.Requires)
             .Enqueue();
@@ -177,7 +174,7 @@ internal class SeedApplicator : ISeedApplication
         return new(module.Name, workerId, module.Batches, module.Provides, module.Requires);
     }
 
-    private void Validate(DependencyQueue<SeedModule> queue)
+    private void Validate(Queue queue)
     {
         var errors = queue.Validate();
 
@@ -187,10 +184,36 @@ internal class SeedApplicator : ISeedApplication
             throw OnInvalid();
     }
 
-    private async Task SeedWorkerMainAsync(QueueContext context)
+    private class WorkerContext
+    {
+        public required Queue Queue    { get; init; }
+        public required Guid  RunId    { get; init; }
+        public required int   WorkerId { get; init; }
+    }
+
+    private IEnumerable<WorkerContext> CreateWorkerContexts(Queue queue)
+    {
+        var runId = Guid.NewGuid();
+        var count = Parallelism.MaxActions;
+
+        for (var workerId = 1; workerId <= count; workerId++)
+        {
+            yield return new()
+            {
+                Queue    = queue,
+                RunId    = runId,
+                WorkerId = workerId
+            };
+        }
+    }
+
+    private async Task WorkerMainAsync(WorkerContext context)
     {
         try
         {
+            // Hop off caller's thread so caller can start other workers
+            await Task.Yield();
+
             await using var connection = Connect(context);
 
             await PrepareAsync(connection, context);
@@ -199,8 +222,11 @@ internal class SeedApplicator : ISeedApplication
                 => module.WorkerId == 0
                 || module.WorkerId == context.WorkerId;
 
-            while (await context.GetNextEntryAsync(CanTake) is { Value: var module })
+            while (await context.Queue.DequeueAsync(CanTake) is { Value: var module } item)
+            {
                 await ExecuteAsync(module, connection, context);
+                context.Queue.Complete(item);
+            }
         }
         catch (OperationCanceledException)
         {
@@ -214,47 +240,47 @@ internal class SeedApplicator : ISeedApplication
         }
     }
 
-    private ISeedTargetConnection Connect(QueueContext context)
+    private ISeedTargetConnection Connect(WorkerContext context)
     {
         Assume.NotNull(_logWriter);
 
-        var prefix = $"{context.WorkerId}>";
+        var prefix = $"W{context.WorkerId}>";
         var logger = new PrefixTextWriterSqlMessageLogger(_logWriter, prefix);
 
         return Session.Connect(Target, logger);
     }
 
-    private async Task PrepareAsync(ISeedTargetConnection connection, QueueContext context)
+    private async Task PrepareAsync(ISeedTargetConnection connection, WorkerContext context)
     {
-        using var _ = await Parallelism.BeginActionScopeAsync(context.CancellationToken);
+        using var _ = await Parallelism.BeginActionScopeAsync(Session.CancellationToken);
 
-        await connection.OpenAsync(context.CancellationToken);
+        await connection.OpenAsync(Session.CancellationToken);
 
         await connection.PrepareAsync(
             context.RunId,
             context.WorkerId,
-            context.CancellationToken
+            Session.CancellationToken
         );
     }
 
-    private async Task ExecuteAsync(SeedModule module, ISeedTargetConnection connection, QueueContext context)
+    private async Task ExecuteAsync(SeedModule module, ISeedTargetConnection connection, WorkerContext context)
     {
-        using var _ = await Parallelism.BeginActionScopeAsync(context.CancellationToken);
+        using var _ = await Parallelism.BeginActionScopeAsync(Session.CancellationToken);
 
         ReportApplying(module, context.WorkerId);
 
         foreach (var batch in module.Batches)
-            await connection.ExecuteSeedBatchAsync(batch, context.CancellationToken);
+            await connection.ExecuteSeedBatchAsync(batch, Session.CancellationToken);
 
         Interlocked.Increment(ref _appliedCount);
     }
 
-    private void HandleError(Exception e, QueueContext context)
+    private void HandleError(Exception e, WorkerContext context)
     {
         if (e.Data is { IsReadOnly: false } data)
             data[nameof(context.WorkerId)] = context.WorkerId;
 
-        context.SetEnding();
+        context.Queue.Clear();
     }
 
     private void ReportStarting()
@@ -415,8 +441,8 @@ internal class SeedApplicator : ISeedApplication
             "The module '{0}' cannot require the topic '{1}' because " +
             "a module providing '{1}' already requires '{0}'. " +
             "The dependency graph does not permit cycles.",
-            error.RequiringEntry.Name,
-            error.RequiredTopic .Name
+            error.RequiringItem.Name,
+            error.RequiredTopic.Name
         );
     }
 
