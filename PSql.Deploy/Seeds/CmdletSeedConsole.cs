@@ -50,7 +50,7 @@ internal class CmdletSeedConsole : S.ISeedConsole
         var fileName = $"{target}.{seed}.log".SanitizeFileName();
 
         return TextWriter.Synchronized(
-            new StreamWriter(Path.Combine(_logPath, fileName))
+            new StreamWriter(Path.Combine(_logPath, fileName)) { AutoFlush = true }
         );
     }
 

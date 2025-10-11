@@ -49,7 +49,7 @@ internal class CmdletMigrationConsole : M.IMigrationConsole
         var database = info.Target.DatabaseDisplayName;
         var fileName = $"{server}.{database}.{(int) phase}_{phase}.log".SanitizeFileName();
 
-        return new StreamWriter(Path.Combine(logPath, fileName));
+        return new StreamWriter(Path.Combine(logPath, fileName)) { AutoFlush = true };
     }
 
     /// <inheritdoc/>
