@@ -49,7 +49,9 @@ internal class CmdletSeedConsole : S.ISeedConsole
 
         var fileName = $"{target}.{seed}.log".SanitizeFileName();
 
-        return new StreamWriter(Path.Combine(_logPath, fileName));
+        return TextWriter.Synchronized(
+            new StreamWriter(Path.Combine(_logPath, fileName))
+        );
     }
 
     /// <inheritdoc/>

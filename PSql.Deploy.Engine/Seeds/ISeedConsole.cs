@@ -67,6 +67,9 @@ public interface ISeedConsole
     /// <returns>
     ///   A writer that writes to the log file.
     /// </returns>
+    /// <remarks>
+    ///   Implementations must ensure that the returned writer is thread-safe.
+    /// </remarks>
     /// <exception cref="ArgumentNullException">
     ///   <paramref name="info"/> is <see langword="null"/>.
     /// </exception>
