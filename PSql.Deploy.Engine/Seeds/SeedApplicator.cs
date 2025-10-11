@@ -280,6 +280,7 @@ internal class SeedApplicator : ISeedApplication
         if (e.Data is { IsReadOnly: false } data)
             data[nameof(context.WorkerId)] = context.WorkerId;
 
+        // Allow workers to complete, but do not start new work
         context.Queue.Clear();
     }
 
