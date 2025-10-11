@@ -473,6 +473,7 @@ internal class MigrationApplicator : IMigrationApplication
     /// </param>
     public void Log(string text)
     {
+        // TODO: Consider making this async
         Assume.NotNull(_logWriter);
 
         _logWriter.WriteLine(text);
