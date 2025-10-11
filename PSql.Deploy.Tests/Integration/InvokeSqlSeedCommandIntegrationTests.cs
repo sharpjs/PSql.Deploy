@@ -12,8 +12,8 @@ public class InvokeSqlSeedCommandIntegrationTests
     [Test]
     public void Invoke()
     {
-        File.Delete("..PSqlDeployTestA.Typical.log");
-        File.Delete("..PSqlDeployTestB.Typical.log");
+        File.Delete("local.PSqlDeployTestA.Typical.log");
+        File.Delete("local.PSqlDeployTestB.Typical.log");
 
         var (_, exception) = Execute(
             """
