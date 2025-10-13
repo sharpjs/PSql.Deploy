@@ -7,7 +7,7 @@ using DependencyQueue;
 namespace PSql.Deploy.Seeds;
 
 using Queue                = DependencyQueue                     <SeedModule>;
-using QueueItemBuilder     = DependencyQueueItemBuilder          <SeedModule>;
+using QueueItemBuilder     = DependencyQueueBuilder              <SeedModule>;
 using QueueError           = DependencyQueueError                ;
 using QueueErrorType       = DependencyQueueErrorType            ;
 using CycleError           = DependencyQueueCycleError           <SeedModule>;
@@ -148,7 +148,7 @@ internal class SeedApplicator : ISeedApplication
 
     private void Populate(Queue queue)
     {
-        var builder = queue.CreateItemBuilder();
+        var builder = queue.CreateBuilder();
 
         foreach (var module in Seed.Modules)
         {
