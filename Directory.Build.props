@@ -9,7 +9,7 @@
     * Imported early: this -> NuGet package .props -> SDK .props -> project
     * Many properties are not yet defined and behave as if empty.
     * Provide defaults for properties here.
-    https://docs.microsoft.com/en-us/visualstudio/msbuild/customize-your-build
+    https://learn.microsoft.com/en-us/visualstudio/msbuild/customize-your-build
   -->
 
   <!-- Descriptive properties -->
