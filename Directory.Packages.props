@@ -18,7 +18,7 @@
 
   <ItemGroup>
     <PackageVersion Include="DependencyQueue"                             Version="1.0.0" />
-    <PackageVersion Include="DotStuff"                                    Version="0.0.0-pre.2" />
+    <PackageVersion Include="DotStuff"                                    Version="1.0.0" />
     <PackageVersion Include="Microsoft.Data.SqlClient"                    Version="[5.2.2, 6.0.0)" />
     <PackageVersion Include="Microsoft.PowerShell.SDK"                    Version="[7.2.24, 7.3.0)" />
     <PackageVersion Include="Prequel"                                     Version="1.1.0" />
