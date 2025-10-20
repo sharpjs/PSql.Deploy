@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- copied to deps\ as None items below -->
+    <!-- Copied to deps\ as None items below -->
     <ProjectReference
       Include="..\PSql.Deploy.Engine\PSql.Deploy.Engine.csproj"
       Private="false" PrivateAssets="all" Aliases="Engine" />
