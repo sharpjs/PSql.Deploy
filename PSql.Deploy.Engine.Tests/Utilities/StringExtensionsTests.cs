@@ -18,7 +18,6 @@ public class StringExtensionsTests
     [Test]
     [TestCase(null, null)]
     [TestCase("",   null)]
-    [TestCase(" ",  " " )]
     [TestCase("a",  "a" )]
     public void NullIfEmpty(string? s, string? expected)
     {

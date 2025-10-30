@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: MIT
 
 using System.Diagnostics;
-using System.Net;
 
 using static System.Reflection.BindingFlags;
 

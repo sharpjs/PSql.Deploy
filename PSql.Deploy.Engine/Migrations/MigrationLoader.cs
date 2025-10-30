@@ -138,8 +138,8 @@ internal static class MigrationLoader
         if (migration.IsPseudo)
             return;
 
-        var name = migration.Name.Replace("'", "''");
-        var hash = migration.Hash.Replace("'", "''");
+        var name = migration.Name.EscapeForSqlString();
+        var hash = migration.Hash.EscapeForSqlString();
 
         builder.StartNewBatch();
         builder.Append(

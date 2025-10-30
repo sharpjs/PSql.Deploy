@@ -15,8 +15,8 @@
     # Requirements
     CompatiblePSEditions = 'Core'
     PowerShellVersion    = '7.2'
-    RequiredModules      = @() # Designed to work with PSql, but can work independently
-    RequiredAssemblies   = @()
+    #RequiredModules     = @(...) # Designed to work with PSql, but can work independently
+    #RequiredAssemblies  = @(...)
 
     # Initialization
     #ScriptsToProcess = @(...)
