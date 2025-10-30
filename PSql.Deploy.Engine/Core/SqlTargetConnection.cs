@@ -32,8 +32,8 @@ internal abstract class SqlTargetConnection : ITargetConnection
         Logger = logger;
 
         Connection = target.SqlCredential is { } credential
-            ? new SqlConnection(target.ConnectionString, credential)
-            : new SqlConnection(target.ConnectionString);
+            ? new(target.ConnectionString, credential)
+            : new(target.ConnectionString);
 
         Connection.RetryLogicProvider                = RetryLogicProvider;
         Connection.FireInfoMessageEventOnUserErrors  = true;
@@ -46,7 +46,7 @@ internal abstract class SqlTargetConnection : ITargetConnection
     }
 
     /// <summary>
-    ///   Gets the retry logic for the connection.
+    ///   Gets the retry logic for connections.
     /// </summary>
     protected static SqlRetryLogicBaseProvider RetryLogicProvider { get; }
         = SqlConfigurableRetryFactory.CreateExponentialRetryProvider(new()
@@ -59,9 +59,6 @@ internal abstract class SqlTargetConnection : ITargetConnection
     /// <inheritdoc/>
     public Target Target { get; }
 
-    /// <inheritdoc/>
-    public ISqlMessageLogger Logger { get; }
-
     /// <summary>
     ///   Gets the underlying SqlClient connection.
     /// </summary>
@@ -71,6 +68,9 @@ internal abstract class SqlTargetConnection : ITargetConnection
     ///   Gets the underlying SqlClient command.
     /// </summary>
     protected SqlCommand Command { get; }
+
+    /// <inheritdoc/>
+    public ISqlMessageLogger Logger { get; }
 
     /// <summary>
     ///   Gets whether one or more error messages have been received over the
