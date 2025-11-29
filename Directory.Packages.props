@@ -12,8 +12,6 @@
 
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <!-- PSqlVersion:     see Directory.Build.Props -->
-    <!-- TaskHostVersion: see Directory.Build.Props -->
   </PropertyGroup>
 
   <ItemGroup>
