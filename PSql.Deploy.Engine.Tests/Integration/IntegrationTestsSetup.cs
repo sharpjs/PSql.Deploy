@@ -1,114 +1,42 @@
 // Copyright Subatomix Research Inc.
 // SPDX-License-Identifier: MIT
 
-using System.Net;
+using Subatomix.Testing.SqlServerIntegration;
 
 namespace PSql.Deploy.Integration;
 
 [SetUpFixture]
 public static class IntegrationTestsSetup
 {
-    private const string
-        PasswordName = "MSSQL_SA_PASSWORD",
-        ServerPipe   = @"\\.\pipe\sql\query";
-
-    private const ushort
-        ServerPort = 1433;
-
-    private static SqlServerContainer? _container;
-    private static Target?             _setupTarget;
-    private static Target?             _testTarget;
+    private static TemporaryDatabase? _database;
+    private static Target?            _target;
 
     internal static Target Target
-        => _testTarget ?? throw new InvalidOperationException("Target not initialized.");
+        => _target ?? throw OnSetUpNotExecuted();
 
     [OneTimeSetUp]
-    public static async Task SetUp()
+    public static void SetUp()
     {
-        var connectionString = new SqlConnectionStringBuilder { DataSource = "." };
-        var credential       = null as NetworkCredential;
+        TestSqlServer.SetUp();
 
-        var password = Environment
-            .GetEnvironmentVariable(PasswordName)
-            .NullIfEmpty();
-
-        if (password is not null)
-        {
-            // Scenario A: Environment variable MSSQL_SA_PASSWORD present.
-            // => Assume that a local SQL Server default instance is running.
-            //    Use the given password to authenticate as SA.
-            credential = new NetworkCredential("sa", password);
-        }
-        else if (IsLocalSqlServerListening())
-        {
-            // Scenario B: Process listening on port 1433 or named pipe.
-            // => Assume that a local SQL Server default instance is running
-            //    and supports integrated authentication.  Assume that the
-            //    current user has suffucient privileges to run tests.
-            connectionString.IntegratedSecurity = true;
-        }
-        else
-        {
-            // Scenario C: No process listening on port 1433 or named pipe.
-            // => Start an ephemeral SQL Server container on port 1433 using a
-            //    generated SA password.
-            _container = new SqlServerContainer(ServerPort);
-            credential = _container.Credential;
-        }
-
-        connectionString.Encrypt         = SqlConnectionEncryptOption.Optional;
-        connectionString.ApplicationName = "PSql.Deploy.Tests";
-
-        _setupTarget = new(connectionString.ToString(), credential);
-
-        connectionString.InitialCatalog = "PSqlDeployTest";
-
-        _testTarget = new(connectionString.ToString(), credential);
-
-        await CreateTestDatabaseAsync();
+        _database = TestSqlServer.CreateTemporaryDatabase("PSqlDeployTest");
+        _target   = new(_database.ConnectionString, TestSqlServer.Credential);
     }
 
-
-    private static bool IsLocalSqlServerListening()
-    {
-        return TcpPort.IsListening(ServerPort)
-            || OperatingSystem.IsWindows() && File.Exists(ServerPipe);
-    }
 
     [OneTimeTearDown]
-    public static async Task TearDown()
+    public static void TearDown()
     {
-        try
-        {
-            await RemoveTestDatabaseAsync();
-        }
-        finally
-        {
-            _container?.Dispose();
-            _container = null;
-        }
+        _database = null;
+        _target   = null;
+
+        TestSqlServer.TearDown();
     }
 
-    private static async Task CreateTestDatabaseAsync()
+    private static Exception OnSetUpNotExecuted()
     {
-        if (_setupTarget is null)
-            return;
-
-        await using var connection = new SqlTestTargetConnection(_setupTarget);
-
-        await connection.OpenAsync(CancellationToken.None);
-        await connection.RemoveDatabaseAsync("PSqlDeployTest");
-        await connection.CreateDatabaseAsync("PSqlDeployTest");
-    }
-
-    private static async Task RemoveTestDatabaseAsync()
-    {
-        if (_setupTarget is null)
-            return;
-
-        await using var connection = new SqlTestTargetConnection(_setupTarget);
-
-        await connection.OpenAsync(CancellationToken.None);
-        await connection.RemoveDatabaseAsync("PSqlDeployTest");
+        return new InvalidOperationException(
+            nameof(IntegrationTestsSetup) + "." + nameof(SetUp) + " has not executed."
+        );
     }
 }

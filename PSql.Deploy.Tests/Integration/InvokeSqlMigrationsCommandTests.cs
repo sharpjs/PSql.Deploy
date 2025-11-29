@@ -5,6 +5,8 @@ using PSql.Deploy.Migrations;
 
 namespace PSql.Deploy.Integration;
 
+using static IntegrationTestsSetup;
+
 [TestFixture]
 [Parallelizable(ParallelScope.Fixtures)] // because tests write to the same files
 public class InvokeSqlMigrationsCommandIntegrationTests
@@ -12,17 +14,17 @@ public class InvokeSqlMigrationsCommandIntegrationTests
     [Test]
     public void Invoke()
     {
-        File.Delete("..PSqlDeployTestA.0_Pre.log");
-        File.Delete("..PSqlDeployTestA.1_Core.log");
-        File.Delete("..PSqlDeployTestA.2_Post.log");
-        File.Delete("..PSqlDeployTestB.0_Pre.log");
-        File.Delete("..PSqlDeployTestB.1_Core.log");
-        File.Delete("..PSqlDeployTestB.2_Post.log");
+        File.Delete($"local.{DatabaseA.Name}.0_Pre.log");
+        File.Delete($"local.{DatabaseA.Name}.1_Core.log");
+        File.Delete($"local.{DatabaseA.Name}.2_Post.log");
+        File.Delete($"local.{DatabaseB.Name}.0_Pre.log");
+        File.Delete($"local.{DatabaseB.Name}.1_Core.log");
+        File.Delete($"local.{DatabaseB.Name}.2_Post.log");
 
         var (output, exception) = Execute(
-            """
-            $TargetA = New-SqlContext -DatabaseName PSqlDeployTestA
-            $TargetB = New-SqlContext -DatabaseName PSqlDeployTestB
+            $$"""
+            $TargetA = New-SqlContext -DatabaseName {{DatabaseA.Name}}
+            $TargetB = New-SqlContext -DatabaseName {{DatabaseB.Name}}  
             $Targets = New-SqlTargetDatabaseGroup -Target $TargetA, $TargetB -Name Test
             $Path    = Join-Path TestDbs A
 
@@ -77,21 +79,21 @@ public class InvokeSqlMigrationsCommandIntegrationTests
         ShouldBeMigrations(3, MigrationState.AppliedPost);
         ShouldBeMigrations(6, MigrationState.AppliedPost);
 
-        File.ReadAllText("local.PSqlDeployTestA.0_Pre.log" ).ShouldNotBeNullOrEmpty();
-        File.ReadAllText("local.PSqlDeployTestA.1_Core.log").ShouldNotBeNullOrEmpty();
-        File.ReadAllText("local.PSqlDeployTestA.2_Post.log").ShouldNotBeNullOrEmpty();
-        File.ReadAllText("local.PSqlDeployTestB.0_Pre.log" ).ShouldNotBeNullOrEmpty();
-        File.ReadAllText("local.PSqlDeployTestB.1_Core.log").ShouldNotBeNullOrEmpty();
-        File.ReadAllText("local.PSqlDeployTestB.2_Post.log").ShouldNotBeNullOrEmpty();
+        File.ReadAllText($"local.{DatabaseA.Name}.0_Pre.log" ).ShouldNotBeNullOrEmpty();
+        File.ReadAllText($"local.{DatabaseA.Name}.1_Core.log").ShouldNotBeNullOrEmpty();
+        File.ReadAllText($"local.{DatabaseA.Name}.2_Post.log").ShouldNotBeNullOrEmpty();
+        File.ReadAllText($"local.{DatabaseB.Name}.0_Pre.log" ).ShouldNotBeNullOrEmpty();
+        File.ReadAllText($"local.{DatabaseB.Name}.1_Core.log").ShouldNotBeNullOrEmpty();
+        File.ReadAllText($"local.{DatabaseB.Name}.2_Post.log").ShouldNotBeNullOrEmpty();
     }
 
     [Test]
     public void Invoke_DefaultPath()
     {
         var (_, exception) = Execute(
-            """
+            $$"""
             Join-Path TestDbs A | Set-Location
-            $Target = New-SqlContext -DatabaseName PSqlDeployTestA
+            $Target = New-SqlContext -DatabaseName {{DatabaseA.Name}}
             Invoke-SqlMigrations $Target -WhatIf
             """
         );
@@ -101,9 +103,6 @@ public class InvokeSqlMigrationsCommandIntegrationTests
 
     private static (IReadOnlyList<PSObject?>, Exception?) Execute(string script)
     {
-        return ScriptExecutor.Execute(
-            IntegrationTestsSetup.WithIntegrationTestDefaults,
-            script
-        );
+        return ScriptExecutor.Execute(WithIntegrationTestDefaults, script);
     }
 }

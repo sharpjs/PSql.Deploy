@@ -5,6 +5,8 @@ using System.Management.Automation.Runspaces;
 
 namespace PSql.Deploy.Integration;
 
+using static IntegrationTestsSetup;
+
 [TestFixture]
 [Parallelizable(ParallelScope.Fixtures)] // because tests write to the same files
 public class InvokeSqlSeedCommandIntegrationTests
@@ -12,13 +14,16 @@ public class InvokeSqlSeedCommandIntegrationTests
     [Test]
     public void Invoke()
     {
-        File.Delete("local.PSqlDeployTestA.Typical.log");
-        File.Delete("local.PSqlDeployTestB.Typical.log");
+        var logNameA = $"local.{DatabaseA.Name}.Typical.log";
+        var logNameB = $"local.{DatabaseB.Name}.Typical.log";
+
+        File.Delete(logNameA);
+        File.Delete(logNameB);
 
         var (_, exception) = Execute(
-            """
-            $TargetA = New-SqlContext -DatabaseName PSqlDeployTestA
-            $TargetB = New-SqlContext -DatabaseName PSqlDeployTestB
+            $$"""
+            $TargetA = New-SqlContext -DatabaseName {{DatabaseA.Name}}
+            $TargetB = New-SqlContext -DatabaseName {{DatabaseB.Name}}
             $Targets = New-SqlTargetDatabaseGroup -Target $TargetA, $TargetB -Name Test
             $Path    = Join-Path TestDbs A -Resolve
 
@@ -33,17 +38,17 @@ public class InvokeSqlSeedCommandIntegrationTests
 
         exception.ShouldBeNull();
 
-        File.ReadAllText("local.PSqlDeployTestA.Typical.log").ShouldNotBeNullOrEmpty();
-        File.ReadAllText("local.PSqlDeployTestB.Typical.log").ShouldNotBeNullOrEmpty();
+        File.ReadAllText(logNameA).ShouldNotBeNullOrEmpty();
+        File.ReadAllText(logNameB).ShouldNotBeNullOrEmpty();
     }
 
     [Test]
     public void Invoke_DefaultPath()
     {
         var (_, exception) = Execute(
-            """
+            $$"""
             Join-Path TestDbs A | Set-Location
-            $Target = New-SqlContext -DatabaseName PSqlDeployTestA
+            $Target = New-SqlContext -DatabaseName {{DatabaseA.Name}}
 
             Invoke-SqlSeed $Target Typical -Define @{ foo = "bar" } -WhatIf
             """
@@ -58,9 +63,9 @@ public class InvokeSqlSeedCommandIntegrationTests
         // NOTE: The test seed 'Typical' requires a SqlCmd variable 'foo'.
 
         var (_, exception) = Execute(
-            """
+            $$"""
             Join-Path TestDbs A | Set-Location
-            $Target = New-SqlContext -DatabaseName PSqlDeployTestA
+            $Target = New-SqlContext -DatabaseName {{DatabaseA.Name}}
 
             Invoke-SqlSeed $Target Typical <#-Define#> -WhatIf
             """
@@ -77,9 +82,9 @@ public class InvokeSqlSeedCommandIntegrationTests
         // NOTE: The test seed 'Typical' requires a SqlCmd variable 'foo'.
 
         var (_, exception) = Execute(
-            """
+            $$"""
             Join-Path TestDbs A | Set-Location
-            $Target = New-SqlContext -DatabaseName PSqlDeployTestA
+            $Target = New-SqlContext -DatabaseName {{DatabaseA.Name}}
 
             Invoke-SqlSeed $Target Typical -Define @{} -WhatIf
             """
@@ -105,9 +110,9 @@ public class InvokeSqlSeedCommandIntegrationTests
                 IntegrationTestsSetup.WithIntegrationTestDefaults(state);
                 state.Variables.Add(variable);
             },
-            """
+            $$"""
             Join-Path TestDbs A | Set-Location
-            $Target = New-SqlContext -DatabaseName PSqlDeployTestA
+            $Target = New-SqlContext -DatabaseName {{DatabaseA.Name}}
 
             Invoke-SqlSeed $Target Typical -Define @{ $ToStringIsNull = "value" } -WhatIf
             """
@@ -123,9 +128,9 @@ public class InvokeSqlSeedCommandIntegrationTests
     public void Invoke_DefineWithNullValue()
     {
         var (_, exception) = Execute(
-            """
+            $$"""
             Join-Path TestDbs A | Set-Location
-            $Target = New-SqlContext -DatabaseName PSqlDeployTestA
+            $Target = New-SqlContext -DatabaseName {{DatabaseA.Name}}
 
             Invoke-SqlSeed $Target Typical -Define @{ foo = $null } -WhatIf
             """
