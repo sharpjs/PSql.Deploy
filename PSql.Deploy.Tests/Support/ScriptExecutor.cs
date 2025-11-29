@@ -49,8 +49,7 @@ internal static class ScriptExecutor
 
     internal static (IReadOnlyList<PSObject?>, Exception?) Execute(Action<InitialSessionState>? setup, string script)
     {
-        if (script is null)
-            throw new ArgumentNullException(nameof(script));
+        ArgumentNullException.ThrowIfNull(script);
 
         var state = InitialState;
 
