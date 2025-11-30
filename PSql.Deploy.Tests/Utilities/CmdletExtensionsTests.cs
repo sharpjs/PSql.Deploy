@@ -114,6 +114,6 @@ public class CmdletExtensionsTests
 
     private static (IReadOnlyList<PSObject?>, Exception?) Execute(string command)
     {
-        return ScriptExecutor.Execute(command);
+        return ScriptExecutor.Execute(ScriptExecutor.WithTestingVariable, command);
     }
 }
