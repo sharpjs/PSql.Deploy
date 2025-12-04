@@ -15,8 +15,8 @@ for SQL Server and Azure SQL Database.
 [![NuGet](https://img.shields.io/powershellgallery/v/PSql.Deploy.svg)](https://www.powershellgallery.com/packages/PSql.Deploy)
 [![NuGet](https://img.shields.io/powershellgallery/dt/PSql.Deploy.svg)](https://www.powershellgallery.com/packages/PSql.Deploy)
 
-Slowly nearing public release.
-Based on previous work used privately in production for years.
+Version 3 recently released.  Based on previous work used privately in
+production for years.
 
 ## Installation
 
@@ -24,7 +24,13 @@ Install [this PowerShell module](https://www.powershellgallery.com/packages/PSql
 
 ## Usage
 
-WIP
+For now, invoke the following command for more documentation:
+
+```powershell
+Get-Help about_PSql_Deploy
+```
+
+Better README content is forthcoming.
 
 <!--
   Copyright Subatomix Research Inc.
